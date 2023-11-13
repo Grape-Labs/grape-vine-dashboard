@@ -7,17 +7,15 @@ import VineHolderComponent from './VineHolderComponent'
 import {
   CssBaseline,
   AppBar,
-  Box,
   Container,
   Toolbar,
   Paper,
-  Button,
   Typography,
 } from '@mui/material'
 
 function Copyright() {
   return (
-    <Typography variant="body2" color="text.secondary" align="center">
+    <Typography variant="body2" color="secondary" align="center">
       Powered by Grape
     </Typography>
   );
@@ -26,7 +24,6 @@ function Copyright() {
 const Home: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   
-
   return (
     <React.Fragment>
       <CssBaseline />
@@ -51,6 +48,7 @@ const Home: React.FC = () => {
           <VineHolderComponent />
         </Paper>
       </Container>
+      <Copyright />
     </React.Fragment>
   );
 };

@@ -1,0 +1,1 @@
+export const GRAPE_RPC_ENDPOINT = process.env.REACT_APP_RPC_ENDPOINT || 'https://api.mainnet-beta.solana.com';

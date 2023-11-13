@@ -32,11 +32,12 @@ const Home: React.FC = () => {
       <CssBaseline />
       <AppBar
         position="absolute"
-        color="default"
+        //color="default"
         elevation={0}
         sx={{
           position: 'relative',
           borderBottom: (t) => `1px solid ${t.palette.divider}`,
+          background: 'rgba(255,255,255,0.5)'
         }}
       >
         <Toolbar>

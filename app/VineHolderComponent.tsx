@@ -1,12 +1,18 @@
 'use client'
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import {
-
-} from '@ant-design/icons';
-
-import { Divider, List, Typography } from 'antd';
+  Box,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Avatar,
+  IconButton,
+  Typography,
+} from '@mui/material'
 
 const data = [
   'XYZXYZXYZXYZXYZXYZXYZ',
@@ -15,21 +21,16 @@ const data = [
 ];
 
 const VineHolderComponent: React.FC = () => (
-  <>
-    <Divider orientation="left">Holders</Divider>
-    <List
-      header={<div>Header</div>}
-      footer={<div>Footer</div>}
-      bordered
-      dataSource={data}
-      renderItem={(item, key) => (
-        <List.Item>
-          <Typography.Text mark>[{key}]</Typography.Text> {item} ()
-        </List.Item>
-      )}
-    />
-    
-  </>
+  <Box sx={{ flexGrow: 1 }}>
+    <Divider>Holders</Divider>
+    <List>
+      {data && data.map((item, key) => (
+        <ListItem key={key}>
+          <Typography>[{key}]</Typography> {item} ()
+        </ListItem>
+      ))}
+    </List>
+  </Box>
 );
 
 export default VineHolderComponent;

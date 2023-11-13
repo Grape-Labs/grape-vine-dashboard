@@ -1,8 +1,8 @@
 'use client'
 import React, { useState } from 'react';
 
-import { PublicKey, Connection } from '@solana/web3.js'; 
-//import { } from '@solana/spl-token';
+import { PublicKey, Connection, TokenAccountsFilter } from '@solana/web3.js'; 
+import { TOKEN_PROGRAM_ID, getAccount, getMint, } from '@solana/spl-token';
 import { GRAPE_RPC_ENDPOINT } from './constants';
 
 import {
@@ -35,10 +35,11 @@ const VineHolderComponent: React.FC = () => {
   const fetchTokenInfo = async() => {
     let tokenDetails = await connection.getParsedAccountInfo(token);
     if (tokenDetails){
-      console.log("tokenDetails: "+JSON.stringify(tokenDetails))
-    
       setTokenInfo(tokenDetails.value.data.parsed.info);
     }
+
+    //const tokenMint = await getMint(connection, token);
+    //console.log("tokenMint: ",tokenMint);
   }
 
   React.useEffect(() => {   

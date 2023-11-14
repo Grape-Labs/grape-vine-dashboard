@@ -77,6 +77,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       } catch(err) {
         // Log an error message if there is an error fetching token information
         console.error("Error fetching token info:", err);
+        // Optionally, you can set an error state or show an error message to the user
       } finally {
         // Set loading to false after fetching token information and holders
         setLoading(false);

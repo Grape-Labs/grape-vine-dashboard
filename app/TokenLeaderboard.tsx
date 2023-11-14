@@ -22,8 +22,10 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const connection = new Connection(GRAPE_RPC_ENDPOINT);
   const token = new PublicKey(props.programId);
 
-  const [tokenInfo, setTokenInfo] = useState(null);
-  const [holders, setHolders] = useState([])
+  // Define state variables for token information, holders, and loading status
+  const [tokenInfo, setTokenInfo] = useState<any | null>(null);
+  const [holders, setHolders] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const fetchTokenInfo = async() => {
     try {

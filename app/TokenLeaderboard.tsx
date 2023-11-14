@@ -92,13 +92,13 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
       {/* Display token information if available */}
       <Typography>
-        {tokenInfo &&
+        {tokenInfo && (
           <>
             Address: {token.toBase58()}<br/>
-            Decimals: {tokenInfo.decimals}<br/>
-            Supply: {tokenInfo.supply}<br/>
+            Decimals: {tokenInfo?.decimals}<br/>
+            Supply: {tokenInfo?.supply}<br/>
           </>
-        }
+        )}
       </Typography>
 
       <Divider>Holders</Divider>

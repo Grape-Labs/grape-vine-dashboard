@@ -38,7 +38,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         // Fetch parsed account information for the specified token
         let tokenDetails = await connection.getParsedAccountInfo(token);
         // If tokenDetails is available, update the state with token information
-        if (tokenDetails) {
+        if (tokenDetails?.value?.data?.parsed?.info) {
           setTokenInfo(tokenDetails.value.data.parsed.info);
         }
 

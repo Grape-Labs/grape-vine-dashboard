@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 
 import { PublicKey, Connection, TokenAccountsFilter, LAMPORTS_PER_SOL } from '@solana/web3.js'; 
 import { TOKEN_PROGRAM_ID, getAccount, getMint, } from '@solana/spl-token';
@@ -20,12 +20,12 @@ import {
 
 // Vine Token: A6GComqUgUZ7mTqZcDrgnigPEdYDcw5yCumbHaaQxVKK
 
-const VineHolderComponent: React.FC = () => {
+const TokenLeaderboard: FC = () => {
   const connection = new Connection(GRAPE_RPC_ENDPOINT);
   const token = new PublicKey("A6GComqUgUZ7mTqZcDrgnigPEdYDcw5yCumbHaaQxVKK");
 
-  const [tokenInfo, setTokenInfo] = React.useState(null);
-  const [holders, setHolders] = React.useState([])
+  const [tokenInfo, setTokenInfo] = useState(null);
+  const [holders, setHolders] = useState([])
 
   const fetchTokenInfo = async() => {
     try {
@@ -77,7 +77,7 @@ const VineHolderComponent: React.FC = () => {
     }
   }
 
-  React.useEffect(() => {   
+  useEffect(() => {   
     //if (true)
       fetchTokenInfo();
 }, []);
@@ -108,4 +108,4 @@ const VineHolderComponent: React.FC = () => {
   );
 }
 
-export default VineHolderComponent;
+export default TokenLeaderboard;

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 //import { Link } from 'react-router-dom';
 
-import VineHolderComponent from './VineHolderComponent'
+import TokenLeaderboard from './TokenLeaderboard'
 
 import {
   CssBaseline,
@@ -45,7 +45,7 @@ const Home: React.FC = () => {
       </AppBar>
       <Container component="main" maxWidth="sm" sx={{ mb: 4 }}>
         <Paper variant="outlined" sx={{ my: { xs: 3, md: 6 }, p: { xs: 2, md: 3 } }}>
-          <VineHolderComponent />
+          <TokenLeaderboard programId="A6GComqUgUZ7mTqZcDrgnigPEdYDcw5yCumbHaaQxVKK"/>
         </Paper>
       </Container>
       <Copyright />

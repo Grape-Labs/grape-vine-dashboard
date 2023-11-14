@@ -18,11 +18,9 @@ import {
   Typography,
 } from '@mui/material'
 
-// Vine Token: A6GComqUgUZ7mTqZcDrgnigPEdYDcw5yCumbHaaQxVKK
-
-const TokenLeaderboard: FC = () => {
+const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const connection = new Connection(GRAPE_RPC_ENDPOINT);
-  const token = new PublicKey("A6GComqUgUZ7mTqZcDrgnigPEdYDcw5yCumbHaaQxVKK");
+  const token = new PublicKey(props.programId);
 
   const [tokenInfo, setTokenInfo] = useState(null);
   const [holders, setHolders] = useState([])

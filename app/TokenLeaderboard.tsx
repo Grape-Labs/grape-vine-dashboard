@@ -80,7 +80,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   useEffect(() => {   
     //if (true)
       fetchTokenInfo();
-}, []);
+  }, []);
 
   return (
     <Box sx={{ flexGrow: 1 }}>

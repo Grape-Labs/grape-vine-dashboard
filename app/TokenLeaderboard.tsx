@@ -59,21 +59,27 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
             ],
           }
         )
+        // Extract the public keys from an array of token accounts
+        const holdersAta = tokenAccounts.map(({ pubkey }) => pubkey);
 
-        // Fetch account information for each token account in parallel
-        const holders = await Promise.all(tokenAccounts.map(async (account) => {
-          const address = account.pubkey.toBase58();
-          const accountInfo = await getAccount(connection, account.pubkey);
+        // Fetch parsed account information for multiple accounts in a single request
+        const accountInfo = await connection.getMultipleParsedAccounts(holdersAta);
+
+        // Extract relevant data from the account information and parse it to ensure deep cloning
+        const holders = JSON.parse(JSON.stringify(accountInfo)).value.map(({ data: { parsed: { info } } }) => {
+          // Map the account data to a new format, extracting address and converting balance
           return {
-            address: address,
-            balance: Number(accountInfo.amount)
+            address: info.owner,  // Extract the owner address from the parsed account info
+            balance: +info.tokenAmount.amount / 10 ** +info.tokenAmount.decimals,
+            // Convert the balance by dividing amount by 10 raised to the power of decimals
           };
-        }));
+        });
 
         // Sort the holders array based on the balance in descending order
         const sortedHolders = holders.sort((a, b) => b.balance - a.balance)  
         // Update the state with the sorted holders array
         setHolders(sortedHolders);
+
       } catch(err) {
         // Log an error message if there is an error fetching token information
         console.error("Error fetching token info:", err);

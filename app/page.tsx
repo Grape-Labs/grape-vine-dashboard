@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 //import { Link } from 'react-router-dom';
 
 import TokenLeaderboard from './TokenLeaderboard'
+import { tokens } from "./constants"
 
 import {
   CssBaseline,
@@ -45,7 +46,9 @@ const Home: React.FC = () => {
       </AppBar>
       <Container component="main" maxWidth="sm" sx={{ mb: 4 }}>
         <Paper variant="outlined" sx={{ my: { xs: 3, md: 6 }, p: { xs: 2, md: 3 } }}>
-          <TokenLeaderboard programId="A6GComqUgUZ7mTqZcDrgnigPEdYDcw5yCumbHaaQxVKK"/>
+          {tokens && tokens.map(({programId}) => (
+            <TokenLeaderboard key={programId} programId={programId} />
+          ))}
         </Paper>
       </Container>
       <Copyright />

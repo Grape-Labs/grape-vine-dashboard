@@ -9,6 +9,7 @@ import {
   Toolbar,
   Paper,
   Typography,
+  Avatar,
 } from "@mui/material";
 import grapeTheme from "./utils/config/theme";
 import { ThemeProvider } from "@mui/material/styles";
@@ -46,12 +47,14 @@ const Home: React.FC = () => {
               display="flex"
               sx={{ ml: 1, mr: 1 }}
             >
-              <img
-                src={VINE_LOGO}
-                width="50px"
-                className="header-logo"
-                alt="Powered by Grape"
-              />
+              <Avatar>
+                <img
+                  src={VINE_LOGO}
+                  width="50px"
+                  className="header-logo"
+                  alt="Powered by Grape"
+                />
+              </Avatar>
             </Typography>
 
             <Typography

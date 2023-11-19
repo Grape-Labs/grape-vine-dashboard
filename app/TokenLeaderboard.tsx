@@ -110,6 +110,9 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const excludeArr = [
+    "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk"
+  ]
 
   // Use the useEffect hook to fetch token information and holders when the component mounts
   useEffect(() => {
@@ -118,6 +121,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       try {
         // Fetch parsed account information for the specified token
         let tokenDetails = await connection.getParsedAccountInfo(token);
+        console.log('tokenDetails: '+JSON.stringify(tokenDetails))
         // If tokenDetails is available, update the state with token information
         const parsedTokenDetails = JSON.parse(JSON.stringify(tokenDetails));
         if (parsedTokenDetails?.value?.data?.parsed?.info) {
@@ -205,17 +209,16 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         )}
         </Typography></Grid> }
 
-      <Typography variant="h4">HOLDERS</Typography>
+      <Typography variant="h4">Holders</Typography>
       <Table>
         <TableContainer component={Paper} sx={{ background: "none" }}>
           <StyledTable
-            sx={{ minWidth: 500 }}
             size="small"
-            aria-label="Portfolio Table"
+            aria-label="Vine Holders Table"
           >
             <TableHead>
               <TableRow>
-                <TableCell>
+                <TableCell key={'ttitle'}>
                   <Typography variant="caption">Owner</Typography>
                 </TableCell>
                 <TableCell align="center">
@@ -235,7 +238,9 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                         page * rowsPerPage + rowsPerPage
                       )
                     : holders
-                  ).map((item: any, index: number) => (
+                  )
+                  .filter((item) => !excludeArr.includes(item.address))
+                  .map((item: any, index: number) => (
                     <>
                       {item?.address && (
                         <TableRow key={index} sx={{ borderBottom: "none" }}>
@@ -278,7 +283,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
             </TableBody>
 
             <TableFooter>
-              <TableRow>
+              <TableRow key={'tfooter'}>
                 <TablePagination
                   rowsPerPageOptions={[20]}
                   colSpan={5}

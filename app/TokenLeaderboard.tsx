@@ -29,6 +29,7 @@ import {
   Snackbar,
   Alert,
   Tooltip,
+  Zoom,
 } from "@mui/material";
 
 import ScreenshotMonitorIcon from '@mui/icons-material/ScreenshotMonitor';
@@ -132,7 +133,12 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [timestamp, setTimestamp] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const componentRef = useRef(null);
-  
+  const [open, setOpen] = useState(false);
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   const handleCapture = () => {
     if (componentRef.current) {
       html2canvas(componentRef.current)
@@ -267,6 +273,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       } else{
         setTimestamp(moment().toString());
         setLoadingSpin(false);
+        setOpen(true);
       }
     };
 
@@ -478,6 +485,20 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       >
         <Alert onClose={handleCloseSnackbar} severity="success">
           Copied to clipboard!
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={open}
+        autoHideDuration={3000} // Adjust the duration as needed
+        onClose={handleClose}
+        TransitionComponent={Zoom}
+      //  anchorOrigin={{ vertical: 'top', horizontal: 'center' }} // Set anchorOrigin for top center
+      >
+        <Alert 
+          onClose={handleClose} 
+          severity="success">
+          Operation randomizer successful!
         </Alert>
       </Snackbar>
     </Box>

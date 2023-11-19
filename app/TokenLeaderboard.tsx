@@ -121,7 +121,8 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
   const handleGetRaffleSelection = () => {
     const won = weightedRandomChoice(holders, excludeArr);
-    setWinner(won.address);
+    if (won)
+      setWinner(won.address);
   };
 
   // Use the useEffect hook to fetch token information and holders when the component mounts

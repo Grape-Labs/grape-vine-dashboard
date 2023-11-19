@@ -153,15 +153,12 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         const holders = JSON.parse(JSON.stringify(accountInfo)).value.map(
           (data:any, key:number) => {
             // Map the account data to a new format, extracting address and converting balance
-            console.log("data: "+JSON.stringify(data))
-            
             return {
               address: data.data.parsed.info.owner, // Extract the owner address from the parsed account info
               balance: data.data.parsed.info.tokenAmount.amount, // Convert the balance by dividing amount by 10 raised to the power of decimals
             };
           }
         );
-          console.log("holders: "+JSON.stringify(holders))
         // Sort the holders array based on the balance in descending order
         const sortedHolders = holders.sort((a:any, b:any) => b.balance - a.balance);
         // Update the state with the sorted holders array

@@ -69,7 +69,7 @@ const Home: React.FC = () => {
           <Paper
             variant="outlined"
             sx={{ my: { xs: 3, md: 6 }, p: { xs: 2, md: 3 } }}
-            style={{ background: "rgba(0,0,0,0.5)" }}
+            style={{ background: "rgba(0,0,0,0.5)", borderRadius: "20px" }}
           >
             {tokens &&
               tokens.map(({ programId }) => (

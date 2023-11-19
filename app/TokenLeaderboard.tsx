@@ -241,7 +241,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
               borderRadius:'17px'
             }}
           >
-            Raffle!
+            Randomizer<sup>beta</sup>
           </Button>
         </Box>
       </Box>

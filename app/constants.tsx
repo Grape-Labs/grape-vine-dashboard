@@ -4,6 +4,8 @@ export const tokens = [
   {
     programId: "A6GComqUgUZ7mTqZcDrgnigPEdYDcw5yCumbHaaQxVKK",
     name: "Vine",
-    image: "./public/images/vine.jpg"
+    image: "./images/vine.jpg"
   }
 ]
+
+export const VINE_LOGO = './images/vine.jpg'

@@ -1,11 +1,13 @@
 // Import necessary modules and components from libraries
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useState, useRef } from "react";
 import { PublicKey, Connection } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { GRAPE_RPC_ENDPOINT } from "./constants";
 import { styled, useTheme } from "@mui/material/styles";
 import moment from "moment";
 import { CopyToClipboard } from 'react-copy-to-clipboard';
+import html2canvas from 'html2canvas';
+
 
 import {
   Paper,
@@ -26,8 +28,10 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  Tooltip,
 } from "@mui/material";
 
+import ScreenshotMonitorIcon from '@mui/icons-material/ScreenshotMonitor';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 import LoopIcon from '@mui/icons-material/Loop';
@@ -67,7 +71,7 @@ function TablePaginationActions(props: any) {
   const handleLastPageButtonClick = (event:any) => {
     onPageChange(event, Math.max(0, Math.ceil(count / rowsPerPage) - 1));
   };
-
+  
   return (
     <Box sx={{ flexShrink: 0, ml: 2.5 }}>
       <IconButton
@@ -127,6 +131,30 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [loadingSpin, setLoadingSpin] = useState(false);
   const [timestamp, setTimestamp] = useState('');
   const [isCopied, setIsCopied] = useState(false);
+  const componentRef = useRef(null);
+  
+  const handleCapture = () => {
+    if (componentRef.current) {
+      html2canvas(componentRef.current)
+        .then((canvas) => {
+          const screenshotUrl = canvas.toDataURL(); // This is the screenshot image URL
+          console.log('Screenshot taken:', screenshotUrl);
+          // You can save or display the screenshot as needed
+          // Create a temporary anchor element
+          const downloadLink = document.createElement('a');
+          downloadLink.href = screenshotUrl;
+          downloadLink.download = 'vine_screenshot_'+timestamp+'.png'; // Set the filename
+
+          // Trigger a click on the anchor to initiate the download
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        })
+        .catch((error) => {
+          console.error('Error capturing screenshot:', error);
+        });
+    }
+  };
 
   const handleCopy = () => {
     setIsCopied(true);
@@ -271,6 +299,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       
       <Box
         textAlign='center'
+        ref={componentRef}
         sx={{
           m:2,
           p:1,
@@ -294,11 +323,19 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
             </CopyToClipboard>
             
             {(timestamp && timestamp.length > 0) ? 
-              <Grid>
-                <Typography variant="caption">
-                  {moment(timestamp).format('LLLL')}
-                </Typography>
-              </Grid> : ""}
+              <>
+                <Tooltip title="Save Screenshot">
+                  <IconButton onClick={handleCapture}>
+                    <ScreenshotMonitorIcon />
+                  </IconButton>
+                </Tooltip>
+                <Grid>
+                  <Typography variant="caption">
+                    {moment(timestamp).format('LLLL')}
+                  </Typography>
+                </Grid>
+              </>
+              : ""}
             </Box>
           </>
         }

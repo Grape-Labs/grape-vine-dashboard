@@ -44,7 +44,7 @@ const Home: React.FC = () => {
           </Typography>
         </Toolbar>
       </AppBar>
-      <Container component="main" maxWidth="sm" sx={{ mb: 4 }}>
+      <Container component="main" maxWidth="lg" sx={{ mb: 4 }}>
         <Paper variant="outlined" sx={{ my: { xs: 3, md: 6 }, p: { xs: 2, md: 3 } }}>
           {tokens && tokens.map(({programId}) => (
             <TokenLeaderboard key={programId} programId={programId} />

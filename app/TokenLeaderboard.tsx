@@ -1,9 +1,14 @@
 // Import necessary modules and components from libraries
-import { FC, useEffect, useState } from 'react';
+import { FC, useEffect, useState } from "react";
 
-import { PublicKey, Connection, TokenAccountsFilter, LAMPORTS_PER_SOL } from '@solana/web3.js'; 
-import { TOKEN_PROGRAM_ID, getAccount, getMint, } from '@solana/spl-token';
-import { GRAPE_RPC_ENDPOINT } from './constants';
+import {
+  PublicKey,
+  Connection,
+  TokenAccountsFilter,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID, getAccount, getMint } from "@solana/spl-token";
+import { GRAPE_RPC_ENDPOINT } from "./constants";
 
 import {
   Box,
@@ -16,7 +21,7 @@ import {
   Avatar,
   IconButton,
   Typography,
-} from '@mui/material'
+} from "@mui/material";
 
 // Define a React functional component named TokenLeaderboard
 const TokenLeaderboard: FC<{ programId: string }> = (props) => {
@@ -24,14 +29,14 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const connection = new Connection(GRAPE_RPC_ENDPOINT);
   // Define the token's public key based on the provided programId prop
   const token = new PublicKey(props.programId);
-  
+
   // Define state variables for token information, holders, and loading status
   const [tokenInfo, setTokenInfo] = useState<any | null>(null);
   const [holders, setHolders] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Use the useEffect hook to fetch token information and holders when the component mounts
-  useEffect(() => { 
+  useEffect(() => {
     // Define an asynchronous function to handle token data fetching
     (async () => {
       try {
@@ -58,29 +63,37 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
               },
             ],
           }
-        )
+        );
         // Extract the public keys from an array of token accounts
         const holdersAta = tokenAccounts.map(({ pubkey }) => pubkey);
 
         // Fetch parsed account information for multiple accounts in a single request
-        const accountInfo = await connection.getMultipleParsedAccounts(holdersAta);
+        const accountInfo = await connection.getMultipleParsedAccounts(
+          holdersAta
+        );
 
         // Extract relevant data from the account information and parse it to ensure deep cloning
-        const holders = JSON.parse(JSON.stringify(accountInfo)).value.map(({ data: { parsed: { info } } }) => {
-          // Map the account data to a new format, extracting address and converting balance
-          return {
-            address: info.owner,  // Extract the owner address from the parsed account info
-            balance: +info.tokenAmount.amount / 10 ** +info.tokenAmount.decimals,
-            // Convert the balance by dividing amount by 10 raised to the power of decimals
-          };
-        });
+        const holders = JSON.parse(JSON.stringify(accountInfo)).value.map(
+          ({
+            data: {
+              parsed: { info },
+            },
+          }) => {
+            // Map the account data to a new format, extracting address and converting balance
+            return {
+              address: info.owner, // Extract the owner address from the parsed account info
+              balance:
+                +info.tokenAmount.amount / 10 ** +info.tokenAmount.decimals,
+              // Convert the balance by dividing amount by 10 raised to the power of decimals
+            };
+          }
+        );
 
         // Sort the holders array based on the balance in descending order
-        const sortedHolders = holders.sort((a, b) => b.balance - a.balance)  
+        const sortedHolders = holders.sort((a, b) => b.balance - a.balance);
         // Update the state with the sorted holders array
         setHolders(sortedHolders);
-
-      } catch(err) {
+      } catch (err) {
         // Log an error message if there is an error fetching token information
         console.error("Error fetching token info:", err);
         // Optionally, you can set an error state or show an error message to the user
@@ -100,9 +113,12 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       <Typography>
         {tokenInfo && (
           <>
-            Address: {token.toBase58()}<br/>
-            Decimals: {tokenInfo?.decimals}<br/>
-            Supply: {tokenInfo?.supply}<br/>
+            Address: {token.toBase58()}
+            <br />
+            Decimals: {tokenInfo?.decimals}
+            <br />
+            Supply: {tokenInfo?.supply}
+            <br />
           </>
         )}
       </Typography>
@@ -125,7 +141,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       </List>
     </Box>
   );
-}
+};
 
 // Export the TokenLeaderboard component as the default export of this module
 export default TokenLeaderboard;

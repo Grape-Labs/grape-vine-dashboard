@@ -1,27 +1,100 @@
 // Import necessary modules and components from libraries
 import { FC, useEffect, useState } from "react";
-
-import {
-  PublicKey,
-  Connection,
-  TokenAccountsFilter,
-  LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, getAccount, getMint } from "@solana/spl-token";
+import { PublicKey, Connection } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { GRAPE_RPC_ENDPOINT } from "./constants";
-
+import { styled, useTheme } from "@mui/material/styles";
 import {
+  Paper,
   Box,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemIcon,
-  ListItemText,
   Divider,
-  Avatar,
   IconButton,
   Typography,
+  Table,
+  TableContainer,
+  TableHead,
+  TableBody,
+  TableFooter,
+  TableCell,
+  TableRow,
+  TablePagination,
 } from "@mui/material";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import LastPageIcon from "@mui/icons-material/LastPage";
+import {
+  formatAmount,
+  getFormattedNumberToLocale,
+} from "./utils/grapeTools/helpers";
+
+const StyledTable = styled(Table)(({ theme }) => ({
+  "& .MuiTableCell-root": {
+    borderBottom: "1px solid rgba(255,255,255,0.05)",
+  },
+}));
+
+function TablePaginationActions(props: any) {
+  const theme = useTheme();
+  const { count, page, rowsPerPage, onPageChange } = props;
+
+  const handleFirstPageButtonClick = (event) => {
+    onPageChange(event, 0);
+  };
+
+  const handleBackButtonClick = (event) => {
+    onPageChange(event, page - 1);
+  };
+
+  const handleNextButtonClick = (event) => {
+    onPageChange(event, page + 1);
+  };
+
+  const handleLastPageButtonClick = (event) => {
+    onPageChange(event, Math.max(0, Math.ceil(count / rowsPerPage) - 1));
+  };
+
+  return (
+    <Box sx={{ flexShrink: 0, ml: 2.5 }}>
+      <IconButton
+        onClick={handleFirstPageButtonClick}
+        disabled={page === 0}
+        aria-label="first page"
+      >
+        {theme.direction === "rtl" ? <LastPageIcon /> : <FirstPageIcon />}
+      </IconButton>
+      <IconButton
+        onClick={handleBackButtonClick}
+        disabled={page === 0}
+        aria-label="previous page"
+      >
+        {theme.direction === "rtl" ? (
+          <KeyboardArrowRight />
+        ) : (
+          <KeyboardArrowLeft />
+        )}
+      </IconButton>
+      <IconButton
+        onClick={handleNextButtonClick}
+        disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+        aria-label="next page"
+      >
+        {theme.direction === "rtl" ? (
+          <KeyboardArrowLeft />
+        ) : (
+          <KeyboardArrowRight />
+        )}
+      </IconButton>
+      <IconButton
+        onClick={handleLastPageButtonClick}
+        disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+        aria-label="last page"
+      >
+        {theme.direction === "rtl" ? <FirstPageIcon /> : <LastPageIcon />}
+      </IconButton>
+    </Box>
+  );
+}
 
 // Define a React functional component named TokenLeaderboard
 const TokenLeaderboard: FC<{ programId: string }> = (props) => {
@@ -34,6 +107,8 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [tokenInfo, setTokenInfo] = useState<any | null>(null);
   const [holders, setHolders] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Use the useEffect hook to fetch token information and holders when the component mounts
   useEffect(() => {
@@ -82,9 +157,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
             // Map the account data to a new format, extracting address and converting balance
             return {
               address: info.owner, // Extract the owner address from the parsed account info
-              balance:
-                +info.tokenAmount.amount / 10 ** +info.tokenAmount.decimals,
-              // Convert the balance by dividing amount by 10 raised to the power of decimals
+              balance: info.tokenAmount.amount, // Convert the balance by dividing amount by 10 raised to the power of decimals
             };
           }
         );
@@ -103,6 +176,15 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       }
     })();
   }, []); // Empty dependencies array ensures the effect runs only once when the component mounts
+
+  const handleChangePage = (event: any, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: any) => {
+    setRowsPerPage(parseInt(event.target.value, 200));
+    setPage(0);
+  };
 
   // Render the component with token information and holders
   return (
@@ -124,21 +206,97 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       </Typography>
 
       <Divider>Holders</Divider>
-      <List>
-        {/* Display loading message while fetching data, otherwise, display the list of holders */}
-        {loading ? (
-          <Typography>Loading...</Typography>
-        ) : (
-          holders.map((item, key) => (
-            // Display each holder's address and balance as a list item
-            <ListItem key={key}>
-              <Typography>
-                Address: {item.address} Balance: {item.balance}
-              </Typography>
-            </ListItem>
-          ))
-        )}
-      </List>
+      <Table>
+        <TableContainer component={Paper} sx={{ background: "none" }}>
+          <StyledTable
+            sx={{ minWidth: 500 }}
+            size="small"
+            aria-label="Portfolio Table"
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  <Typography variant="caption">Owner</Typography>
+                </TableCell>
+                <TableCell align="center">
+                  <Typography variant="caption">Amount</Typography>
+                </TableCell>
+                <TableCell align="center">
+                  <Typography variant="caption">% of Supply</Typography>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {holders && (
+                <>
+                  {(rowsPerPage > 0
+                    ? holders.slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                    : holders
+                  ).map((item: any, index: number) => (
+                    <>
+                      {item?.address && (
+                        <TableRow key={index} sx={{ borderBottom: "none" }}>
+                          <TableCell>
+                            <Typography variant="h6">{item.address}</Typography>
+                          </TableCell>
+
+                          <TableCell align="center">
+                            <Typography variant="h6">
+                              {getFormattedNumberToLocale(
+                                formatAmount(
+                                  +(
+                                    item.balance /
+                                    Math.pow(10, tokenInfo?.decimals)
+                                  ).toFixed(0)
+                                )
+                              )}
+                            </Typography>
+                          </TableCell>
+
+                          <TableCell align="center">
+                            <Typography variant="h6">
+                              {tokenInfo?.supply &&
+                                (
+                                  (+item.balance / tokenInfo?.supply) *
+                                  100
+                                ).toFixed(2)}
+                              %
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  ))}
+                </>
+              )}
+            </TableBody>
+
+            <TableFooter>
+              <TableRow>
+                <TablePagination
+                  rowsPerPageOptions={[20]}
+                  colSpan={5}
+                  count={holders && holders.length}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  SelectProps={{
+                    inputProps: {
+                      "aria-label": "rows per page",
+                    },
+                    native: true,
+                  }}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  ActionsComponent={TablePaginationActions}
+                />
+              </TableRow>
+            </TableFooter>
+          </StyledTable>
+        </TableContainer>
+      </Table>
     </Box>
   );
 };

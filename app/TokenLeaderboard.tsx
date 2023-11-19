@@ -20,8 +20,10 @@ import {
   TableCell,
   TableRow,
   TablePagination,
+  CircularProgress,
 } from "@mui/material";
 
+import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 import LoopIcon from '@mui/icons-material/Loop';
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
@@ -115,6 +117,8 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [winner, setWinner] = useState('');
+  const [loadingSpin, setLoadingSpin] = useState(false);
+
   const excludeArr = [
     "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk"
   ]
@@ -210,9 +214,12 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       handleGetRaffleSelection();
       spinCount++;
 
+      setLoadingSpin(true);
       if (spinCount < spins) {
         timeoutId = setTimeout(spinIteration, interval);
         //timeoutId = setTimeout(spinIteration, interval);
+      } else{
+        setLoadingSpin(false);
       }
     };
 
@@ -260,12 +267,18 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
           <Button 
             onClick={spinRoulette}
             color='inherit'
+            disabled={loadingSpin ? true:false}
             sx={{
               textTransform:'none',
               borderRadius:'17px'
             }}
           >
-            <LoopIcon fontSize='small' sx={{mr:1}} /> Randomizer<sup>beta</sup>
+            {loadingSpin ?
+              <HourglassBottomIcon fontSize='small' sx={{mr:1}} /> 
+            :
+              <LoopIcon fontSize='small' sx={{mr:1}} /> 
+            }
+            Randomizer<sup>beta</sup>
           </Button>
         </Box>
       </Box>

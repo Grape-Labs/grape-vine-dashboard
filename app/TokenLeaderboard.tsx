@@ -6,6 +6,7 @@ import { GRAPE_RPC_ENDPOINT } from "./constants";
 import { styled, useTheme } from "@mui/material/styles";
 import {
   Paper,
+  Grid,
   Box,
   Divider,
   IconButton,
@@ -147,18 +148,20 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         const accountInfo = await connection.getMultipleParsedAccounts(
           holdersAta
         );
-
+        
         // Extract relevant data from the account information and parse it to ensure deep cloning
         const holders = JSON.parse(JSON.stringify(accountInfo)).value.map(
           (data:any, key:number) => {
             // Map the account data to a new format, extracting address and converting balance
+            console.log("data: "+JSON.stringify(data))
+            
             return {
-              address: data.parsed.info.owner, // Extract the owner address from the parsed account info
-              balance: data.parsed.info.tokenAmount.amount, // Convert the balance by dividing amount by 10 raised to the power of decimals
+              address: data.data.parsed.info.owner, // Extract the owner address from the parsed account info
+              balance: data.data.parsed.info.tokenAmount.amount, // Convert the balance by dividing amount by 10 raised to the power of decimals
             };
           }
         );
-
+          console.log("holders: "+JSON.stringify(holders))
         // Sort the holders array based on the balance in descending order
         const sortedHolders = holders.sort((a:any, b:any) => b.balance - a.balance);
         // Update the state with the sorted holders array
@@ -189,18 +192,21 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       {/* <Typography variant="h4">TOKEN</Typography> */}
 
       {/* Display token information if available */}
-      {/* <Typography>
+      { 
+        <Grid container alignContent={'right'} justifyContent={'right'}>
+        <Typography variant="caption" sx={{textAlign:'right'}}>
         {tokenInfo && (
           <>
             Address: {token.toBase58()}
             <br />
-            Decimals: {tokenInfo?.decimals}
-            <br />
             Supply: {tokenInfo?.supply}
             <br />
+            Decimals: {tokenInfo?.decimals}
+            <br />
+            
           </>
         )}
-      </Typography> */}
+        </Typography></Grid> }
 
       <Typography variant="h4">HOLDERS</Typography>
       <Table>

@@ -242,14 +242,17 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
                           <TableCell align="center">
                             <Typography variant="h6">
-                              {getFormattedNumberToLocale(
+                              
+                              {(item.balance / 10 ** tokenInfo?.decimals).toLocaleString()}
+                              
+                              {/*getFormattedNumberToLocale(
                                 formatAmount(
                                   +(
                                     item.balance /
                                     Math.pow(10, tokenInfo?.decimals)
                                   ).toFixed(0)
                                 )
-                              )}
+                              )*/}
                             </Typography>
                           </TableCell>
 

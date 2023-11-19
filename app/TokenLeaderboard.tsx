@@ -5,7 +5,7 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { GRAPE_RPC_ENDPOINT } from "./constants";
 import { styled, useTheme } from "@mui/material/styles";
 import moment from "moment";
-import {CopyToClipboard} from 'react-copy-to-clipboard';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 
 import {
   Paper,
@@ -323,109 +323,113 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       </Box>
 
       <Typography variant="h4">Holders</Typography>
-      <Table
-        sx={{
-          border: "none"}}
-      >
-        <TableContainer 
-          component={Paper} 
-          sx={{ 
-            background: "none",
-            border:"none"
-          }}>
-          <StyledTable
-            size="small"
-            aria-label="Vine Holders Table"
+      <Box sx={{ overflow: "auto" }}>
+         <Box sx={{ width: "100%", display: "table", tableLayout: "fixed" }}>
+          <Table
+            sx={{
+              border: "none"}}
           >
-            <TableHead>
-              <TableRow>
-                <TableCell key={'ttitle'}>
-                  <Typography variant="caption">Owner</Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <Typography variant="caption">Amount</Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <Typography variant="caption">% of Supply</Typography>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {holders && (
-                <>
-                  {(rowsPerPage > 0
-                    ? holders.slice(
-                        page * rowsPerPage,
-                        page * rowsPerPage + rowsPerPage
-                      )
-                    : holders
-                  )
-                  .filter((item) => !excludeArr.includes(item.address))
-                  .map((item: any, index: number) => (
+            <TableContainer 
+              component={Paper} 
+              sx={{ 
+                background: "none",
+                border:"none"
+              }}>
+              <StyledTable
+                size="small"
+                aria-label="Vine Holders Table"
+              >
+                <TableHead>
+                  <TableRow>
+                    <TableCell key={'ttitle'}>
+                      <Typography variant="caption">Owner</Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Typography variant="caption">Amount</Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Typography variant="caption">% of Supply</Typography>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {holders && (
                     <>
-                      {item?.address && (
-                        <TableRow key={index} sx={{ borderBottom: "none" }}>
-                          <TableCell>
-                            <Typography variant="h6">{item.address}</Typography>
-                          </TableCell>
+                      {(rowsPerPage > 0
+                        ? holders.slice(
+                            page * rowsPerPage,
+                            page * rowsPerPage + rowsPerPage
+                          )
+                        : holders
+                      )
+                      .filter((item) => !excludeArr.includes(item.address))
+                      .map((item: any, index: number) => (
+                        <>
+                          {item?.address && (
+                            <TableRow key={index} sx={{ borderBottom: "none" }}>
+                              <TableCell>
+                                <Typography variant="h6">{item.address}</Typography>
+                              </TableCell>
 
-                          <TableCell align="center">
-                            <Typography variant="h6">
-                              
-                              {(item.balance / 10 ** tokenInfo?.decimals).toLocaleString()}
-                              
-                              {/*getFormattedNumberToLocale(
-                                formatAmount(
-                                  +(
-                                    item.balance /
-                                    Math.pow(10, tokenInfo?.decimals)
-                                  ).toFixed(0)
-                                )
-                              )*/}
-                            </Typography>
-                          </TableCell>
+                              <TableCell align="center">
+                                <Typography variant="h6">
+                                  
+                                  {(item.balance / 10 ** tokenInfo?.decimals).toLocaleString()}
+                                  
+                                  {/*getFormattedNumberToLocale(
+                                    formatAmount(
+                                      +(
+                                        item.balance /
+                                        Math.pow(10, tokenInfo?.decimals)
+                                      ).toFixed(0)
+                                    )
+                                  )*/}
+                                </Typography>
+                              </TableCell>
 
-                          <TableCell align="center">
-                            <Typography variant="h6">
-                              {tokenInfo?.supply &&
-                                (
-                                  (+item.balance / tokenInfo?.supply) *
-                                  100
-                                ).toFixed(2)}
-                              %
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      )}
+                              <TableCell align="center">
+                                <Typography variant="h6">
+                                  {tokenInfo?.supply &&
+                                    (
+                                      (+item.balance / tokenInfo?.supply) *
+                                      100
+                                    ).toFixed(2)}
+                                  %
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      ))}
                     </>
-                  ))}
-                </>
-              )}
-            </TableBody>
+                  )}
+                </TableBody>
 
-            <TableFooter>
-              <TableRow key={'tfooter'}>
-                <TablePagination
-                  rowsPerPageOptions={[20]}
-                  colSpan={5}
-                  count={holders && holders.length}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  SelectProps={{
-                    inputProps: {
-                      "aria-label": "rows per page",
-                    },
-                    native: true,
-                  }}
-                  onPageChange={handleChangePage}
-                  onRowsPerPageChange={handleChangeRowsPerPage}
-                  ActionsComponent={TablePaginationActions}
-                />
-              </TableRow>
-            </TableFooter>
-          </StyledTable>
-        </TableContainer>
-      </Table>
+                <TableFooter>
+                  <TableRow key={'tfooter'}>
+                    <TablePagination
+                      rowsPerPageOptions={[20]}
+                      colSpan={5}
+                      count={holders && holders.length}
+                      rowsPerPage={rowsPerPage}
+                      page={page}
+                      SelectProps={{
+                        inputProps: {
+                          "aria-label": "rows per page",
+                        },
+                        native: true,
+                      }}
+                      onPageChange={handleChangePage}
+                      onRowsPerPageChange={handleChangeRowsPerPage}
+                      ActionsComponent={TablePaginationActions}
+                    />
+                  </TableRow>
+                </TableFooter>
+              </StyledTable>
+            </TableContainer>
+          </Table>
+        </Box>
+      </Box>
 
       <Snackbar
         open={isCopied}

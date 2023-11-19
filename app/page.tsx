@@ -53,6 +53,16 @@ const Home: React.FC = () => {
                 alt="Powered by Grape"
               />
             </Typography>
+
+            <Typography
+              component="h1"
+              variant="h6"
+              color="inherit"
+              display="flex"
+              sx={{ ml: 1, mr: 1 }}
+            >
+              Vine Dashboard
+            </Typography>
           </Toolbar>
         </AppBar>
         <Container component="main" maxWidth="lg" sx={{ mb: 4 }}>

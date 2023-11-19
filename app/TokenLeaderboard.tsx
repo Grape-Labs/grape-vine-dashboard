@@ -189,7 +189,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   // Render the component with token information and holders
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Divider>Token</Divider>
+      <Typography variant="h4">TOKEN</Typography>
 
       {/* Display token information if available */}
       <Typography>
@@ -205,7 +205,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         )}
       </Typography>
 
-      <Divider>Holders</Divider>
+      <Typography variant="h4">HOLDERS</Typography>
       <Table>
         <TableContainer component={Paper} sx={{ background: "none" }}>
           <StyledTable

@@ -239,7 +239,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
           <>
             Address: {token.toBase58()}
             <br />
-            Supply: {tokenInfo?.supply}
+            Supply: {tokenInfo?.supply / 10 ** tokenInfo?.decimals}
             <br />
             Decimals: {tokenInfo?.decimals}
             <br />

@@ -9,6 +9,7 @@ import {
   Grid,
   Box,
   Divider,
+  Button,
   IconButton,
   Typography,
   Table,
@@ -25,6 +26,7 @@ import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
 import {
+  weightedRandomChoice,
   formatAmount,
   getFormattedNumberToLocale,
 } from "./utils/grapeTools/helpers";
@@ -110,9 +112,15 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [winner, setWinner] = useState('');
   const excludeArr = [
     "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk"
   ]
+
+  const handleGetRaffleSelection = (event:any) => {
+    const won = weightedRandomChoice(holders, excludeArr);
+    setWinner(won.address);
+  };
 
   // Use the useEffect hook to fetch token information and holders when the component mounts
   useEffect(() => {
@@ -208,6 +216,35 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
           </>
         )}
         </Typography></Grid> }
+      
+      <Box
+        textAlign='center'
+        sx={{
+          m:2,
+          p:1,
+          background:'rgba(0,0,0,0.2)',
+          borderRadius:'17px'}}
+      >
+        {(winner && winner.length > 0) &&
+          <>
+            <Box>
+            {winner}
+            </Box>
+          </>
+        }
+        <Box textAlign="right">
+          <Button 
+            onClick={handleGetRaffleSelection}
+            color='inherit'
+            sx={{
+              textTransform:'none',
+              borderRadius:'17px'
+            }}
+          >
+            Raffle!
+          </Button>
+        </Box>
+      </Box>
 
       <Typography variant="h4">Holders</Typography>
       <Table>

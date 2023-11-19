@@ -16,7 +16,7 @@ export const formatAmount = (
 ) => {
   if (val) {
     if (abbr) {
-      return abbreviateNumber(val, precision);
+      return val / 10 ** precision;//abbreviateNumber(val, precision);
     } else {
       return val.toFixed(precision);
     }

@@ -150,15 +150,11 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
         // Extract relevant data from the account information and parse it to ensure deep cloning
         const holders = JSON.parse(JSON.stringify(accountInfo)).value.map(
-          ({
-            data: {
-              parsed: { info },
-            },
-          }) => {
+          (data:any, key:number) => {
             // Map the account data to a new format, extracting address and converting balance
             return {
-              address: info.owner, // Extract the owner address from the parsed account info
-              balance: info.tokenAmount.amount, // Convert the balance by dividing amount by 10 raised to the power of decimals
+              address: data.parsed.info.owner, // Extract the owner address from the parsed account info
+              balance: data.parsed.info.tokenAmount.amount, // Convert the balance by dividing amount by 10 raised to the power of decimals
             };
           }
         );

@@ -4,6 +4,9 @@ import { PublicKey, Connection } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { GRAPE_RPC_ENDPOINT } from "./constants";
 import { styled, useTheme } from "@mui/material/styles";
+import moment from "moment";
+import {CopyToClipboard} from 'react-copy-to-clipboard';
+
 import {
   Paper,
   Grid,
@@ -21,8 +24,11 @@ import {
   TableRow,
   TablePagination,
   CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 
+import FileCopyIcon from '@mui/icons-material/FileCopy';
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 import LoopIcon from '@mui/icons-material/Loop';
 import FirstPageIcon from "@mui/icons-material/FirstPage";
@@ -37,6 +43,7 @@ import {
 
 const StyledTable = styled(Table)(({ theme }) => ({
   "& .MuiTableCell-root": {
+    border:"none",
     borderBottom: "1px solid rgba(255,255,255,0.05)",
   },
 }));
@@ -118,6 +125,16 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [winner, setWinner] = useState('');
   const [loadingSpin, setLoadingSpin] = useState(false);
+  const [timestamp, setTimestamp] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = () => {
+    setIsCopied(true);
+  };
+
+  const handleCloseSnackbar = () => {
+    setIsCopied(false);
+  };
 
   const excludeArr = [
     "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk"
@@ -215,10 +232,12 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       spinCount++;
 
       setLoadingSpin(true);
+      setTimestamp("");
       if (spinCount < spins) {
         timeoutId = setTimeout(spinIteration, interval);
         //timeoutId = setTimeout(spinIteration, interval);
       } else{
+        setTimestamp(moment().toString());
         setLoadingSpin(false);
       }
     };
@@ -228,25 +247,27 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
   // Render the component with token information and holders
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ 
+      flexGrow: 1,
+      border:'none' }}>
       {/* <Typography variant="h4">TOKEN</Typography> */}
 
       {/* Display token information if available */}
       { 
         <Grid container alignContent={'right'} justifyContent={'right'}>
-        <Typography variant="caption" sx={{textAlign:'right'}}>
-        {tokenInfo && (
-          <>
-            Address: {token.toBase58()}
-            <br />
-            Supply: {tokenInfo?.supply / 10 ** tokenInfo?.decimals}
-            <br />
-            Decimals: {tokenInfo?.decimals}
-            <br />
-            
-          </>
-        )}
-        </Typography></Grid> }
+          <Typography variant="caption" sx={{textAlign:'right'}}>
+          {tokenInfo && (
+            <>
+              Address: {token.toBase58()}
+              <br />
+              Supply: {tokenInfo?.supply / 10 ** tokenInfo?.decimals}
+              <br />
+              Decimals: {tokenInfo?.decimals}
+              <br />
+            </>
+          )}
+          </Typography>
+        </Grid> }
       
       <Box
         textAlign='center'
@@ -254,12 +275,30 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
           m:2,
           p:1,
           background:'rgba(0,0,0,0.2)',
-          borderRadius:'17px'}}
+          border:'none',
+          borderRadius:'17px',
+        }}
       >
         {(winner && winner.length > 0) &&
           <>
             <Box>
-            {winner}
+            <CopyToClipboard text={winner} onCopy={handleCopy}>
+              <Button
+                variant="text"
+                color="inherit"
+                sx={{ borderRadius:'17px'}}
+                startIcon={<FileCopyIcon />}
+              >
+              {winner}
+              </Button>
+            </CopyToClipboard>
+            
+            {(timestamp && timestamp.length > 0) ? 
+              <Grid>
+                <Typography variant="caption">
+                  {moment(timestamp).format('LLLL')}
+                </Typography>
+              </Grid> : ""}
             </Box>
           </>
         }
@@ -284,8 +323,16 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       </Box>
 
       <Typography variant="h4">Holders</Typography>
-      <Table>
-        <TableContainer component={Paper} sx={{ background: "none" }}>
+      <Table
+        sx={{
+          border: "none"}}
+      >
+        <TableContainer 
+          component={Paper} 
+          sx={{ 
+            background: "none",
+            border:"none"
+          }}>
           <StyledTable
             size="small"
             aria-label="Vine Holders Table"
@@ -379,6 +426,16 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
           </StyledTable>
         </TableContainer>
       </Table>
+
+      <Snackbar
+        open={isCopied}
+        autoHideDuration={2000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="success">
+          Copied to clipboard!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

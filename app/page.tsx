@@ -37,7 +37,9 @@ const Home: React.FC = () => {
             borderBottom: (t) => `1px solid ${t.palette.divider}`,
           }}
           color="primary"
-          style={{ background: "rgba(0,0,0,0.5)" }}
+          style={{ 
+            background: "rgba(0,0,0,0.5)",
+            border: "none" }}
         >
           <Toolbar>
             <Typography

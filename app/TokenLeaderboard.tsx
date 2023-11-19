@@ -280,6 +280,17 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
     spinIteration();
   };
 
+  const shortenString = (input: any, startChars = 6, endChars = 6) => {
+    if (input.length <= startChars + endChars) {
+      return input;
+    }
+  
+    const start = input.slice(0, startChars);
+    const end = input.slice(-endChars);
+  
+    return `${start}...${end}`;
+  };
+
   // Render the component with token information and holders
   return (
     <Box sx={{ 
@@ -415,12 +426,35 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                           {item?.address && (
                             <TableRow key={index} sx={{ borderBottom: "none" }}>
                               <TableCell>
-                                <Typography variant="h6">{item.address}</Typography>
+                                <Typography variant="body2">
+                                  <CopyToClipboard text={item.address} onCopy={handleCopy}>
+                                    <Button
+                                      variant="text"
+                                      color="inherit"
+                                      sx={{ 
+                                        borderRadius:'17px',
+                                        textTransform:'none',
+                                        '&:hover .MuiSvgIcon-root': {
+                                          opacity: 1,
+                                        },
+                                      }}
+                                      endIcon={
+                                        <FileCopyIcon sx={{
+                                          color:'rgba(255,255,255,0.25)',
+                                          opacity: 0}} />
+                                      }
+                                    >
+                                  
+                                    {shortenString(item.address,8,8)}
+                                    </Button>
+                                  </CopyToClipboard>
+                                
+                                
+                                </Typography>
                               </TableCell>
 
                               <TableCell align="center">
-                                <Typography variant="h6">
-                                  
+                                <Typography variant="body2">
                                   {(item.balance / 10 ** tokenInfo?.decimals).toLocaleString()}
                                   
                                   {/*getFormattedNumberToLocale(
@@ -435,7 +469,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                               </TableCell>
 
                               <TableCell align="center">
-                                <Typography variant="h6">
+                                <Typography variant="body2">
                                   {tokenInfo?.supply &&
                                     (
                                       (+item.balance / tokenInfo?.supply) *

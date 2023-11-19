@@ -284,105 +284,101 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       </Box>
 
       <Typography variant="h4">Holders</Typography>
-      <Box sx={{ overflow: "auto" }}>
-        <Box sx={{ width: "100%", display: "table", tableLayout: "fixed" }}>
-          <Table>
-            <TableContainer component={Paper} sx={{ background: "none" }}>
-              <StyledTable
-                size="small"
-                aria-label="Vine Holders Table"
-              >
-                <TableHead>
-                  <TableRow>
-                    <TableCell key={'ttitle'}>
-                      <Typography variant="caption">Owner</Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="caption">Amount</Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="caption">% of Supply</Typography>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {holders && (
-                    <>
-                      {(rowsPerPage > 0
-                        ? holders.slice(
-                            page * rowsPerPage,
-                            page * rowsPerPage + rowsPerPage
-                          )
-                        : holders
+      <Table>
+        <TableContainer component={Paper} sx={{ background: "none" }}>
+          <StyledTable
+            size="small"
+            aria-label="Vine Holders Table"
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell key={'ttitle'}>
+                  <Typography variant="caption">Owner</Typography>
+                </TableCell>
+                <TableCell align="center">
+                  <Typography variant="caption">Amount</Typography>
+                </TableCell>
+                <TableCell align="center">
+                  <Typography variant="caption">% of Supply</Typography>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {holders && (
+                <>
+                  {(rowsPerPage > 0
+                    ? holders.slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
                       )
-                      .filter((item) => !excludeArr.includes(item.address))
-                      .map((item: any, index: number) => (
-                        <>
-                          {item?.address && (
-                            <TableRow key={index} sx={{ borderBottom: "none" }}>
-                              <TableCell>
-                                <Typography variant="h6">{item.address}</Typography>
-                              </TableCell>
+                    : holders
+                  )
+                  .filter((item) => !excludeArr.includes(item.address))
+                  .map((item: any, index: number) => (
+                    <>
+                      {item?.address && (
+                        <TableRow key={index} sx={{ borderBottom: "none" }}>
+                          <TableCell>
+                            <Typography variant="h6">{item.address}</Typography>
+                          </TableCell>
 
-                              <TableCell align="center">
-                                <Typography variant="h6">
-                                  
-                                  {(item.balance / 10 ** tokenInfo?.decimals).toLocaleString()}
-                                  
-                                  {/*getFormattedNumberToLocale(
-                                    formatAmount(
-                                      +(
-                                        item.balance /
-                                        Math.pow(10, tokenInfo?.decimals)
-                                      ).toFixed(0)
-                                    )
-                                  )*/}
-                                </Typography>
-                              </TableCell>
+                          <TableCell align="center">
+                            <Typography variant="h6">
+                              
+                              {(item.balance / 10 ** tokenInfo?.decimals).toLocaleString()}
+                              
+                              {/*getFormattedNumberToLocale(
+                                formatAmount(
+                                  +(
+                                    item.balance /
+                                    Math.pow(10, tokenInfo?.decimals)
+                                  ).toFixed(0)
+                                )
+                              )*/}
+                            </Typography>
+                          </TableCell>
 
-                              <TableCell align="center">
-                                <Typography variant="h6">
-                                  {tokenInfo?.supply &&
-                                    (
-                                      (+item.balance / tokenInfo?.supply) *
-                                      100
-                                    ).toFixed(2)}
-                                  %
-                                </Typography>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </>
-                      ))}
+                          <TableCell align="center">
+                            <Typography variant="h6">
+                              {tokenInfo?.supply &&
+                                (
+                                  (+item.balance / tokenInfo?.supply) *
+                                  100
+                                ).toFixed(2)}
+                              %
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </>
-                  )}
-                </TableBody>
+                  ))}
+                </>
+              )}
+            </TableBody>
 
-                <TableFooter>
-                  <TableRow key={'tfooter'}>
-                    <TablePagination
-                      rowsPerPageOptions={[20]}
-                      colSpan={5}
-                      count={holders && holders.length}
-                      rowsPerPage={rowsPerPage}
-                      page={page}
-                      SelectProps={{
-                        inputProps: {
-                          "aria-label": "rows per page",
-                        },
-                        native: true,
-                      }}
-                      onPageChange={handleChangePage}
-                      onRowsPerPageChange={handleChangeRowsPerPage}
-                      ActionsComponent={TablePaginationActions}
-                    />
-                  </TableRow>
-                </TableFooter>
-              </StyledTable>
-            </TableContainer>
-          </Table>
-        </Box>
-      </Box>
+            <TableFooter>
+              <TableRow key={'tfooter'}>
+                <TablePagination
+                  rowsPerPageOptions={[20]}
+                  colSpan={5}
+                  count={holders && holders.length}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  SelectProps={{
+                    inputProps: {
+                      "aria-label": "rows per page",
+                    },
+                    native: true,
+                  }}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  ActionsComponent={TablePaginationActions}
+                />
+              </TableRow>
+            </TableFooter>
+          </StyledTable>
+        </TableContainer>
+      </Table>
     </Box>
   );
 };

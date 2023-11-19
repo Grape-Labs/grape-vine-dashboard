@@ -38,19 +38,19 @@ function TablePaginationActions(props: any) {
   const theme = useTheme();
   const { count, page, rowsPerPage, onPageChange } = props;
 
-  const handleFirstPageButtonClick = (event) => {
+  const handleFirstPageButtonClick = (event:any) => {
     onPageChange(event, 0);
   };
 
-  const handleBackButtonClick = (event) => {
+  const handleBackButtonClick = (event:any) => {
     onPageChange(event, page - 1);
   };
 
-  const handleNextButtonClick = (event) => {
+  const handleNextButtonClick = (event:any) => {
     onPageChange(event, page + 1);
   };
 
-  const handleLastPageButtonClick = (event) => {
+  const handleLastPageButtonClick = (event:any) => {
     onPageChange(event, Math.max(0, Math.ceil(count / rowsPerPage) - 1));
   };
 
@@ -118,8 +118,9 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         // Fetch parsed account information for the specified token
         let tokenDetails = await connection.getParsedAccountInfo(token);
         // If tokenDetails is available, update the state with token information
-        if (tokenDetails?.value?.data?.parsed?.info) {
-          setTokenInfo(tokenDetails.value.data.parsed.info);
+        const parsedTokenDetails = JSON.parse(JSON.stringify(tokenDetails));
+        if (parsedTokenDetails?.value?.data?.parsed?.info) {
+          setTokenInfo(parsedTokenDetails.value.data.parsed.info);
         }
 
         // Fetch token accounts based on the token program ID and token's public key
@@ -133,7 +134,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
               {
                 memcmp: {
                   offset: 0, // Adjust the offset based on the actual offset of the mint field in the account data
-                  bytes: token,
+                  bytes: token.toBase58(),
                 },
               },
             ],
@@ -163,7 +164,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         );
 
         // Sort the holders array based on the balance in descending order
-        const sortedHolders = holders.sort((a, b) => b.balance - a.balance);
+        const sortedHolders = holders.sort((a:any, b:any) => b.balance - a.balance);
         // Update the state with the sorted holders array
         setHolders(sortedHolders);
       } catch (err) {

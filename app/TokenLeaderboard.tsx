@@ -189,10 +189,10 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   // Render the component with token information and holders
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="h4">TOKEN</Typography>
+      {/* <Typography variant="h4">TOKEN</Typography> */}
 
       {/* Display token information if available */}
-      <Typography>
+      {/* <Typography>
         {tokenInfo && (
           <>
             Address: {token.toBase58()}
@@ -203,7 +203,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
             <br />
           </>
         )}
-      </Typography>
+      </Typography> */}
 
       <Typography variant="h4">HOLDERS</Typography>
       <Table>

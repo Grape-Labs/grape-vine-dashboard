@@ -21,6 +21,8 @@ import {
   TableRow,
   TablePagination,
 } from "@mui/material";
+
+import LoopIcon from '@mui/icons-material/Loop';
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
@@ -117,7 +119,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
     "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk"
   ]
 
-  const handleGetRaffleSelection = (event:any) => {
+  const handleGetRaffleSelection = () => {
     const won = weightedRandomChoice(holders, excludeArr);
     setWinner(won.address);
   };
@@ -195,6 +197,27 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
     setPage(0);
   };
 
+  let timeoutId: NodeJS.Timeout;
+  const spinRoulette = () => {
+    const interval = 100; // Adjust the spinning speed
+    const spins = 30; // Adjust the number of spins
+
+    let spinCount = 0;
+
+    const spinIteration = () => {
+      //setSelectedItem(getRandomItemWithWeightedBalance());
+      handleGetRaffleSelection();
+      spinCount++;
+
+      if (spinCount < spins) {
+        timeoutId = setTimeout(spinIteration, interval);
+        //timeoutId = setTimeout(spinIteration, interval);
+      }
+    };
+
+    spinIteration();
+  };
+
   // Render the component with token information and holders
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -234,14 +257,14 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         }
         <Box textAlign="right">
           <Button 
-            onClick={handleGetRaffleSelection}
+            onClick={spinRoulette}
             color='inherit'
             sx={{
               textTransform:'none',
               borderRadius:'17px'
             }}
           >
-            Randomizer<sup>beta</sup>
+            <LoopIcon fontSize='small' sx={{mr:1}} /> Randomizer<sup>beta</sup>
           </Button>
         </Box>
       </Box>

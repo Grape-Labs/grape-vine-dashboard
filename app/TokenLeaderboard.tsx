@@ -315,7 +315,10 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
               <Button
                 variant="text"
                 color="inherit"
-                sx={{ borderRadius:'17px'}}
+                sx={{ 
+                  borderRadius:'17px',
+                  textTransform:'none',
+                }}
                 startIcon={<FileCopyIcon />}
               >
               {winner}

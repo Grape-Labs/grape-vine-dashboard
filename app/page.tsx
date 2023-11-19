@@ -1,10 +1,7 @@
-'use client'
-import React, { useState } from 'react';
-//import { Link } from 'react-router-dom';
-
-import TokenLeaderboard from './TokenLeaderboard'
-import { tokens } from "./constants"
-
+"use client";
+import React, { useState } from "react";
+import TokenLeaderboard from "./TokenLeaderboard";
+import { tokens, VINE_LOGO } from "./constants";
 import {
   CssBaseline,
   AppBar,
@@ -12,7 +9,9 @@ import {
   Toolbar,
   Paper,
   Typography,
-} from '@mui/material'
+} from "@mui/material";
+import grapeTheme from "./utils/config/theme";
+import { ThemeProvider } from "@mui/material/styles";
 
 function Copyright() {
   return (
@@ -24,34 +23,52 @@ function Copyright() {
 
 const Home: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
-  
+
   return (
     <React.Fragment>
-      <CssBaseline />
-      <AppBar
-        position="absolute"
-        //color="default"
-        elevation={0}
-        sx={{
-          position: 'relative',
-          borderBottom: (t) => `1px solid ${t.palette.divider}`,
-          background: 'rgba(255,255,255,0.5)'
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" color="inherit" noWrap>
-            Vine Dashboard
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Container component="main" maxWidth="lg" sx={{ mb: 4 }}>
-        <Paper variant="outlined" sx={{ my: { xs: 3, md: 6 }, p: { xs: 2, md: 3 } }}>
-          {tokens && tokens.map(({programId}) => (
-            <TokenLeaderboard key={programId} programId={programId} />
-          ))}
-        </Paper>
-      </Container>
-      <Copyright />
+      <ThemeProvider theme={grapeTheme}>
+        <CssBaseline />
+        <AppBar
+          position="absolute"
+          elevation={0}
+          sx={{
+            position: "relative",
+            borderBottom: (t) => `1px solid ${t.palette.divider}`,
+          }}
+          color="primary"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+        >
+          <Toolbar>
+            <Typography
+              component="h1"
+              variant="h6"
+              color="inherit"
+              display="flex"
+              sx={{ ml: 1, mr: 1 }}
+            >
+              <img
+                src={VINE_LOGO}
+                width="50px"
+                className="header-logo"
+                alt="Powered by Grape"
+              />
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <Container component="main" maxWidth="lg" sx={{ mb: 4 }}>
+          <Paper
+            variant="outlined"
+            sx={{ my: { xs: 3, md: 6 }, p: { xs: 2, md: 3 } }}
+            style={{ background: "rgba(0,0,0,0.5)" }}
+          >
+            {tokens &&
+              tokens.map(({ programId }) => (
+                <TokenLeaderboard key={programId} programId={programId} />
+              ))}
+          </Paper>
+        </Container>
+        <Copyright />
+      </ThemeProvider>
     </React.Fragment>
   );
 };

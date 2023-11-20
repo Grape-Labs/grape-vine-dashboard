@@ -39,7 +39,8 @@ const Home: React.FC = () => {
           color="primary"
           style={{ 
             background: "rgba(0,0,0,0.5)",
-            border: "none" }}
+            border: "none",
+            borderBottom: "1px solid rgba(0,0,0,0.25)" }}
         >
           <Toolbar>
             <Typography
@@ -47,6 +48,7 @@ const Home: React.FC = () => {
               variant="h6"
               color="inherit"
               display="flex"
+              className="vine-logo"
               sx={{ ml: 1, mr: 1 }}
             >
               <Avatar>
@@ -60,13 +62,15 @@ const Home: React.FC = () => {
             </Typography>
 
             <Typography
-              component="h1"
               variant="h6"
               color="inherit"
-              display="flex"
-              sx={{ ml: 1, mr: 1 }}
+              className="vine-wrapper"
+              sx={{ ml: 1, mr: 1,
+                textShadow: '1px 1px 2px black' }}
             >
-              Vine Dashboard
+              <div className="vine-title">
+                <div data-text="Vine">Vine Dashboard</div>
+              </div>
             </Typography>
           </Toolbar>
         </AppBar>

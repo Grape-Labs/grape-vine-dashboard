@@ -322,9 +322,32 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
           <Typography variant="caption" sx={{textAlign:'right'}}>
           {tokenInfo && (
             <>
-              Address: {token.toBase58()}
+              <CopyToClipboard text={token.toBase58()} onCopy={handleCopy}>
+                  <Button
+                    variant="text"
+                    color="inherit"
+                    sx={{ 
+                      fontSize:'12px',
+                      borderRadius:'17px',
+                      textTransform:'none',
+                      '&:hover .MuiSvgIcon-root': {
+                        opacity: 1,
+                      },
+                    }}
+                    startIcon={
+                      <FileCopyIcon sx={{
+                        color:'rgba(255,255,255,0.25)',
+                        opacity: 0,
+                        fontSize:"10px"}} />
+                    }
+                  >
+                
+                  {shortenString(token.toBase58(),8,8)}
+                  </Button>
+                </CopyToClipboard>
+              
               <br />
-              Supply: {tokenInfo?.supply / 10 ** tokenInfo?.decimals}
+              Supply: {(tokenInfo?.supply / 10 ** tokenInfo?.decimals).toLocaleString()}
               <br />
               Decimals: {tokenInfo?.decimals}
               <br />
@@ -333,72 +356,75 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
           </Typography>
         </Grid> }
       
-      <Box
-        textAlign='center'
-        ref={componentRef}
-        sx={{
-          m:2,
-          p:1,
-          background:'rgba(0,0,0,0.2)',
-          border:'none',
-          borderRadius:'17px',
-        }}
-      >
-        {(winner && winner.length > 0) &&
-          <>
-            <Box>
-            <CopyToClipboard text={winner} onCopy={handleCopy}>
-              <Button
-                variant="text"
-                color="inherit"
-                sx={{ 
-                  borderRadius:'17px',
-                  textTransform:'none',
-                }}
-                startIcon={<FileCopyIcon />}
-              >
-              {winner}
-              </Button>
-            </CopyToClipboard>
-            
-            {(timestamp && timestamp.length > 0) ? 
-              <>
-                <Tooltip title="Save Screenshot">
-                  <IconButton onClick={handleCapture}>
-                    <ScreenshotMonitorIcon />
-                  </IconButton>
-                </Tooltip>
-                <Grid>
-                  <Fade in={timestamp ? true : false}>
-                    <Typography variant="caption">
-                        {moment(timestamp).format('LLLL')}
-                    </Typography>
-                  </Fade>
-                </Grid>
-              </>
-              : ""}
-            </Box>
-          </>
-        }
-        <Box textAlign="right">
-          <Button 
-            onClick={spinRoulette}
-            color='inherit'
-            disabled={loadingSpin ? true:false}
-            sx={{
-              textTransform:'none',
-              borderRadius:'17px'
-            }}
-          >
-            {loadingSpin ?
-              <HourglassBottomIcon fontSize='small' sx={{mr:1}} /> 
-            :
-              <LoopIcon fontSize='small' sx={{mr:1}} /> 
-            }
-            Randomizer<sup>beta</sup>
-          </Button>
+      {!loading &&
+        <Box
+          textAlign='center'
+          ref={componentRef}
+          sx={{
+            m:2,
+            p:1,
+            background:'rgba(0,0,0,0.2)',
+            border:'none',
+            borderRadius:'17px',
+          }}
+        >
+          {(winner && winner.length > 0) &&
+            <>
+              <Box>
+              <CopyToClipboard text={winner} onCopy={handleCopy}>
+                <Button
+                  variant="text"
+                  color="inherit"
+                  sx={{ 
+                    borderRadius:'17px',
+                    textTransform:'none',
+                  }}
+                  startIcon={<FileCopyIcon />}
+                >
+                {winner}
+                </Button>
+              </CopyToClipboard>
+              
+              {(timestamp && timestamp.length > 0) ? 
+                <>
+                  <Tooltip title="Save Screenshot">
+                    <IconButton onClick={handleCapture}>
+                      <ScreenshotMonitorIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Grid>
+                    <Fade in={timestamp ? true : false}>
+                      <Typography variant="caption">
+                          {moment(timestamp).format('LLLL')}
+                      </Typography>
+                    </Fade>
+                  </Grid>
+                </>
+                : ""}
+              </Box>
+            </>
+          }
+
+          <Box textAlign="right">
+            <Button 
+              onClick={spinRoulette}
+              color='inherit'
+              disabled={loadingSpin ? true:false}
+              sx={{
+                textTransform:'none',
+                borderRadius:'17px'
+              }}
+            >
+              {loadingSpin ?
+                <HourglassBottomIcon fontSize='small' sx={{mr:1}} /> 
+              :
+                <LoopIcon fontSize='small' sx={{mr:1}} /> 
+              }
+              Randomizer<sup>beta</sup>
+            </Button>
+          </Box>
         </Box>
-      </Box>
+      }
 
       <Typography variant="h4">Leaderboard</Typography>
       <Box sx={{ overflow: "auto" }}>

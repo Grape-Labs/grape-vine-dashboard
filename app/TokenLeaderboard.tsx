@@ -30,6 +30,7 @@ import {
   Alert,
   Tooltip,
   Zoom,
+  Fade,
 } from "@mui/material";
 
 import ScreenshotMonitorIcon from '@mui/icons-material/ScreenshotMonitor';
@@ -183,11 +184,12 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   // Use the useEffect hook to fetch token information and holders when the component mounts
   useEffect(() => {
     // Define an asynchronous function to handle token data fetching
+    setLoading(true);
     (async () => {
       try {
         // Fetch parsed account information for the specified token
         let tokenDetails = await connection.getParsedAccountInfo(token);
-        console.log('tokenDetails: '+JSON.stringify(tokenDetails))
+        //console.log('tokenDetails: '+JSON.stringify(tokenDetails))
         // If tokenDetails is available, update the state with token information
         const parsedTokenDetails = JSON.parse(JSON.stringify(tokenDetails));
         if (parsedTokenDetails?.value?.data?.parsed?.info) {
@@ -211,28 +213,44 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
             ],
           }
         );
+
         // Extract the public keys from an array of token accounts
         const holdersAta = tokenAccounts.map(({ pubkey }) => pubkey);
-
-        // Fetch parsed account information for multiple accounts in a single request
-        const accountInfo = await connection.getMultipleParsedAccounts(
-          holdersAta
-        );
         
-        // Extract relevant data from the account information and parse it to ensure deep cloning
-        const holders = JSON.parse(JSON.stringify(accountInfo)).value.map(
-          (data:any, key:number) => {
-            // Map the account data to a new format, extracting address and converting balance
-            return {
-              address: data.data.parsed.info.owner, // Extract the owner address from the parsed account info
-              balance: data.data.parsed.info.tokenAmount.amount, // Convert the balance by dividing amount by 10 raised to the power of decimals
-            };
+        // Define the chunk size (100 in this case)
+        const chunkSize = 100;
+        const holderArr = new Array();
+        // Loop through the array in chunks
+        for (let i = 0; i < holdersAta.length; i += chunkSize) {
+          // Slice the array to get a chunk of 100 items
+          const chunk = holdersAta.slice(i, i + chunkSize);
+
+          // Fetch parsed account information for the current chunk
+          const accountInfo = await connection.getMultipleParsedAccounts(chunk);
+          if (accountInfo){
+            // Extract relevant data from the account information and parse it to ensure deep cloning
+            const holders = JSON.parse(JSON.stringify(accountInfo)).value.map(
+              (data:any, key:number) => {
+                // Map the account data to a new format, extracting address and converting balance
+                return {
+                  address: data.data.parsed.info.owner, // Extract the owner address from the parsed account info
+                  balance: data.data.parsed.info.tokenAmount.amount, // Convert the balance by dividing amount by 10 raised to the power of decimals
+                };
+              }
+            );
+
+            holderArr.push(...holders);
+            // Process the fetched information as needed
+            console.log(`Processed ${holders.length} accounts in chunk ${i / chunkSize + 1}`);
           }
-        );
+        }
+          
+          
         // Sort the holders array based on the balance in descending order
-        const sortedHolders = holders.sort((a:any, b:any) => b.balance - a.balance);
+        const sortedHolders = holderArr.sort((a:any, b:any) => b.balance - a.balance);
         // Update the state with the sorted holders array
         setHolders(sortedHolders);
+        setLoading(false);
       } catch (err) {
         // Log an error message if there is an error fetching token information
         console.error("Error fetching token info:", err);
@@ -351,9 +369,11 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                   </IconButton>
                 </Tooltip>
                 <Grid>
-                  <Typography variant="caption">
-                    {moment(timestamp).format('LLLL')}
-                  </Typography>
+                  <Fade in={timestamp ? true : false}>
+                    <Typography variant="caption">
+                        {moment(timestamp).format('LLLL')}
+                    </Typography>
+                  </Fade>
                 </Grid>
               </>
               : ""}
@@ -380,135 +400,143 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         </Box>
       </Box>
 
-      <Typography variant="h4">Holders</Typography>
+      <Typography variant="h4">Leaderboard</Typography>
       <Box sx={{ overflow: "auto" }}>
          <Box sx={{ width: "100%", display: "table", tableLayout: "fixed" }}>
-          <Table
-            sx={{
-              border: "none"}}
-          >
-            <TableContainer 
-              component={Paper} 
-              sx={{ 
-                background: "none",
-                border:"none"
-              }}>
-              <StyledTable
-                size="small"
-                aria-label="Vine Holders Table"
-              >
-                <TableHead>
-                  <TableRow>
-                    <TableCell key={'ttitle'}>
-                      <Typography variant="caption">Owner</Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="caption">Amount</Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="caption">% of Supply</Typography>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {holders && (
-                    <>
-                      {(rowsPerPage > 0
-                        ? holders.slice(
-                            page * rowsPerPage,
-                            page * rowsPerPage + rowsPerPage
-                          )
-                        : holders
-                      )
-                      .filter((item) => !excludeArr.includes(item.address))
-                      .map((item: any, index: number) => (
-                        <>
-                          {item?.address && (
-                            <TableRow key={index} sx={{ borderBottom: "none" }}>
-                              <TableCell>
-                                <Typography variant="body2">
-                                  <CopyToClipboard text={item.address} onCopy={handleCopy}>
-                                    <Button
-                                      variant="text"
-                                      color="inherit"
-                                      sx={{ 
-                                        borderRadius:'17px',
-                                        textTransform:'none',
-                                        '&:hover .MuiSvgIcon-root': {
-                                          opacity: 1,
-                                        },
-                                      }}
-                                      endIcon={
-                                        <FileCopyIcon sx={{
-                                          color:'rgba(255,255,255,0.25)',
-                                          opacity: 0}} />
-                                      }
-                                    >
+          {loading ?
+            <>
+              <Grid alignContent={"center"} sx={{textAlign:'center'}}>
+                <CircularProgress color="inherit"/>
+              </Grid>
+            </>
+          :
+            <Table
+              sx={{
+                border: "none"}}
+            >
+              <TableContainer 
+                component={Paper} 
+                sx={{ 
+                  background: "none",
+                  border:"none"
+                }}>
+                <StyledTable
+                  size="small"
+                  aria-label="Vine Leaderboard Table"
+                >
+                  <TableHead>
+                    <TableRow>
+                      <TableCell key={'ttitle'}>
+                        <Typography variant="caption">Owner</Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Typography variant="caption">Amount</Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Typography variant="caption">% of Supply</Typography>
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {holders && (
+                      <>
+                        {(rowsPerPage > 0
+                          ? holders.slice(
+                              page * rowsPerPage,
+                              page * rowsPerPage + rowsPerPage
+                            )
+                          : holders
+                        )
+                        .filter((item) => !excludeArr.includes(item.address))
+                        .map((item: any, index: number) => (
+                          <>
+                            {item?.address && (
+                              <TableRow key={index} sx={{ borderBottom: "none" }}>
+                                <TableCell>
+                                  <Typography variant="body2">
+                                    <CopyToClipboard text={item.address} onCopy={handleCopy}>
+                                      <Button
+                                        variant="text"
+                                        color="inherit"
+                                        sx={{ 
+                                          borderRadius:'17px',
+                                          textTransform:'none',
+                                          '&:hover .MuiSvgIcon-root': {
+                                            opacity: 1,
+                                          },
+                                        }}
+                                        endIcon={
+                                          <FileCopyIcon sx={{
+                                            color:'rgba(255,255,255,0.25)',
+                                            opacity: 0}} />
+                                        }
+                                      >
+                                    
+                                      {shortenString(item.address,8,8)}
+                                      </Button>
+                                    </CopyToClipboard>
                                   
-                                    {shortenString(item.address,8,8)}
-                                    </Button>
-                                  </CopyToClipboard>
-                                
-                                
-                                </Typography>
-                              </TableCell>
-
-                              <TableCell align="center">
-                                <Typography variant="body2">
-                                  {(item.balance / 10 ** tokenInfo?.decimals).toLocaleString()}
                                   
-                                  {/*getFormattedNumberToLocale(
-                                    formatAmount(
-                                      +(
-                                        item.balance /
-                                        Math.pow(10, tokenInfo?.decimals)
-                                      ).toFixed(0)
-                                    )
-                                  )*/}
-                                </Typography>
-                              </TableCell>
+                                  </Typography>
+                                </TableCell>
 
-                              <TableCell align="center">
-                                <Typography variant="body2">
-                                  {tokenInfo?.supply &&
-                                    (
-                                      (+item.balance / tokenInfo?.supply) *
-                                      100
-                                    ).toFixed(2)}
-                                  %
-                                </Typography>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </>
-                      ))}
-                    </>
-                  )}
-                </TableBody>
+                                <TableCell align="center">
+                                  <Typography variant="body2">
+                                    {(item.balance / 10 ** tokenInfo?.decimals).toLocaleString()}
+                                    
+                                    {/*getFormattedNumberToLocale(
+                                      formatAmount(
+                                        +(
+                                          item.balance /
+                                          Math.pow(10, tokenInfo?.decimals)
+                                        ).toFixed(0)
+                                      )
+                                    )*/}
+                                  </Typography>
+                                </TableCell>
 
-                <TableFooter>
-                  <TableRow key={'tfooter'}>
-                    <TablePagination
-                      rowsPerPageOptions={[20]}
-                      colSpan={5}
-                      count={holders && holders.length}
-                      rowsPerPage={rowsPerPage}
-                      page={page}
-                      SelectProps={{
-                        inputProps: {
-                          "aria-label": "rows per page",
-                        },
-                        native: true,
-                      }}
-                      onPageChange={handleChangePage}
-                      onRowsPerPageChange={handleChangeRowsPerPage}
-                      ActionsComponent={TablePaginationActions}
-                    />
-                  </TableRow>
-                </TableFooter>
-              </StyledTable>
-            </TableContainer>
-          </Table>
+                                <TableCell align="center">
+                                  <Typography variant="body2">
+                                    {tokenInfo?.supply &&
+                                      (
+                                        (+item.balance / tokenInfo?.supply) *
+                                        100
+                                      ).toFixed(2)}
+                                    %
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </>
+                        ))}
+                      </>
+                    )}
+                  </TableBody>
+
+                  <TableFooter>
+                    <TableRow key={'tfooter'}>
+                      <TablePagination
+                        rowsPerPageOptions={[20]}
+                        colSpan={5}
+                        count={holders && holders.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        SelectProps={{
+                          inputProps: {
+                            "aria-label": "rows per page",
+                          },
+                          native: true,
+                        }}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleChangeRowsPerPage}
+                        ActionsComponent={TablePaginationActions}
+                      />
+                    </TableRow>
+                  </TableFooter>
+                </StyledTable>
+              </TableContainer>
+            </Table>
+          }
         </Box>
       </Box>
 

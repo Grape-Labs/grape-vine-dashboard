@@ -31,6 +31,7 @@ import {
   Tooltip,
   Zoom,
   Fade,
+  useMediaQuery,
 } from "@mui/material";
 
 import ScreenshotMonitorIcon from '@mui/icons-material/ScreenshotMonitor';
@@ -135,6 +136,8 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [isCopied, setIsCopied] = useState(false);
   const componentRef = useRef(null);
   const [open, setOpen] = useState(false);
+
+  const isMobile = useMediaQuery('(max-width:600px)');
 
   const handleClose = () => {
     setOpen(false);
@@ -381,7 +384,10 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                   }}
                   startIcon={<FileCopyIcon />}
                 >
-                {winner}
+                  
+                  
+                  {isMobile ? `${shortenString(winner,8,8)}` : winner}
+
                 </Button>
               </CopyToClipboard>
               

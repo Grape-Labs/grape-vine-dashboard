@@ -175,7 +175,8 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   };
 
   const excludeArr = [
-    "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk"
+    "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk",
+    "6jEQpEnoSRPP8A2w6DWDQDpqrQTJvG4HinaugiBGtQKD"
   ]
 
   const handleGetRaffleSelection = () => {
@@ -384,7 +385,6 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                   }}
                   startIcon={<FileCopyIcon />}
                 >
-                  
                   
                   {isMobile ? `${shortenString(winner,8,8)}` : winner}
 

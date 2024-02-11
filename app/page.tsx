@@ -1,5 +1,7 @@
 "use client";
 import React, { useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+
 import TokenLeaderboard from "./TokenLeaderboard";
 import { tokens, VINE_LOGO } from "./constants";
 import {
@@ -83,7 +85,7 @@ const Home: React.FC = () => {
             {tokens &&
               tokens.map(({ programId }) => (
                 <TokenLeaderboard key={programId} programId={programId} />
-              ))}
+            ))}
           </Paper>
         </Container>
         <Copyright />

@@ -339,10 +339,12 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                       },
                     }}
                     startIcon={
-                      <FileCopyIcon sx={{
-                        color:'rgba(255,255,255,0.25)',
-                        opacity: 0,
-                        fontSize:"10px"}} />
+                      <FileCopyIcon 
+                        fontSize={'small'}  
+                        sx={{
+                          color:'rgba(255,255,255,0.25)',
+                          opacity: 0,
+                          fontSize:"10px"}} />
                     }
                   >
                 

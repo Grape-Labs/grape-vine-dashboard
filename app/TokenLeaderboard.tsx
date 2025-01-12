@@ -176,7 +176,8 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
   const excludeArr = [
     "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk",
-    "6jEQpEnoSRPP8A2w6DWDQDpqrQTJvG4HinaugiBGtQKD"
+    "6jEQpEnoSRPP8A2w6DWDQDpqrQTJvG4HinaugiBGtQKD",
+    "8n5buhK82U6Mb5tTwwRJgJWBt1HjEJM2CxhRutw1n6qT"
   ]
 
   const handleGetRaffleSelection = () => {

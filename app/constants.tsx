@@ -2,9 +2,10 @@ export const GRAPE_RPC_ENDPOINT = process.env.NEXT_PUBLIC_RPC_ENDPOINT || 'https
 
 export const tokens = [
   {
-    programId: "GXQdLgaxTMCoAKbHSnQq8M9UtDzYYjHEPkxPUJKiTuYC",
+    programId: "8n5buhK82U6Mb5tTwwRJgJWBt1HjEJM2CxhRutw1n6qT",
+    //programId: "GXQdLgaxTMCoAKbHSnQq8M9UtDzYYjHEPkxPUJKiTuYC",
     //programId: "A6GComqUgUZ7mTqZcDrgnigPEdYDcw5yCumbHaaQxVKK",
-    name: "Vine v2",
+    name: "Vine v3",
     image: "./images/vine.jpg"
   }
 ]

@@ -18,7 +18,16 @@ import { ThemeProvider } from "@mui/material/styles";
 
 function Copyright() {
   return (
-    <Typography variant="caption" color="primary" align="center">
+    <Typography 
+      variant="caption" 
+      color="white" // Sets text color to white
+      align="center" 
+      sx={{ 
+        display: "block",  // Ensures it takes full width
+        textAlign: "center",  // Centers text horizontally
+        marginTop: 2,  // Optional spacing
+      }}
+    >
       Powered by Grape
     </Typography>
   );

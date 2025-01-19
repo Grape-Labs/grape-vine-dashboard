@@ -40,13 +40,13 @@ const Home: React.FC = () => {
     <div
       style={{
         position: "relative",
-        height: "100vh",
+        minHeight: "100vh", // Fix for mobile screen height changes
         width: "100vw",
         background: `url('/images/background_sample_image.webp')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed", // Default (works on desktop)
+        backgroundAttachment: "fixed",
       }}
     >
       {/* Semi-transparent overlay */}
@@ -126,6 +126,21 @@ const Home: React.FC = () => {
         </Container>
         <Copyright />
       </ThemeProvider>
+      {/* Fix for Mobile Viewport Height Issues */}
+      <style>
+        {`
+          @media (max-width: 768px) {
+            div[style*="background-attachment: fixed"] {
+              background-attachment: scroll !important;
+            }
+            
+            div[style*="minHeight: 100vh"] {
+              height: 100%;
+              minHeight: -webkit-fill-available; /* Fixes height on iOS Safari */
+            }
+          }
+        `}
+      </style>
       </div>
     </div>
   );

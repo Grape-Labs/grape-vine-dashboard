@@ -46,7 +46,7 @@ const Home: React.FC = () => {
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
+        backgroundAttachment: "fixed", // Default (works on desktop)
       }}
     >
       {/* Semi-transparent overlay */}
@@ -62,8 +62,10 @@ const Home: React.FC = () => {
           zIndex: 1,
         }}
       ></div>
+
+      {/* Content */}
       <div style={{ position: "relative", zIndex: 2, color: "white", textAlign: "center" }}>
-      <ThemeProvider theme={grapeTheme}>
+    <ThemeProvider theme={grapeTheme}>
         <CssBaseline />
         <AppBar
           position="absolute"

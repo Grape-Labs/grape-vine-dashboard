@@ -58,7 +58,7 @@ const Home: React.FC = () => {
           width: "100%",
           height: "100%",
           background: "linear-gradient(to right, rgba(187, 210, 197, 0.8), rgba(83, 105, 118, 0.8), rgba(41, 46, 73, 0.8))",
-          opacity: 0.9, // 90% faded effect
+          opacity: 0.95, // 90% faded effect
           zIndex: 1,
         }}
       ></div>

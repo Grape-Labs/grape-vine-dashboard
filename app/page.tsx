@@ -30,7 +30,7 @@ const Home: React.FC = () => {
   return (
     <div
       style={{
-        backgroundImage: `url('/images/background_sample_image2.webp'), linear-gradient(to right, #bbd2c5, #536976, #292e49)`,
+        background: `linear-gradient(to right, rgba(187, 210, 197, 0.8), rgba(83, 105, 118, 0.8), rgba(41, 46, 73, 0.8)), url('/images/background_sample_image2.webp')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",

@@ -39,16 +39,29 @@ const Home: React.FC = () => {
   return (
     <div
       style={{
-        background: `linear-gradient(to right, rgba(187, 210, 197, 0.8), rgba(83, 105, 118, 0.8), rgba(41, 46, 73, 0.8)), url('/images/background_sample_image2.webp')`,
+        position: "relative",
+        height: "100vh",
+        width: "100vw",
+        background: `url('/images/background_sample_image2.webp')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
         backgroundAttachment: "fixed",
-        backgroundBlendMode: "overlay", // Makes the image transparent
-        height: "100vh",
-        width: "100vw",
       }}
     >
+      {/* Semi-transparent overlay */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "linear-gradient(to right, rgba(187, 210, 197, 0.8), rgba(83, 105, 118, 0.8), rgba(41, 46, 73, 0.8))",
+          opacity: 0.9, // 90% faded effect
+          zIndex: 1,
+        }}
+      ></div>
       <ThemeProvider theme={grapeTheme}>
         <CssBaseline />
         <AppBar

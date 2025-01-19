@@ -26,7 +26,7 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
   background: 
     radial-gradient(88.33% 113.42% at 71.34% 83.89%, #4e8ebf 0%,  #5671be 32.29%,  #713585 58.85%,  #36325d 85.5%,  #251a3a 98.96%), 
-    url('/images/background_sample_image2.webp'); /* Update with the correct image path */
+    url('./images/background_sample_image2.webp'); /* Update with the correct image path */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

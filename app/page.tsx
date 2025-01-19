@@ -35,6 +35,7 @@ const Home: React.FC = () => {
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
         backgroundAttachment: "fixed",
+        backgroundBlendMode: "overlay", // Makes the image transparent
         height: "100vh",
         width: "100vw",
       }}

@@ -126,6 +126,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
   // Define state variables for token information, holders, and loading status
   const [tokenInfo, setTokenInfo] = useState<any | null>(null);
+  const [totalTokensHeld, setTotalTokensHeld] = useState(0);
   const [holders, setHolders] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState(0);
@@ -255,6 +256,16 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         const sortedHolders = holderArr.sort((a:any, b:any) => b.balance - a.balance);
         // Update the state with the sorted holders array
         setHolders(sortedHolders);
+
+
+        // Compute the total tokens held
+        const totalTokens = sortedHolders.reduce((acc, holder) => {
+          return acc + Number(holder.balance);
+        }, 0);
+
+        console.log("Total tokens held:", totalTokens);
+        setTotalTokensHeld(totalTokens);
+
         setLoading(false);
       } catch (err) {
         // Log an error message if there is an error fetching token information
@@ -357,6 +368,8 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
               Supply: {(tokenInfo?.supply / 10 ** tokenInfo?.decimals).toLocaleString()}
               <br />
               Decimals: {tokenInfo?.decimals}
+              <br />
+              Tokens Held: {totalTokensHeld}
               <br />
             </>
           )}

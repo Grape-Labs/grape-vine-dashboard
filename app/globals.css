@@ -25,8 +25,8 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: 
-  linear-gradient(70deg, rgba(0, 0, 0, 0.8), rgba(146, 60, 181, 0.8)), 
-  url('./images/background_sample_image2.png'); /* Update with the correct image path */
+    linear-gradient(70deg, rgba(0, 0, 0, 0.8), rgba(146, 60, 181, 0.8)), 
+    url('/images/background_sample_image2.png'); /* Update with the correct image path */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

@@ -42,7 +42,7 @@ const Home: React.FC = () => {
         position: "relative",
         height: "100vh",
         width: "100vw",
-        background: `url('/images/background_sample_image2.webp')`,
+        background: `url('/images/background_sample_image.webp')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",

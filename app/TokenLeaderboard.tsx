@@ -259,9 +259,13 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
 
         // Compute the total tokens held
-        const totalTokens = sortedHolders.reduce((acc, holder) => {
-          return acc + Number(holder.balance);
-        }, 0);
+        const totalTokens = sortedHolders
+          .filter(holder => !excludeArr.includes(holder.address))
+          .reduce((acc, holder) => acc + Number(holder.balance), 0);
+
+        //const totalTokens = sortedHolders.reduce((acc, holder) => {
+        //  return acc + Number(holder.balance);
+        //}, 0);
 
         console.log("Total tokens held:", totalTokens);
         setTotalTokensHeld(totalTokens / 10 ** parsedTokenDetails.value.data.parsed.info?.decimals);

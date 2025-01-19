@@ -28,7 +28,17 @@ const Home: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <React.Fragment>
+    <div
+      style={{
+        backgroundImage: `url('/images/background_sample_image2.webp'), linear-gradient(to right, #bbd2c5, #536976, #292e49)`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+        height: "100vh",
+        width: "100vw",
+      }}
+    >
       <ThemeProvider theme={grapeTheme}>
         <CssBaseline />
         <AppBar
@@ -90,7 +100,7 @@ const Home: React.FC = () => {
         </Container>
         <Copyright />
       </ThemeProvider>
-    </React.Fragment>
+    </div>
   );
 };
 

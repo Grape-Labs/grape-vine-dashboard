@@ -25,7 +25,6 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: 
-    url('/images/background_sample_image2.webp'),
     linear-gradient(to right, #bbd2c5, #536976, #292e49);
   background-size: cover;
   background-position: center;

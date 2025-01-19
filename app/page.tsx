@@ -62,6 +62,7 @@ const Home: React.FC = () => {
           zIndex: 1,
         }}
       ></div>
+      <div style={{ position: "relative", zIndex: 2, color: "white", textAlign: "center" }}>
       <ThemeProvider theme={grapeTheme}>
         <CssBaseline />
         <AppBar
@@ -123,6 +124,7 @@ const Home: React.FC = () => {
         </Container>
         <Copyright />
       </ThemeProvider>
+      </div>
     </div>
   );
 };

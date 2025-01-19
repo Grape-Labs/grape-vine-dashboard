@@ -18,7 +18,7 @@ import { ThemeProvider } from "@mui/material/styles";
 
 function Copyright() {
   return (
-    <Typography variant="body2" color="secondary" align="center">
+    <Typography variant="caption" color="primary" align="center">
       Powered by Grape
     </Typography>
   );
@@ -30,7 +30,7 @@ const Home: React.FC = () => {
   return (
     <div
       style={{
-        background: `linear-gradient(to right, rgba(187, 210, 197, 0.9), rgba(83, 105, 118, 0.8), rgba(41, 46, 73, 0.9)), url('/images/background_sample_image2.webp')`,
+        background: `linear-gradient(to right, rgba(187, 210, 197, 0.8), rgba(83, 105, 118, 0.8), rgba(41, 46, 73, 0.8)), url('/images/background_sample_image2.webp')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",

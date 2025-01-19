@@ -264,7 +264,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         }, 0);
 
         console.log("Total tokens held:", totalTokens);
-        setTotalTokensHeld(totalTokens);
+        setTotalTokensHeld(totalTokens / 10 ** parsedTokenDetails.value.data.parsed.info?.decimals);
 
         setLoading(false);
       } catch (err) {

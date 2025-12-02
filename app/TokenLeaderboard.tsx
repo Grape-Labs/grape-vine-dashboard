@@ -139,34 +139,70 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const componentRef = useRef(null);
   const [open, setOpen] = useState(false);
 
+  const [snapshotCopied, setSnapshotCopied] = useState(false);
+
   const isMobile = useMediaQuery('(max-width:600px)');
 
   const handleClose = () => {
     setOpen(false);
   };
 
-  const handleCapture = () => {
-    if (componentRef.current) {
-      html2canvas(componentRef.current)
-        .then((canvas) => {
-          const screenshotUrl = canvas.toDataURL(); // This is the screenshot image URL
-          console.log('Screenshot taken:', screenshotUrl);
-          // You can save or display the screenshot as needed
-          // Create a temporary anchor element
-          const downloadLink = document.createElement('a');
-          downloadLink.href = screenshotUrl;
-          downloadLink.download = 'vine_screenshot_'+timestamp+'.png'; // Set the filename
+  const handleCapture = async () => {
+  if (!componentRef.current) return;
 
-          // Trigger a click on the anchor to initiate the download
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          document.body.removeChild(downloadLink);
-        })
-        .catch((error) => {
-          console.error('Error capturing screenshot:', error);
-        });
-    }
-  };
+  try {
+    const element = componentRef.current as HTMLElement;
+
+    const canvas = await html2canvas(element, {
+      backgroundColor: null, // preserve transparent / gradient BG
+      scale: 2,              // higher-res snapshot
+    });
+
+    // Convert to Blob
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+
+      const supportsClipboard =
+        typeof navigator !== "undefined" &&
+        (navigator as any).clipboard &&
+        typeof (navigator as any).clipboard.write === "function" &&
+        typeof (window as any).ClipboardItem !== "undefined";
+
+      if (supportsClipboard) {
+        try {
+          const item = new (window as any).ClipboardItem({
+            "image/png": blob,
+          });
+          await (navigator as any).clipboard.write([item]);
+          setSnapshotCopied(true); // show snackbar that it was copied
+        } catch (err) {
+          console.error("Clipboard write failed, falling back to download:", err);
+          // Fallback: trigger download
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `vine_snapshot_${timestamp || "winner"}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
+      } else {
+        // No clipboard support: download instead
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `vine_snapshot_${timestamp || "winner"}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    }, "image/png");
+  } catch (error) {
+    console.error("Error capturing snapshot:", error);
+  }
+};
 
   const handleCopy = () => {
     setIsCopied(true);
@@ -837,6 +873,16 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       >
         <Alert onClose={handleCloseSnackbar} severity="success">
           Copied to clipboard!
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={snapshotCopied}
+        autoHideDuration={2000}
+        onClose={() => setSnapshotCopied(false)}
+      >
+        <Alert onClose={() => setSnapshotCopied(false)} severity="success">
+          Snapshot copied to clipboard!
         </Alert>
       </Snackbar>
 

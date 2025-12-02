@@ -59,7 +59,9 @@ html, body {
     rgba(255, 255, 255, 0.18) 50%,
     transparent 100%
   );
-  animation: shimmerMove 2.2s infinite;
+}
+.shimmer:hover::after {
+  animation: shimmerMove 1.8s infinite;
 }
 
 @keyframes shimmerMove {
@@ -71,5 +73,17 @@ html, body {
   }
   100% {
     left: 150%;
+  }
+}
+
+@keyframes shimmerBar {
+  0% {
+    left: -120%;
+  }
+  50% {
+    left: 120%;
+  }
+  100% {
+    left: 120%;
   }
 }

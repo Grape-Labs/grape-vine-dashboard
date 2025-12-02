@@ -7,7 +7,8 @@ import { styled, useTheme } from "@mui/material/styles";
 import moment from "moment";
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import html2canvas from 'html2canvas';
-
+// @ts-ignore
+import confetti from "canvas-confetti";
 
 import {
   Paper,
@@ -291,6 +292,24 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
     setPage(0);
   };
 
+  const fireConfetti = () => {
+    confetti({
+      particleCount: 90,
+      spread: 55,
+      startVelocity: 35,
+      ticks: 90,
+      scalar: 0.9,
+      colors: [
+        "#8A2BE2", // grape purple
+        "#4B0082",
+        "#00FFA3", // Solana green
+        "#03E1FF",
+        "white"
+      ],
+      origin: { y: 0.25 }, // subtle top burst
+    });
+  };
+
   let timeoutId: NodeJS.Timeout;
   const spinRoulette = () => {
     const interval = 100; // Adjust the spinning speed
@@ -312,6 +331,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         setTimestamp(moment().toString());
         setLoadingSpin(false);
         setOpen(true);
+        fireConfetti();
       }
     };
 
@@ -453,77 +473,128 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   </Box>
 )}
       
-      {!loading &&
-        <Box
-          textAlign='center'
-          ref={componentRef}
-          sx={{
-            m:2,
-            p:1,
-            background:'rgba(0,0,0,0.2)',
-            border:'none',
-            borderRadius:'17px',
+{!loading && (
+  <Box
+    ref={componentRef}
+    sx={{
+      m: 2,
+      p: 2.5,
+      borderRadius: "20px",
+      background: "rgba(255,255,255,0.06)",
+      border: "1px solid rgba(255,255,255,0.12)",
+      backdropFilter: "blur(12px)",
+      boxShadow: loadingSpin
+        ? "0 0 18px rgba(0,200,255,0.25)"
+        : "0 0 8px rgba(0,0,0,0.4)",
+      transition: "0.3s ease",
+      position: "relative",
+      overflow: "hidden",
+    }}
+  >
+    {/* Animated top shimmer while spinning */}
+    {loadingSpin && (
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: "-120%",
+          height: "4px",
+          width: "60%",
+          background:
+            "linear-gradient(90deg, rgba(255,255,255,0), rgba(0,200,255,0.8), rgba(255,255,255,0))",
+          animation: "shimmerBar 1.4s infinite ease",
+        }}
+      />
+    )}
+
+    {/* Winner section */}
+    {winner && winner.length > 0 && (
+      <Fade in timeout={450}>
+        <Box sx={{ textAlign: "center", mb: 2 }}>
+          <CopyToClipboard text={winner} onCopy={handleCopy}>
+            <Button
+              variant="contained"
+              color="inherit"
+              sx={{
+                borderRadius: "18px",
+                textTransform: "none",
+                px: 2.5,
+                py: 1,
+                background: "rgba(0,0,0,0.45)",
+                "&:hover": { background: "rgba(0,0,0,0.65)" },
+                fontWeight: 500,
+                letterSpacing: 0.5,
+              }}
+              startIcon={<FileCopyIcon />}
+            >
+              {isMobile ? shortenString(winner, 8, 8) : winner}
+            </Button>
+          </CopyToClipboard>
+
+          {timestamp && (
+            <Fade in timeout={500}>
+              <Box sx={{ mt: 1.5 }}>
+                <Tooltip title="Save Screenshot">
+                  <IconButton onClick={handleCapture} sx={{ color: "white" }}>
+                    <ScreenshotMonitorIcon />
+                  </IconButton>
+                </Tooltip>
+
+                <Typography
+                  variant="caption"
+                  sx={{ opacity: 0.8, display: "block", mt: 0.5 }}
+                >
+                  {moment(timestamp).format("LLLL")}
+                </Typography>
+              </Box>
+            </Fade>
+          )}
+        </Box>
+      </Fade>
+    )}
+
+    {/* Button */}
+    <Box textAlign="right">
+      <Button
+        onClick={spinRoulette}
+        disabled={loadingSpin}
+        sx={{
+          textTransform: "none",
+          borderRadius: "18px",
+          px: 2.5,
+          py: 1,
+          background: loadingSpin
+            ? "rgba(0,200,255,0.3)"
+            : "rgba(255,255,255,0.1)",
+          "&:hover": {
+            background: loadingSpin
+              ? "rgba(0,200,255,0.35)"
+              : "rgba(255,255,255,0.2)",
+          },
+          transition: "0.2s",
+        }}
+      >
+        {loadingSpin ? (
+          <HourglassBottomIcon sx={{ mr: 1 }} fontSize="small" />
+        ) : (
+          <LoopIcon sx={{ mr: 1 }} fontSize="small" />
+        )}
+        <Typography component="span" sx={{ fontSize: "0.9rem" }}>
+          Randomizer
+        </Typography>
+        <sup
+          style={{
+            marginLeft: 4,
+            fontSize: 9,
+            opacity: 0.6,
           }}
         >
-          {(winner && winner.length > 0) &&
-            <>
-              <Box>
-              <CopyToClipboard text={winner} onCopy={handleCopy}>
-                <Button
-                  variant="text"
-                  color="inherit"
-                  sx={{ 
-                    borderRadius:'17px',
-                    textTransform:'none',
-                  }}
-                  startIcon={<FileCopyIcon />}
-                >
-                  
-                  {isMobile ? `${shortenString(winner,8,8)}` : winner}
-
-                </Button>
-              </CopyToClipboard>
-              
-              {(timestamp && timestamp.length > 0) ? 
-                <>
-                  <Tooltip title="Save Screenshot">
-                    <IconButton onClick={handleCapture}>
-                      <ScreenshotMonitorIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Grid>
-                    <Fade in={timestamp ? true : false}>
-                      <Typography variant="caption">
-                          {moment(timestamp).format('LLLL')}
-                      </Typography>
-                    </Fade>
-                  </Grid>
-                </>
-                : ""}
-              </Box>
-            </>
-          }
-
-          <Box textAlign="right">
-            <Button 
-              onClick={spinRoulette}
-              color='inherit'
-              disabled={loadingSpin ? true:false}
-              sx={{
-                textTransform:'none',
-                borderRadius:'17px'
-              }}
-            >
-              {loadingSpin ?
-                <HourglassBottomIcon fontSize='small' sx={{mr:1}} /> 
-              :
-                <LoopIcon fontSize='small' sx={{mr:1}} /> 
-              }
-              Randomizer<sup>beta</sup>
-            </Button>
-          </Box>
-        </Box>
-      }
+          beta
+        </sup>
+      </Button>
+    </Box>
+  </Box>
+)}
 
       <Typography variant="h4">Leaderboard</Typography>
       <Box sx={{ overflow: "auto" }}>

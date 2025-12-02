@@ -17,6 +17,7 @@
     "@solana/spl-token": "^0.3.8",
     "@solana/web3.js": "^1.87.6",
     "antd": "^5.11.1",
+    "canvas-confetti": "^1.9.4",
     "crypto": "^1.0.1",
     "dotenv": "^16.3.1",
     "html2canvas": "^1.4.1",

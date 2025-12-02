@@ -336,49 +336,105 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       border:'none' }}>
       {/* <Typography variant="h4">TOKEN</Typography> */}
 
-      {/* Display token information if available */}
-      { 
-        <Grid container alignContent={'right'} justifyContent={'right'}>
-          <Typography variant="caption" sx={{textAlign:'right'}}>
-          {tokenInfo && (
-            <>
-              <CopyToClipboard text={token.toBase58()} onCopy={handleCopy}>
-                  <Button
-                    variant="text"
-                    color="inherit"
-                    sx={{ 
-                      fontSize:'12px',
-                      borderRadius:'17px',
-                      textTransform:'none',
-                      '&:hover .MuiSvgIcon-root': {
-                        opacity: 1,
-                      },
-                    }}
-                    startIcon={
-                      <FileCopyIcon 
-                        fontSize={'small'}  
-                        sx={{
-                          color:'rgba(255,255,255,0.25)',
-                          opacity: 0,
-                          fontSize:"10px"}} />
-                    }
-                  >
-                
-                  {shortenString(token.toBase58(),8,8)}
-                  </Button>
-                </CopyToClipboard>
-              
-              <br />
-              Supply: {(tokenInfo?.supply / 10 ** tokenInfo?.decimals).toLocaleString()}
-              <br />
-              Decimals: {tokenInfo?.decimals}
-              <br />
-              Tokens Held: {totalTokensHeld}
-              <br />
-            </>
-          )}
-          </Typography>
-        </Grid> }
+      {/* Token Summary */}
+{tokenInfo && (
+  <Box 
+    sx={{ 
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-end",
+      mb: 2,
+      mt: 1
+    }}
+  >
+
+    {/* TOKEN ADDRESS */}
+    <CopyToClipboard text={token.toBase58()} onCopy={handleCopy}>
+      <Button
+        variant="text"
+        color="inherit"
+        sx={{
+          fontSize: "12px",
+          borderRadius: "14px",
+          textTransform: "none",
+          px: 1.5,
+          py: 0.5,
+          mb: 1,
+          display: "flex",
+          alignItems: "center",
+          opacity: 0.9,
+          "&:hover": {
+            background: "rgba(255,255,255,0.08)"
+          },
+          "&:hover .MuiSvgIcon-root": {
+            opacity: 1
+          }
+        }}
+        startIcon={
+          <FileCopyIcon
+            fontSize="small"
+            sx={{ 
+              opacity: 0,
+              transition: "opacity 0.2s ease",
+              color: "rgba(255,255,255,0.5)" 
+            }}
+          />
+        }
+      >
+        {shortenString(token.toBase58(), 8, 8)}
+      </Button>
+    </CopyToClipboard>
+
+    {/* METRICS */}
+    <Box 
+      sx={{
+        display: "flex",
+        gap: 1,
+        flexWrap: "wrap",
+        justifyContent: "flex-end"
+      }}
+    >
+      <Box
+        sx={{
+          px: 1.3,
+          py: 0.4,
+          borderRadius: "12px",
+          background: "rgba(255,255,255,0.08)",
+          fontSize: "11px",
+          opacity: 0.9
+        }}
+      >
+        Supply: {(tokenInfo.supply / 10 ** tokenInfo.decimals).toLocaleString()}
+      </Box>
+
+      <Box
+        sx={{
+          px: 1.3,
+          py: 0.4,
+          borderRadius: "12px",
+          background: "rgba(255,255,255,0.08)",
+          fontSize: "11px",
+          opacity: 0.9
+        }}
+      >
+        Decimals: {tokenInfo.decimals}
+      </Box>
+
+      <Box
+        sx={{
+          px: 1.3,
+          py: 0.4,
+          borderRadius: "12px",
+          background: "rgba(255,255,255,0.08)",
+          fontSize: "11px",
+          opacity: 0.9
+        }}
+      >
+        Tokens Held: {totalTokensHeld.toLocaleString()}
+      </Box>
+    </Box>
+  </Box>
+)}
       
       {!loading &&
         <Box

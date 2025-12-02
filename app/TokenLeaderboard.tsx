@@ -336,102 +336,119 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       border:'none' }}>
       {/* <Typography variant="h4">TOKEN</Typography> */}
 
-      {/* Token Summary */}
+{/* Premium Token Summary */}
 {tokenInfo && (
   <Box 
     sx={{ 
       display: "flex",
       flexDirection: "column",
       alignItems: "flex-end",
-      mb: 2,
-      mt: 1
+      mb: 3,
+      mt: 1,
+      gap: 1.5
     }}
   >
 
-    {/* TOKEN ADDRESS */}
+    {/* TOKEN ADDRESS PANEL */}
     <CopyToClipboard text={token.toBase58()} onCopy={handleCopy}>
-      <Button
-        variant="text"
-        color="inherit"
+      <Box
         sx={{
-          fontSize: "12px",
+          px: 2,
+          py: 1,
           borderRadius: "14px",
-          textTransform: "none",
-          px: 1.5,
-          py: 0.5,
-          mb: 1,
+          cursor: "pointer",
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          backdropFilter: "blur(8px)",
           display: "flex",
           alignItems: "center",
-          opacity: 0.9,
+          gap: 1,
+          transition: "all 0.2s ease",
           "&:hover": {
-            background: "rgba(255,255,255,0.08)"
-          },
-          "&:hover .MuiSvgIcon-root": {
-            opacity: 1
+            background: "rgba(255,255,255,0.12)",
+            borderColor: "rgba(255,255,255,0.2)",
+            transform: "translateY(-1px)"
           }
         }}
-        startIcon={
-          <FileCopyIcon
-            fontSize="small"
-            sx={{ 
-              opacity: 0,
-              transition: "opacity 0.2s ease",
-              color: "rgba(255,255,255,0.5)" 
-            }}
-          />
-        }
       >
-        {shortenString(token.toBase58(), 8, 8)}
-      </Button>
+        <FileCopyIcon 
+          sx={{ 
+            fontSize: 16,
+            opacity: 0.7
+          }} 
+        />
+        <Typography 
+          variant="body2" 
+          sx={{ fontWeight: 500, opacity: 0.9 }}
+        >
+          {shortenString(token.toBase58(), 8, 8)}
+        </Typography>
+      </Box>
     </CopyToClipboard>
 
-    {/* METRICS */}
-    <Box 
+    {/* METRIC CARDS */}
+    <Box
       sx={{
         display: "flex",
-        gap: 1,
+        gap: 1.2,
         flexWrap: "wrap",
         justifyContent: "flex-end"
       }}
     >
-      <Box
-        sx={{
-          px: 1.3,
-          py: 0.4,
-          borderRadius: "12px",
-          background: "rgba(255,255,255,0.08)",
-          fontSize: "11px",
-          opacity: 0.9
-        }}
-      >
-        Supply: {(tokenInfo.supply / 10 ** tokenInfo.decimals).toLocaleString()}
-      </Box>
-
-      <Box
-        sx={{
-          px: 1.3,
-          py: 0.4,
-          borderRadius: "12px",
-          background: "rgba(255,255,255,0.08)",
-          fontSize: "11px",
-          opacity: 0.9
-        }}
-      >
-        Decimals: {tokenInfo.decimals}
-      </Box>
-
-      <Box
-        sx={{
-          px: 1.3,
-          py: 0.4,
-          borderRadius: "12px",
-          background: "rgba(255,255,255,0.08)",
-          fontSize: "11px",
-          opacity: 0.9
-        }}
-      >
-        Tokens Held: {totalTokensHeld.toLocaleString()}
-      </Box>
+      {/* CARD COMPONENT */}
+      {[
+        {
+          label: "Supply",
+          value: (tokenInfo.supply / 10 ** tokenInfo.decimals).toLocaleString(),
+        },
+        {
+          label: "Decimals",
+          value: tokenInfo.decimals,
+        },
+        {
+          label: "Tokens Held",
+          value: totalTokensHeld.toLocaleString(),
+        },
+      ].map(({ label, value }, i) => (
+        <Box
+          key={i}
+          className="shimmer"
+          sx={{
+            minWidth: 120,
+            px: 1.8,
+            py: 1,
+            borderRadius: "14px",
+            background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))",
+            border: "1px solid rgba(255,255,255,0.12)",
+            backdropFilter: "blur(10px)",
+            display: "flex",
+            flexDirection: "column",
+            textAlign: "right",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+            overflow: "hidden",
+            position: "relative",
+            transition: "0.25s ease",
+            "&:hover": {
+              boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+              transform: "translateY(-2px)",
+              borderColor: "rgba(255,255,255,0.2)",
+            }
+          }}
+        >
+          <Typography 
+            variant="caption" 
+            sx={{ opacity: 0.7, fontSize: "11px" }}
+          >
+            {label}
+          </Typography>
+          <Typography 
+            variant="body1" 
+            sx={{ fontWeight: 600, opacity: 0.95 }}
+          >
+            {value}
+          </Typography>
+        </Box>
+      ))}
     </Box>
   </Box>
 )}

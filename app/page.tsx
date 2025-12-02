@@ -48,27 +48,29 @@ const Home: React.FC = () => {
         backgroundAttachment: { xs: "scroll", md: "fixed" },
       }}
     >
-      {/* Transparent overlay for subtle dimming */}
+
+      {/* Background overlay only */}
       <Box
         sx={{
           position: "absolute",
           inset: 0,
-          background:
-            "linear-gradient(90deg, rgba(18,21,28,0.7), rgba(18,21,28,0.4) 40%, rgba(18,21,28,0.7))",
-          zIndex: 1,
+          background: "rgba(0,0,0,0.45)",
+          backdropFilter: "blur(12px)",
+          zIndex: 1, // behind everything
         }}
       />
 
+      {/* Foreground content */}
       <ThemeProvider theme={grapeTheme}>
         <CssBaseline />
 
-        {/* ---- TOP NAV ---- */}
         <AppBar
           elevation={0}
           position="static"
           sx={{
             borderBottom: "1px solid rgba(255,255,255,0.12)",
-            zIndex: 2,
+            zIndex: 2, // above overlay
+            position: "relative"
           }}
         >
           <Toolbar>

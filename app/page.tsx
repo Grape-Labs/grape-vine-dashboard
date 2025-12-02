@@ -1,7 +1,5 @@
 "use client";
-import React, { useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-
+import React from "react";
 import TokenLeaderboard from "./TokenLeaderboard";
 import { tokens, VINE_LOGO } from "./constants";
 import {
@@ -9,23 +7,25 @@ import {
   AppBar,
   Container,
   Toolbar,
-  Paper,
   Typography,
   Avatar,
+  Paper,
+  Box,
 } from "@mui/material";
 import grapeTheme from "./utils/config/theme";
 import { ThemeProvider } from "@mui/material/styles";
 
+/* --- FOOTER --- */
 function Copyright() {
   return (
-    <Typography 
-      variant="caption" 
-      color="white" // Sets text color to white
-      align="center" 
-      sx={{ 
-        display: "block",  // Ensures it takes full width
-        textAlign: "center",  // Centers text horizontally
-        marginTop: 2,  // Optional spacing
+    <Typography
+      variant="caption"
+      sx={{
+        display: "block",
+        textAlign: "center",
+        color: "rgba(255,255,255,0.7)",
+        mt: 3,
+        mb: 1,
       }}
     >
       Powered by Grape
@@ -33,52 +33,43 @@ function Copyright() {
   );
 }
 
+/* --- MAIN PAGE --- */
 const Home: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(false);
-
   return (
-    <div
-      style={{
-        position: "relative",
-        minHeight: "100vh", // Fix for mobile screen height changes
+    <Box
+      sx={{
+        minHeight: "100vh",
         width: "100vw",
-        background: `url('/images/background_sample_image.webp')`,
+        position: "relative",
+        backgroundImage: `url('/images/background_sample_image.webp')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
+        backgroundAttachment: { xs: "scroll", md: "fixed" },
       }}
     >
-      {/* Semi-transparent overlay */}
-      <div
-        style={{
+      {/* Transparent overlay for subtle dimming */}
+      <Box
+        sx={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          background: "linear-gradient(to right, rgba(187, 210, 197, 0.8), rgba(83, 105, 118, 0.8), rgba(41, 46, 73, 0.8))",
-          opacity: 0.98, // 98% faded effect
+          inset: 0,
+          background:
+            "linear-gradient(90deg, rgba(18,21,28,0.7), rgba(18,21,28,0.4) 40%, rgba(18,21,28,0.7))",
           zIndex: 1,
         }}
-      ></div>
+      />
 
-      {/* Content */}
-      <div style={{ position: "relative", zIndex: 2, color: "white", textAlign: "center" }}>
-    <ThemeProvider theme={grapeTheme}>
+      <ThemeProvider theme={grapeTheme}>
         <CssBaseline />
+
+        {/* ---- TOP NAV ---- */}
         <AppBar
-          position="absolute"
           elevation={0}
+          position="static"
           sx={{
-            position: "relative",
-            borderBottom: (t) => `1px solid ${t.palette.divider}`,
+            borderBottom: "1px solid rgba(255,255,255,0.12)",
+            zIndex: 2,
           }}
-          color="primary"
-          style={{ 
-            background: "rgba(0,0,0,0.5)",
-            border: "none",
-            borderBottom: "1px solid rgba(0,0,0,0.25)" }}
         >
           <Toolbar>
             <Typography
@@ -112,37 +103,32 @@ const Home: React.FC = () => {
             </Typography>
           </Toolbar>
         </AppBar>
-        <Container component="main" maxWidth="lg" sx={{ mb: 4 }}>
+
+        {/* ---- CONTENT ---- */}
+        <Container
+          component="main"
+          maxWidth="lg"
+          sx={{ mt: 4, mb: 6, position: "relative", zIndex: 2 }}
+        >
           <Paper
-            variant="outlined"
-            sx={{ my: { xs: 3, md: 6 }, p: { xs: 2, md: 3 } }}
-            style={{ background: "rgba(0,0,0,0.5)", borderRadius: "20px" }}
+            elevation={0}
+            sx={{
+              p: { xs: 2, md: 3 },
+              borderRadius: "20px",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              backdropFilter: "blur(10px)",
+            }}
           >
-            {tokens &&
-              tokens.map(({ programId }) => (
-                <TokenLeaderboard key={programId} programId={programId} />
+            {tokens.map(({ programId }) => (
+              <TokenLeaderboard key={programId} programId={programId} />
             ))}
           </Paper>
         </Container>
+
         <Copyright />
       </ThemeProvider>
-      {/* Fix for Mobile Viewport Height Issues */}
-      <style>
-        {`
-          @media (max-width: 768px) {
-            div[style*="background-attachment: fixed"] {
-              background-attachment: scroll !important;
-            }
-            
-            div[style*="minHeight: 100vh"] {
-              height: 100%;
-              minHeight: -webkit-fill-available; /* Fixes height on iOS Safari */
-            }
-          }
-        `}
-      </style>
-      </div>
-    </div>
+    </Box>
   );
 };
 

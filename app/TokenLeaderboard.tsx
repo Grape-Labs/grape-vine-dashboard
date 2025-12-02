@@ -293,21 +293,62 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   };
 
   const fireConfetti = () => {
-    confetti({
-      particleCount: 90,
-      spread: 55,
+    // Safety: only run in browser
+    if (typeof window === "undefined") return;
+
+    const duration = 1400; // total duration in ms
+    const animationEnd = Date.now() + duration;
+
+    // Shared settings
+    const defaults = {
       startVelocity: 35,
+      spread: 55,
       ticks: 90,
+      zIndex: 9999,
       scalar: 0.9,
       colors: [
         "#8A2BE2", // grape purple
-        "#4B0082",
+        "#C084FC", // soft purple
         "#00FFA3", // Solana green
-        "#03E1FF",
-        "white"
+        "#03E1FF", // Solana cyan
+        "#FFFFFF", // white accent
       ],
-      origin: { y: 0.25 }, // subtle top burst
-    });
+    };
+
+    function randomInRange(min: number, max: number) {
+      return Math.random() * (max - min) + min;
+    }
+
+    const interval: any = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        return;
+      }
+
+      // Adjust particle count as time runs out
+      const particleCount = Math.round(50 * (timeLeft / duration));
+
+      // Two symmetric bursts from left/right
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: {
+          x: randomInRange(0.15, 0.35),
+          y: randomInRange(0.15, 0.35),
+        },
+      });
+
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: {
+          x: randomInRange(0.65, 0.85),
+          y: randomInRange(0.15, 0.35),
+        },
+      });
+    }, 180);
   };
 
   let timeoutId: NodeJS.Timeout;
@@ -596,145 +637,198 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   </Box>
 )}
 
-      <Typography variant="h4">Leaderboard</Typography>
-      <Box sx={{ overflow: "auto" }}>
-         <Box sx={{ width: "100%", display: "table", tableLayout: "fixed" }}>
-          {loading ?
-            <>
-              <Grid alignContent={"center"} sx={{textAlign:'center'}}>
-                <CircularProgress color="inherit"/>
-              </Grid>
-            </>
-          :
-            <Table
-              sx={{
-                border: "none"}}
-            >
-              <TableContainer 
-                component={Paper} 
-                sx={{ 
-                  background: "none",
-                  border:"none"
-                }}>
-                <StyledTable
-                  size="small"
-                  aria-label="Vine Leaderboard Table"
-                >
-                  <TableHead>
-                    <TableRow>
-                      <TableCell key={'ttitle'}>
-                        <Typography variant="caption">Owner</Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="caption">Amount</Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="caption">% of Supply</Typography>
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {holders && (
-                      <>
-                        {(rowsPerPage > 0
-                          ? holders.slice(
-                              page * rowsPerPage,
-                              page * rowsPerPage + rowsPerPage
-                            )
-                          : holders
-                        )
-                        .filter((item) => !excludeArr.includes(item.address))
-                        .map((item: any, index: number) => (
-                          <>
-                            {item?.address && (
-                              <TableRow key={index} sx={{ borderBottom: "none" }}>
-                                <TableCell>
-                                  <Typography variant="body2">
-                                    <CopyToClipboard text={item.address} onCopy={handleCopy}>
-                                      <Button
-                                        variant="text"
-                                        color="inherit"
-                                        sx={{ 
-                                          borderRadius:'17px',
-                                          textTransform:'none',
-                                          '&:hover .MuiSvgIcon-root': {
-                                            opacity: 1,
-                                          },
-                                        }}
-                                        endIcon={
-                                          <FileCopyIcon sx={{
-                                            color:'rgba(255,255,255,0.25)',
-                                            opacity: 0}} />
-                                        }
-                                      >
-                                    
-                                      {shortenString(item.address,8,8)}
-                                      </Button>
-                                    </CopyToClipboard>
-                                  
-                                  
-                                  </Typography>
-                                </TableCell>
+      {/* LEADERBOARD HEADER */}
+<Box sx={{ mt: 3, mb: 1.5, display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+  <Typography variant="h5">Leaderboard</Typography>
+  {holders && (
+    <Typography variant="caption" sx={{ opacity: 0.7 }}>
+      {holders.length.toLocaleString()} holders
+    </Typography>
+  )}
+</Box>
 
-                                <TableCell align="center">
-                                  <Typography variant="body2">
-                                    {(item.balance / 10 ** tokenInfo?.decimals).toLocaleString()}
-                                    
-                                    {/*getFormattedNumberToLocale(
-                                      formatAmount(
-                                        +(
-                                          item.balance /
-                                          Math.pow(10, tokenInfo?.decimals)
-                                        ).toFixed(0)
-                                      )
-                                    )*/}
-                                  </Typography>
-                                </TableCell>
+{/* LEADERBOARD TABLE */}
+<Box sx={{ overflow: "auto" }}>
+  <Box sx={{ width: "100%", display: "table", tableLayout: "fixed" }}>
+    {loading ? (
+      <Grid alignContent="center" sx={{ textAlign: "center", py: 4 }}>
+        <CircularProgress color="inherit" />
+      </Grid>
+    ) : (
+      <Paper
+        elevation={0}
+        sx={{
+          background: "rgba(15,23,42,0.78)",
+          borderRadius: "18px",
+          border: "1px solid rgba(148,163,184,0.28)",
+          overflow: "hidden",
+        }}
+      >
+        <TableContainer
+          component={Box}
+          sx={{
+            background: "transparent",
+          }}
+        >
+          <StyledTable size="small" aria-label="Vine Leaderboard Table">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: 56 }}>
+                  <Typography variant="caption">#</Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="caption">Owner</Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="caption">Amount</Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="caption">% of Supply</Typography>
+                </TableCell>
+              </TableRow>
+            </TableHead>
 
-                                <TableCell align="center">
-                                  <Typography variant="body2">
-                                    {tokenInfo?.supply &&
-                                      (
-                                        (+item.balance / tokenInfo?.supply) *
-                                        100
-                                      ).toFixed(2)}
-                                    %
-                                  </Typography>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </>
-                        ))}
-                      </>
-                    )}
-                  </TableBody>
+            <TableBody>
+              {holders && (
+                <>
+                  {(rowsPerPage > 0
+                    ? holders.slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
+                    : holders
+                  )
+                    .filter((item) => !excludeArr.includes(item.address))
+                    .map((item: any, index: number) => {
+                      if (!item?.address) return null;
 
-                  <TableFooter>
-                    <TableRow key={'tfooter'}>
-                      <TablePagination
-                        rowsPerPageOptions={[20]}
-                        colSpan={5}
-                        count={holders && holders.length}
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        SelectProps={{
-                          inputProps: {
-                            "aria-label": "rows per page",
-                          },
-                          native: true,
-                        }}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                        ActionsComponent={TablePaginationActions}
-                      />
-                    </TableRow>
-                  </TableFooter>
-                </StyledTable>
-              </TableContainer>
-            </Table>
-          }
-        </Box>
-      </Box>
+                      const rank = page * rowsPerPage + index + 1;
+
+                      const rankBadgeColor =
+                        rank === 1
+                          ? "#facc15" // gold
+                          : rank === 2
+                          ? "#e5e7eb" // silver
+                          : rank === 3
+                          ? "#a855f7" // grape / bronze-ish
+                          : null;
+
+                      return (
+                        <TableRow
+                          key={index}
+                          sx={{
+                            borderBottom: "none",
+                            "&:hover": {
+                              backgroundColor: "rgba(148,163,184,0.08)",
+                            },
+                          }}
+                        >
+                          {/* RANK + BADGE */}
+                          <TableCell>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                              <Typography variant="caption" sx={{ opacity: 0.75 }}>
+                                {rank}
+                              </Typography>
+                              {rankBadgeColor && (
+                                <Box
+                                  sx={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: "50%",
+                                    bgcolor: rankBadgeColor,
+                                    boxShadow: "0 0 0 1px rgba(15,23,42,0.6)",
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          </TableCell>
+
+                          {/* OWNER */}
+                          <TableCell>
+                            <Typography variant="body2">
+                              <CopyToClipboard
+                                text={item.address}
+                                onCopy={handleCopy}
+                              >
+                                <Button
+                                  variant="text"
+                                  color="inherit"
+                                  sx={{
+                                    borderRadius: "17px",
+                                    textTransform: "none",
+                                    px: 1.4,
+                                    "&:hover .MuiSvgIcon-root": {
+                                      opacity: 1,
+                                    },
+                                  }}
+                                  endIcon={
+                                    <FileCopyIcon
+                                      sx={{
+                                        color: "rgba(255,255,255,0.25)",
+                                        opacity: 0,
+                                        transition: "opacity 0.2s ease",
+                                      }}
+                                    />
+                                  }
+                                >
+                                  {shortenString(item.address, 8, 8)}
+                                </Button>
+                              </CopyToClipboard>
+                            </Typography>
+                          </TableCell>
+
+                          {/* AMOUNT */}
+                          <TableCell align="right">
+                            <Typography variant="body2">
+                              {(
+                                item.balance /
+                                10 ** tokenInfo?.decimals
+                              ).toLocaleString()}
+                            </Typography>
+                          </TableCell>
+
+                          {/* % OF SUPPLY */}
+                          <TableCell align="right">
+                            <Typography variant="body2">
+                              {tokenInfo?.supply &&
+                                (
+                                  (+item.balance / tokenInfo?.supply) *
+                                  100
+                                ).toFixed(2)}
+                              %
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </>
+              )}
+            </TableBody>
+
+            <TableFooter>
+              <TableRow>
+                <TablePagination
+                  rowsPerPageOptions={[20]}
+                  colSpan={4}
+                  count={holders ? holders.length : 0}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  SelectProps={{
+                    inputProps: { "aria-label": "rows per page" },
+                    native: true,
+                  }}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  ActionsComponent={TablePaginationActions}
+                />
+              </TableRow>
+            </TableFooter>
+          </StyledTable>
+        </TableContainer>
+      </Paper>
+    )}
+  </Box>
+</Box>
 
       <Snackbar
         open={isCopied}

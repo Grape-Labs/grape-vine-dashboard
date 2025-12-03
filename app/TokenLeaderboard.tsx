@@ -120,28 +120,69 @@ function TablePaginationActions(props: any) {
 
 // Define a React functional component named TokenLeaderboard
 const TokenLeaderboard: FC<{ programId: string }> = (props) => {
-  // Create a connection to the Solana blockchain using the specified RPC endpoint
   const connection = new Connection(GRAPE_RPC_ENDPOINT);
-  // Define the token's public key based on the provided programId prop
   const token = new PublicKey(props.programId);
 
-  // Define state variables for token information, holders, and loading status
+  // --- STATE ---
   const [tokenInfo, setTokenInfo] = useState<any | null>(null);
   const [totalTokensHeld, setTotalTokensHeld] = useState(0);
   const [holders, setHolders] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [winner, setWinner] = useState('');
+  const [winner, setWinner] = useState("");
   const [loadingSpin, setLoadingSpin] = useState(false);
-  const [timestamp, setTimestamp] = useState('');
+  const [timestamp, setTimestamp] = useState("");
   const [isCopied, setIsCopied] = useState(false);
   const componentRef = useRef(null);
   const [open, setOpen] = useState(false);
 
+  const [highlightedAddress, setHighlightedAddress] = useState<string | null>(null);
   const [snapshotCopied, setSnapshotCopied] = useState(false);
 
-  const isMobile = useMediaQuery('(max-width:600px)');
+  const isMobile = useMediaQuery("(max-width:600px)");
+
+  // 👇 MUST come before we use it
+  const excludeArr = [
+    "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk",
+    "6jEQpEnoSRPP8A2w6DWDQDpqrQTJvG4HinaugiBGtQKD",
+    "AWaMVkukciGYPEpJbnmSXPJzVxuuMFz1gWYBkznJ2qbq",
+  ];
+
+  // --- LEADERBOARD STATS ---
+  const effectiveHolders = holders.filter(
+    (h) => h?.address && !excludeArr.includes(h.address)
+  );
+
+  const totalEffective = effectiveHolders.length;
+  const excludedCount = holders.length - totalEffective;
+
+  let top10SharePct = 0;
+  let medianBalance = 0;
+
+  if (totalEffective > 0 && tokenInfo?.decimals != null) {
+    const sortedByBalance = [...effectiveHolders].sort(
+      (a, b) => Number(b.balance) - Number(a.balance)
+    );
+
+    const balancesRaw = sortedByBalance.map((h) => Number(h.balance));
+
+    const mid = Math.floor(balancesRaw.length / 2);
+    let medianRaw: number;
+    if (balancesRaw.length % 2 === 0) {
+      medianRaw = (balancesRaw[mid - 1] + balancesRaw[mid]) / 2;
+    } else {
+      medianRaw = balancesRaw[mid];
+    }
+    medianBalance = medianRaw / 10 ** tokenInfo.decimals;
+
+    const top10Raw = balancesRaw.slice(0, 10).reduce((acc, v) => acc + v, 0);
+    const totalHeldRaw = balancesRaw.reduce((acc, v) => acc + v, 0);
+
+    if (totalHeldRaw > 0) {
+      top10SharePct = (top10Raw / totalHeldRaw) * 100;
+    }
+  }
 
   const handleClose = () => {
     setOpen(false);
@@ -212,17 +253,32 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
     setIsCopied(false);
   };
 
-  const excludeArr = [
-    "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk",
-    "6jEQpEnoSRPP8A2w6DWDQDpqrQTJvG4HinaugiBGtQKD",
-    "AWaMVkukciGYPEpJbnmSXPJzVxuuMFz1gWYBkznJ2qbq"
-  ]
-
   const handleGetRaffleSelection = () => {
     const won = weightedRandomChoice(holders, excludeArr);
-    if (won)
+    if (won){
       setWinner(won.address);
+          // highlight winner row
+      setHighlightedAddress(won.address);
+
+      // optional: clear highlight after a few seconds
+      setTimeout(() => {
+        setHighlightedAddress(null);
+      }, 2500);
+    }
   };
+
+  useEffect(() => {
+    if (!winner) return;
+
+    const rowId = `holder-row-${winner}`;
+    const rowEl = document.getElementById(rowId);
+    if (rowEl) {
+      rowEl.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [winner]);
 
   // Use the useEffect hook to fetch token information and holders when the component mounts
   useEffect(() => {
@@ -413,6 +469,18 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
     };
 
     spinIteration();
+  };
+
+  const getHolderTier = (percent: number) => {
+    if (percent >= 5) {
+      return { label: "Whale", color: "rgba(248,250,252,0.14)" };
+    } else if (percent >= 1) {
+      return { label: "Large", color: "rgba(129,140,248,0.20)" };
+    } else if (percent >= 0.1) {
+      return { label: "Mid", color: "rgba(45,212,191,0.16)" };
+    } else {
+      return { label: "Tail", color: "rgba(148,163,184,0.18)" };
+    }
   };
 
   const shortenString = (input: any, startChars = 6, endChars = 6) => {
@@ -636,7 +704,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
     >
       {/* Winner section */}
       <Box sx={{ textAlign: "left", flex: 1 }}>
-        {winner && winner.length > 0 && (
+{winner && winner.length > 0 && (
   <Fade in timeout={450}>
     <Box
       sx={{
@@ -645,16 +713,30 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       }}
     >
       <Box
+        key={timestamp || winner}   // ← force remount when new draw completes
         sx={{
+          position: "relative",
           display: "inline-flex",
           alignItems: "center",
           px: 2,
           py: 1,
           borderRadius: "14px",
-          background: "rgba(255,255,255,0.10)",
-          border: "1px solid rgba(255,255,255,0.15)",
-          backdropFilter: "blur(6px)",
-          boxShadow: "0 0 12px rgba(0,0,0,0.3)",
+          background: "rgba(15,23,42,0.9)",
+          border: "1px solid rgba(148,163,184,0.7)",
+          backdropFilter: "blur(8px)",
+          boxShadow: "0 0 0px rgba(0,200,255,0)",
+          animation: "winnerGlow 1.6s ease-out",
+          overflow: "visible",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            inset: -6,
+            borderRadius: "999px",
+            border: "1px solid rgba(56,189,248,0.65)",
+            boxShadow: "0 0 22px rgba(56,189,248,0.55)",
+            opacity: 0,
+            animation: "pulseRing 1.3s ease-out",
+          },
         }}
       >
         <CopyToClipboard text={winner} onCopy={handleCopy}>
@@ -667,8 +749,8 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
               fontSize: "0.9rem",
               letterSpacing: 0.4,
               color: "white",
-              minWidth: "0",
-              "&:hover": { background: "rgba(255,255,255,0.08)" },
+              minWidth: 0,
+              "&:hover": { background: "rgba(255,255,255,0.05)" },
             }}
             startIcon={<FileCopyIcon fontSize="small" />}
           >
@@ -678,13 +760,17 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       </Box>
 
       {timestamp && (
-        <Fade in timeout={350}>
+        <Fade in timeout={500}>
           <Box sx={{ mt: 1.2 }}>
             <Tooltip title="Save snapshot">
-              <IconButton sx={{ color: "white", mr: 0.8 }} onClick={handleCapture}>
+              <IconButton
+                sx={{ color: "white", mr: 0.8 }}
+                onClick={handleCapture}
+              >
                 <ScreenshotMonitorIcon fontSize="small" />
               </IconButton>
             </Tooltip>
+
             <Typography variant="caption" sx={{ opacity: 0.8 }}>
               {moment(timestamp).format("LLLL")}
             </Typography>
@@ -732,11 +818,27 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 )}
 
       {/* LEADERBOARD HEADER */}
-<Box sx={{ mt: 3, mb: 1.5, display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+<Box
+  sx={{
+    mt: 3,
+    mb: 1.5,
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 1,
+  }}
+>
   <Typography variant="h5">Leaderboard</Typography>
-  {holders && (
-    <Typography variant="caption" sx={{ opacity: 0.7 }}>
-      {holders.length.toLocaleString()} holders
+
+  {totalEffective > 0 && (
+    <Typography variant="caption" sx={{ opacity: 0.75, textAlign: "right" }}>
+      {totalEffective.toLocaleString()} holders
+      {/*excludedCount > 0 && ` • ${excludedCount} excluded`*/}
+      {top10SharePct > 0 && ` • Top 10 hold ${top10SharePct.toFixed(1)}%`}
+      {medianBalance > 0 &&
+        ` • Median balance: ${medianBalance.toLocaleString(undefined, {
+          maximumFractionDigits: 0,
+        })} VINE`}
     </Typography>
   )}
 </Box>
@@ -810,11 +912,16 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                       return (
                         <TableRow
                           key={index}
+                          id={`holder-row-${item.address}`}
                           sx={{
                             borderBottom: "none",
                             "&:hover": {
                               backgroundColor: "rgba(148,163,184,0.08)",
                             },
+                            ...(highlightedAddress === item.address && {
+                              animation: "winnerRowPulse 1.4s ease-out",
+                              backgroundColor: "rgba(56,189,248,0.12)",
+                            }),
                           }}
                         >
                           {/* RANK + BADGE */}
@@ -883,14 +990,33 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
                           {/* % OF SUPPLY */}
                           <TableCell align="right">
-                            <Typography variant="body2">
-                              {tokenInfo?.supply &&
-                                (
-                                  (+item.balance / tokenInfo?.supply) *
-                                  100
-                                ).toFixed(2)}
-                              %
-                            </Typography>
+                            {tokenInfo?.supply && (() => {
+                              const pct =
+                                (+item.balance / tokenInfo.supply) * 100;
+                              const tier = getHolderTier(pct);
+
+                              return (
+                                <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1, justifyContent: "flex-end" }}>
+                                  <Typography variant="body2">
+                                    {pct.toFixed(2)}%
+                                  </Typography>
+                                  <Box
+                                    sx={{
+                                      px: 1,
+                                      py: 0.2,
+                                      borderRadius: "999px",
+                                      fontSize: "0.65rem",
+                                      textTransform: "uppercase",
+                                      letterSpacing: 0.6,
+                                      backgroundColor: tier.color,
+                                      color: "rgba(241,245,249,0.9)",
+                                    }}
+                                  >
+                                    {tier.label}
+                                  </Box>
+                                </Box>
+                              );
+                            })()}
                           </TableCell>
                         </TableRow>
                       );

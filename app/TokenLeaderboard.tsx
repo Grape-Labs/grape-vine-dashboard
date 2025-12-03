@@ -34,6 +34,7 @@ import {
   useMediaQuery,
   Drawer,
   Divider,
+  Stack,
 } from "@mui/material";
 
 import LiveTvIcon from '@mui/icons-material/LiveTv';
@@ -1980,24 +1981,67 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
             sx={{ mb: 2, borderColor: "rgba(148,163,184,0.4)" }}
           />
 
-          {/* External links */}
+          {/* External Links */}
           {selectedWallet && (
-            <Button
-              variant="text"
-              color="inherit"
-              size="small"
-              sx={{
-                textTransform: "none",
-                justifyContent: "flex-start",
-                px: 0,
-              }}
-              href={`https://solscan.io/account/${selectedWallet}`}
-              target="_blank"
-              rel="noreferrer"
-              endIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
-            >
-              View on Solscan
-            </Button>
+            <Stack spacing={1.2} sx={{ mt: 2 }}>
+              
+              {/* Solscan */}
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                href={`https://solscan.io/account/${selectedWallet}`}
+                target="_blank"
+                rel="noreferrer"
+                sx={{
+                  borderRadius: "12px",
+                  justifyContent: "space-between",
+                  textTransform: "none",
+                  px: 1.5,
+                  py: 0.8,
+                  background: "rgba(255,255,255,0.03)",
+                  borderColor: "rgba(148,163,184,0.35)",
+                  "&:hover": {
+                    background: "rgba(255,255,255,0.07)",
+                    borderColor: "rgba(255,255,255,0.6)",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all .18s ease",
+                }}
+                endIcon={<OpenInNewIcon sx={{ fontSize: 15, opacity: 0.85 }} />}
+              >
+                View on Solscan
+              </Button>
+
+              {/* Governance.so */}
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                href={`https://www.governance.so/profile/${selectedWallet}`}
+                target="_blank"
+                rel="noreferrer"
+                sx={{
+                  borderRadius: "12px",
+                  justifyContent: "space-between",
+                  textTransform: "none",
+                  px: 1.5,
+                  py: 0.8,
+                  background: "rgba(255,255,255,0.03)",
+                  borderColor: "rgba(148,163,184,0.35)",
+                  "&:hover": {
+                    background: "rgba(255,255,255,0.07)",
+                    borderColor: "rgba(255,255,255,0.6)",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all .18s ease",
+                }}
+                endIcon={<OpenInNewIcon sx={{ fontSize: 15, opacity: 0.85 }} />}
+              >
+                View on Governance.so
+              </Button>
+
+            </Stack>
           )}
         </Box>
       </Drawer>

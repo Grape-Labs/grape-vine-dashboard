@@ -584,91 +584,149 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       />
     )}
 
-    {/* Winner section */}
-    {winner && winner.length > 0 && (
-      <Fade in timeout={450}>
-        <Box sx={{ textAlign: "center", mb: 2 }}>
-          <CopyToClipboard text={winner} onCopy={handleCopy}>
-            <Button
-              variant="contained"
-              color="inherit"
-              sx={{
-                borderRadius: "18px",
-                textTransform: "none",
-                px: 2.5,
-                py: 1,
-                background: "rgba(0,0,0,0.45)",
-                "&:hover": { background: "rgba(0,0,0,0.65)" },
-                fontWeight: 500,
-                letterSpacing: 0.5,
-              }}
-              startIcon={<FileCopyIcon />}
-            >
-              {isMobile ? shortenString(winner, 8, 8) : winner}
-            </Button>
-          </CopyToClipboard>
+    {/* Header / status row */}
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "baseline",
+        justifyContent: "space-between",
+        mb: 1.5,
+        gap: 1,
+      }}
+    >
+      <Typography
+        variant="subtitle2"
+        sx={{ letterSpacing: 0.5, opacity: 0.9 }}
+      >
+        Randomizer
+      </Typography>
 
-          {timestamp && (
-            <Fade in timeout={500}>
-              <Box sx={{ mt: 1.5 }}>
-                <Tooltip title="Save Screenshot">
-                  <IconButton onClick={handleCapture} sx={{ color: "white" }}>
-                    <ScreenshotMonitorIcon />
-                  </IconButton>
-                </Tooltip>
-
-                <Typography
-                  variant="caption"
-                  sx={{ opacity: 0.8, display: "block", mt: 0.5 }}
-                >
-                  {moment(timestamp).format("LLLL")}
-                </Typography>
-              </Box>
-            </Fade>
-          )}
-        </Box>
-      </Fade>
-    )}
-
-    {/* Button */}
-    <Box textAlign="right">
-      <Button
-        onClick={spinRoulette}
-        disabled={loadingSpin}
+      <Box
         sx={{
-          textTransform: "none",
-          borderRadius: "18px",
-          px: 2.5,
-          py: 1,
-          background: loadingSpin
-            ? "rgba(0,200,255,0.3)"
-            : "rgba(255,255,255,0.1)",
-          "&:hover": {
-            background: loadingSpin
-              ? "rgba(0,200,255,0.35)"
-              : "rgba(255,255,255,0.2)",
-          },
-          transition: "0.2s",
+          display: "flex",
+          alignItems: "center",
+          gap: 0.75,
+          opacity: 0.85,
+          fontSize: "0.75rem",
         }}
       >
-        {loadingSpin ? (
-          <HourglassBottomIcon sx={{ mr: 1 }} fontSize="small" />
-        ) : (
-          <LoopIcon sx={{ mr: 1 }} fontSize="small" />
-        )}
-        <Typography component="span" sx={{ fontSize: "0.9rem" }}>
-          Randomizer
+        <Box
+          sx={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            bgcolor: loadingSpin ? "#22c55e" : "#9ca3af",
+          }}
+        />
+        <Typography variant="caption">
+          {loadingSpin ? "Drawing…" : "Ready"}
         </Typography>
-        <sup
-          style={{
-            marginLeft: 4,
-            fontSize: 9,
-            opacity: 0.6,
+      </Box>
+    </Box>
+
+    {/* Content row: winner (left) + button (right) */}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        alignItems: { xs: "flex-start", md: "center" },
+        justifyContent: "space-between",
+        gap: 2,
+      }}
+    >
+      {/* Winner section */}
+      <Box sx={{ textAlign: "left", flex: 1 }}>
+        {winner && winner.length > 0 && (
+  <Fade in timeout={450}>
+    <Box
+      sx={{
+        textAlign: "center",
+        mb: 2,
+      }}
+    >
+      <Box
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          px: 2,
+          py: 1,
+          borderRadius: "14px",
+          background: "rgba(255,255,255,0.10)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          backdropFilter: "blur(6px)",
+          boxShadow: "0 0 12px rgba(0,0,0,0.3)",
+        }}
+      >
+        <CopyToClipboard text={winner} onCopy={handleCopy}>
+          <Button
+            variant="text"
+            color="inherit"
+            sx={{
+              textTransform: "none",
+              fontWeight: 500,
+              fontSize: "0.9rem",
+              letterSpacing: 0.4,
+              color: "white",
+              minWidth: "0",
+              "&:hover": { background: "rgba(255,255,255,0.08)" },
+            }}
+            startIcon={<FileCopyIcon fontSize="small" />}
+          >
+            {isMobile ? shortenString(winner, 8, 8) : winner}
+          </Button>
+        </CopyToClipboard>
+      </Box>
+
+      {timestamp && (
+        <Fade in timeout={350}>
+          <Box sx={{ mt: 1.2 }}>
+            <Tooltip title="Save snapshot">
+              <IconButton sx={{ color: "white", mr: 0.8 }} onClick={handleCapture}>
+                <ScreenshotMonitorIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Typography variant="caption" sx={{ opacity: 0.8 }}>
+              {moment(timestamp).format("LLLL")}
+            </Typography>
+          </Box>
+        </Fade>
+      )}
+    </Box>
+  </Fade>
+)}
+      </Box>
+
+      {/* Button */}
+      <Box sx={{ textAlign: { xs: "left", md: "right" } }}>
+        <Button
+          onClick={spinRoulette}
+          disabled={loadingSpin}
+          sx={{
+            textTransform: "none",
+            borderRadius: "18px",
+            px: 2.6,
+            py: 1,
+            background: loadingSpin
+              ? "rgba(0,200,255,0.3)"
+              : "rgba(255,255,255,0.12)",
+            "&:hover": {
+              background: loadingSpin
+                ? "rgba(0,200,255,0.35)"
+                : "rgba(255,255,255,0.22)",
+            },
+            transition: "0.2s",
           }}
         >
-          beta
-        </sup>
-      </Button>
+          {loadingSpin ? (
+            <HourglassBottomIcon sx={{ mr: 1 }} fontSize="small" />
+          ) : (
+            <LoopIcon sx={{ mr: 1 }} fontSize="small" />
+          )}
+          <Typography component="span" sx={{ fontSize: "0.9rem" }}>
+            Draw wallet
+          </Typography>
+        </Button>
+      </Box>
     </Box>
   </Box>
 )}

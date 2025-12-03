@@ -1124,6 +1124,15 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
     anchor="right"
     open={!!selectedWallet}
     onClose={handleCloseWalletDrawer}
+    //disableSwipeToOpen={false}
+    ModalProps={{
+      keepMounted: true,
+      BackdropProps: {
+        sx: {
+          backgroundColor: "rgba(0,0,0,0.5)", // required to detect click
+        },
+      },
+    }}
     PaperProps={{
       sx: {
         width: { xs: "100%", sm: 360 },
@@ -1135,6 +1144,18 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
     }}
   >
     <Box sx={{ p: 2.5 }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+        <IconButton
+          onClick={handleCloseWalletDrawer}
+          sx={{
+            color: "rgba(255,255,255,0.8)",
+            "&:hover": { color: "white" }
+          }}
+        >
+          ✕
+        </IconButton>
+      </Box>
+    
       <Typography
         variant="overline"
         sx={{
@@ -1275,7 +1296,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       )}
     </Box>
   </Drawer>
-  
+
       <Snackbar
         open={isCopied}
         autoHideDuration={2000}

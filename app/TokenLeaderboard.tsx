@@ -33,8 +33,10 @@ import {
   Zoom,
   Fade,
   useMediaQuery,
+  Drawer,          // ← add
 } from "@mui/material";
 
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ScreenshotMonitorIcon from '@mui/icons-material/ScreenshotMonitor';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
@@ -142,6 +144,10 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
   const isMobile = useMediaQuery("(max-width:600px)");
 
+  // NEW: wallet drawer state
+  const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
+  const [selectedRank, setSelectedRank] = useState<number | null>(null);
+
   const excludedWallets = [
     {
       address: "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk",
@@ -192,6 +198,16 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
       top10SharePct = (top10Raw / totalHeldRaw) * 100;
     }
   }
+
+  const handleOpenWalletDrawer = (address: string, rank: number) => {
+    setSelectedWallet(address);
+    setSelectedRank(rank);
+  };
+
+  const handleCloseWalletDrawer = () => {
+    setSelectedWallet(null);
+    setSelectedRank(null);
+  };
 
   const handleClose = () => {
     setOpen(false);
@@ -502,6 +518,26 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   
     return `${start}...${end}`;
   };
+
+  // --- Derived info for the selected wallet in the drawer ---
+  const selectedHolder = selectedWallet
+    ? holders.find(
+        (h) =>
+          h?.address === selectedWallet &&
+          !excludeArr.includes(h.address)
+      )
+    : null;
+
+  let selectedBalance = 0;
+  let selectedPct = 0;
+  let selectedTier: { label: string; color: string } | null = null;
+
+  if (selectedHolder && tokenInfo?.decimals != null && tokenInfo?.supply) {
+    const raw = Number(selectedHolder.balance);
+    selectedBalance = raw / 10 ** tokenInfo.decimals;
+    selectedPct = (raw / tokenInfo.supply) * 100;
+    selectedTier = getHolderTier(selectedPct);
+  }
 
   // Render the component with token information and holders
   return (
@@ -994,6 +1030,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                                       opacity: 1,
                                     },
                                   }}
+                                  onClick={() => handleOpenWalletDrawer(item.address, rank)}
                                   endIcon={
                                     <FileCopyIcon
                                       sx={{
@@ -1082,6 +1119,163 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   </Box>
 </Box>
 
+  {/* WALLET PROFILE DRAWER */}
+  <Drawer
+    anchor="right"
+    open={!!selectedWallet}
+    onClose={handleCloseWalletDrawer}
+    PaperProps={{
+      sx: {
+        width: { xs: "100%", sm: 360 },
+        background: "rgba(15,23,42,0.96)",
+        borderLeft: "1px solid rgba(148,163,184,0.4)",
+        backdropFilter: "blur(16px)",
+        color: "white",
+      },
+    }}
+  >
+    <Box sx={{ p: 2.5 }}>
+      <Typography
+        variant="overline"
+        sx={{
+          opacity: 0.7,
+          letterSpacing: 1,
+          textTransform: "uppercase",
+        }}
+      >
+        Holder profile
+      </Typography>
+
+      {/* Address + rank */}
+      <Box sx={{ mt: 1, mb: 2 }}>
+        <CopyToClipboard
+          text={selectedWallet || ""}
+          onCopy={handleCopy}
+        >
+          <Button
+            variant="outlined"
+            color="inherit"
+            size="small"
+            fullWidth
+            sx={{
+              justifyContent: "space-between",
+              borderRadius: "999px",
+              textTransform: "none",
+              borderColor: "rgba(148,163,184,0.7)",
+            }}
+          >
+            <span>
+              {selectedWallet
+                ? shortenString(selectedWallet, 6, 8)
+                : ""}
+            </span>
+            <FileCopyIcon sx={{ fontSize: 16, opacity: 0.8 }} />
+          </Button>
+        </CopyToClipboard>
+
+        {selectedRank != null && (
+          <Typography
+            variant="caption"
+            sx={{ mt: 0.75, display: "block", opacity: 0.75 }}
+          >
+            Rank #{selectedRank}
+          </Typography>
+        )}
+      </Box>
+
+      <Divider sx={{ mb: 2, borderColor: "rgba(148,163,184,0.4)" }} />
+
+      {/* Metrics */}
+      {selectedHolder && tokenInfo && (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 1.5,
+            mb: 2,
+          }}
+        >
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{ opacity: 0.7 }}
+            >
+              Balance
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ fontWeight: 600 }}
+            >
+              {selectedBalance.toLocaleString()}
+            </Typography>
+          </Box>
+
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{ opacity: 0.7 }}
+            >
+              % of supply
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ fontWeight: 600 }}
+            >
+              {selectedPct.toFixed(3)}%
+            </Typography>
+          </Box>
+
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{ opacity: 0.7 }}
+            >
+              Tier
+            </Typography>
+            <Box
+              sx={{
+                mt: 0.4,
+                display: "inline-flex",
+                px: 1,
+                py: 0.2,
+                borderRadius: "999px",
+                fontSize: "0.7rem",
+                textTransform: "uppercase",
+                letterSpacing: 0.6,
+                backgroundColor: selectedTier?.color,
+                color: "rgba(241,245,249,0.95)",
+              }}
+            >
+              {selectedTier?.label}
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      <Divider sx={{ mb: 2, borderColor: "rgba(148,163,184,0.4)" }} />
+
+      {/* External links */}
+      {selectedWallet && (
+        <Button
+          variant="text"
+          color="inherit"
+          size="small"
+          sx={{
+            textTransform: "none",
+            justifyContent: "flex-start",
+            px: 0,
+          }}
+          href={`https://solscan.io/account/${selectedWallet}`}
+          target="_blank"
+          rel="noreferrer"
+          endIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
+        >
+          View on Solscan
+        </Button>
+      )}
+    </Box>
+  </Drawer>
+  
       <Snackbar
         open={isCopied}
         autoHideDuration={2000}

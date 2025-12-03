@@ -1148,8 +1148,24 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         <IconButton
           onClick={handleCloseWalletDrawer}
           sx={{
+            width: 32,               // force equal width & height
+            height: 32,
+            borderRadius: "50%",     // perfect circle
             color: "rgba(255,255,255,0.8)",
-            "&:hover": { color: "white" }
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+
+            // consistent hover effect
+            "&:hover": {
+              backgroundColor: "rgba(255,255,255,0.14)",
+              color: "white",
+            },
+
+            // prevent ripple from distorting shape
+            "& .MuiTouchRipple-root": {
+              borderRadius: "50%",
+            },
           }}
         >
           ✕

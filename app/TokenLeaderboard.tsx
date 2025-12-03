@@ -142,12 +142,21 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
   const isMobile = useMediaQuery("(max-width:600px)");
 
-  // 👇 MUST come before we use it
-  const excludeArr = [
-    "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk",
-    "6jEQpEnoSRPP8A2w6DWDQDpqrQTJvG4HinaugiBGtQKD",
-    "AWaMVkukciGYPEpJbnmSXPJzVxuuMFz1gWYBkznJ2qbq",
+  const excludedWallets = [
+    {
+      address: "CBkJ9y9qRfYixCdSChqrVxYebgSEBCNbhnPk8GRdEtFk",
+      reason: "Treasury",
+    },
+    {
+      address: "6jEQpEnoSRPP8A2w6DWDQDpqrQTJvG4HinaugiBGtQKD",
+      reason: "Governance Wallet",
+    },
+    {
+      address: "AWaMVkukciGYPEpJbnmSXPJzVxuuMFz1gWYBkznJ2qbq",
+      reason: "System",
+    },
   ];
+  const excludeArr = excludedWallets.map(w => w.address);
 
   // --- LEADERBOARD STATS ---
   const effectiveHolders = holders.filter(
@@ -833,7 +842,30 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   {totalEffective > 0 && (
     <Typography variant="caption" sx={{ opacity: 0.75, textAlign: "right" }}>
       {totalEffective.toLocaleString()} holders
-      {/*excludedCount > 0 && ` • ${excludedCount} excluded`*/}
+      {excludedCount > 0 && (
+        <Tooltip
+          title={
+            <>
+              <strong>Excluded wallets:</strong>
+              <br />
+              Treasury or system-owned accounts that should not participate
+              in raffles or distort supply stats.
+            </>
+          }
+          placement="top"
+          arrow
+        >
+          <Box
+            component="span"
+            sx={{
+              cursor: "help",
+              ml: 0.5,
+            }}
+          >
+            • {excludedCount} excluded
+          </Box>
+        </Tooltip>
+      )}
       {top10SharePct > 0 && ` • Top 10 hold ${top10SharePct.toFixed(1)}%`}
       {medianBalance > 0 &&
         ` • Median balance: ${medianBalance.toLocaleString(undefined, {

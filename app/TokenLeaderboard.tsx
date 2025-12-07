@@ -643,7 +643,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   }, [streamMode, spinRoulette, handleResetRaffle]);
 
   const getHolderTier = (percent: number) => {
-    if (percent >= 5) {
+    if (percent >= 3.5) {
       return { label: "Whale", color: "rgba(248,250,252,0.14)" };
     } else if (percent >= 1) {
       return { label: "Large", color: "rgba(129,140,248,0.20)" };

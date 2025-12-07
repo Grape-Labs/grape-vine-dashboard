@@ -9,7 +9,12 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import html2canvas from "html2canvas";
 // @ts-ignore
 import confetti from "canvas-confetti";
-
+/*
+import {
+  Metadata,
+  MPL_TOKEN_METADATA_PROGRAM_ID,
+} from "@metaplex-foundation/mpl-token-metadata";
+*/
 import {
   Paper,
   Grid,
@@ -154,6 +159,12 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [selectedRank, setSelectedRank] = useState<number | null>(null);
 
+  const [tokenMeta, setTokenMeta] = useState<{
+    name?: string;
+    symbol?: string;
+    logoURI?: string;
+  } | null>(null);
+
   type WinnerEntry = {
     address: string;
     ts: string;
@@ -241,7 +252,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
   const headerDate = moment(winners[0].ts).format("LLLL"); // full date/time
 
-  let md = `### 🍇 The Vine List\n`;
+  let md = `### 🍇 Raffle Results\n`;
   md += `*${headerDate}*\n\n`;
 
   winners.forEach((w, idx) => {

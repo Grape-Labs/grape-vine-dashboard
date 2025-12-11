@@ -1631,7 +1631,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
           )}
 
           {/* CSV export actions */}
-          <Tooltip title="Copy holders as CSV for Vine Reputation import" arrow>
+          <Tooltip title="Copy holders as CSV" arrow>
             <IconButton
               size="small"
               onClick={handleCopyCsv}

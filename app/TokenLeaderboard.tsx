@@ -42,6 +42,7 @@ import {
   Stack,
 } from "@mui/material";
 
+import DownloadIcon from "@mui/icons-material/Download";
 import LiveTvIcon from '@mui/icons-material/LiveTv';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -59,6 +60,8 @@ import {
   formatAmount,
   getFormattedNumberToLocale,
 } from "./utils/grapeTools/helpers";
+
+import VineReputation from "./VineReputation";
 
 const StyledTable = styled(Table)(({ theme }) => ({
   "& .MuiTableCell-root": {
@@ -147,6 +150,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [open, setOpen] = useState(false);
   const [markdownCopied, setMarkdownCopied] = useState(false);
   const [streamMode, setStreamMode] = useState(false);
+  const [csvCopied, setCsvCopied] = useState(false);
 
   const [highlightedAddress, setHighlightedAddress] = useState<string | null>(
     null
@@ -177,6 +181,75 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
   const [timestamp, setTimestamp] = useState<string>(""); // last draw timestamp (string)
   const [winners, setWinners] = useState<WinnerEntry[]>([]);
   const currentWinner = winners[winners.length - 1] ?? null;
+
+
+  // Build CSV string for reputation import
+  // Format: wallet,points
+  // Here points = floor(normalized token balance).
+  // You can change this mapping later if you want a different scoring rule.
+  const buildReputationCsv = () => {
+    if (!holders || holders.length === 0) return "";
+
+    const filtered = holders.filter(
+      (h) => h?.address && !excludeArr.includes(h.address)
+    );
+
+    const header = "wallet,points";
+
+    const lines = filtered.map((h) => {
+      const raw = Number(h.balance) || 0;
+
+      // Normalize by decimals if we have tokenInfo, otherwise use raw
+      const normalized =
+        tokenInfo && tokenInfo.decimals != null
+          ? raw / 10 ** tokenInfo.decimals
+          : raw;
+
+      // For now: integer points based on balance
+      const points = Math.floor(normalized);
+
+      return `${h.address},${points}`;
+    });
+
+    return [header, ...lines].join("\n");
+  };
+
+  const handleCopyCsv = async () => {
+  const csv = buildReputationCsv();
+  if (!csv) return;
+
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(csv);
+    } else {
+      // fallback
+      const textarea = document.createElement("textarea");
+      textarea.value = csv;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    setCsvCopied(true);
+  } catch (e) {
+    console.error("Failed to copy CSV:", e);
+  }
+};
+
+  const handleDownloadCsv = () => {
+    const csv = buildReputationCsv();
+    if (!csv) return;
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "vine-reputation-export.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   // winnerRef keeps track of the final winner during spin
   const winnerRef = useRef<string>("");
@@ -968,9 +1041,6 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
     </Box>
   </Box>
 )}
-
-
-
       {/* Premium Token Summary */}
       {tokenInfo && (
         <Box
@@ -1507,51 +1577,97 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
           mt: 3,
           mb: 1.5,
           display: "flex",
-          alignItems: "baseline",
+          alignItems: "center",
           justifyContent: "space-between",
           gap: 1,
         }}
       >
         <Typography variant="h5">Leaderboard</Typography>
 
-        {totalEffective > 0 && (
-          <Typography
-            variant="caption"
-            sx={{ opacity: 0.75, textAlign: "right" }}
-          >
-            {totalEffective.toLocaleString()} holders
-            {excludedCount > 0 && (
-              <Tooltip
-                title={
-                  <>
-                    <strong>Excluded wallets:</strong>
-                    <br />
-                    Treasury or system-owned accounts that should not
-                    participate in raffles or distort supply stats.
-                  </>
-                }
-                placement="top"
-                arrow
-              >
-                <Box
-                  component="span"
-                  sx={{
-                    cursor: "help",
-                    ml: 0.5,
-                  }}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          {totalEffective > 0 && (
+            <Typography
+              variant="caption"
+              sx={{ opacity: 0.75, textAlign: "right" }}
+            >
+              {totalEffective.toLocaleString()} holders
+              {excludedCount > 0 && (
+                <Tooltip
+                  title={
+                    <>
+                      <strong>Excluded wallets:</strong>
+                      <br />
+                      Treasury or system-owned accounts that should not
+                      participate in raffles or distort supply stats.
+                    </>
+                  }
+                  placement="top"
+                  arrow
                 >
-                  • {excludedCount} excluded
-                </Box>
-              </Tooltip>
-            )}
-            {top10SharePct > 0 &&
-              ` • Top 10 hold ${top10SharePct.toFixed(1)}%`}
-            {medianBalance > 0 &&
-              ` • Median balance: ${medianBalance.toLocaleString(undefined, {
-                maximumFractionDigits: 0,
-              })} VINE`}
-          </Typography>
-        )}
+                  <Box
+                    component="span"
+                    sx={{
+                      cursor: "help",
+                      ml: 0.5,
+                    }}
+                  >
+                    • {excludedCount} excluded
+                  </Box>
+                </Tooltip>
+              )}
+              {top10SharePct > 0 &&
+                ` • Top 10 hold ${top10SharePct.toFixed(1)}%`}
+              {medianBalance > 0 &&
+                ` • Median balance: ${medianBalance.toLocaleString(undefined, {
+                  maximumFractionDigits: 0,
+                })} VINE`}
+            </Typography>
+          )}
+
+          {/* CSV export actions */}
+          <Tooltip title="Copy holders as CSV for Vine Reputation import" arrow>
+            <IconButton
+              size="small"
+              onClick={handleCopyCsv}
+              sx={{
+                ml: 0.5,
+                borderRadius: "10px",
+                border: "1px solid rgba(148,163,184,0.5)",
+                background: "rgba(15,23,42,0.9)",
+                "&:hover": {
+                  background: "rgba(30,64,175,0.9)",
+                  borderColor: "rgba(191,219,254,0.9)",
+                },
+              }}
+            >
+              <DescriptionIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Download holders CSV" arrow>
+            <IconButton
+              size="small"
+              onClick={handleDownloadCsv}
+              sx={{
+                borderRadius: "10px",
+                border: "1px solid rgba(148,163,184,0.5)",
+                background: "rgba(15,23,42,0.9)",
+                "&:hover": {
+                  background: "rgba(30,64,175,0.9)",
+                  borderColor: "rgba(191,219,254,0.9)",
+                },
+              }}
+            >
+              <DownloadIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       {/* LEADERBOARD TABLE */}
@@ -1908,84 +2024,103 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
           {/* Metrics */}
           {selectedHolder && tokenInfo && (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 1.5,
-                mb: 2,
-              }}
-            >
-              <Box>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  Balance
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{ fontWeight: 600 }}
-                >
-                  {selectedBalance.toLocaleString()}
-                </Typography>
-              </Box>
+            <>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 1.5,
+                  mb: 2,
+                }}
+              >
+                <Box>
+                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                    Balance
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 600 }}
+                  >
+                    {selectedBalance.toLocaleString()}
+                  </Typography>
+                </Box>
 
-              <Box>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  % of supply
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{ fontWeight: 600 }}
-                >
-                  {selectedPct.toFixed(3)}%
-                </Typography>
-              </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                    % of supply
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 600 }}
+                  >
+                    {selectedPct.toFixed(3)}%
+                  </Typography>
+                </Box>
 
-              <Box>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  Tier
-                </Typography>
-                <Box
-                  sx={{
-                    mt: 0.4,
-                    display: "inline-flex",
-                    px: 1,
-                    py: 0.2,
-                    borderRadius: "999px",
-                    fontSize: "0.7rem",
-                    textTransform: "uppercase",
-                    letterSpacing: 0.6,
-                    backgroundColor: selectedTier?.color,
-                    color: "rgba(241,245,249,0.95)",
-                  }}
-                >
-                  {selectedTier?.label}
+                <Box>
+                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                    Tier
+                  </Typography>
+                  <Box
+                    sx={{
+                      mt: 0.4,
+                      display: "inline-flex",
+                      px: 1,
+                      py: 0.2,
+                      borderRadius: "999px",
+                      fontSize: "0.7rem",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.6,
+                      backgroundColor: selectedTier?.color,
+                      color: "rgba(241,245,249,0.95)",
+                    }}
+                  >
+                    {selectedTier?.label}
+                  </Box>
+                </Box>
+
+                <Box>
+                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                    Draw chance: 
+                  </Typography>
+                  <Box
+                    sx={{
+                      mt: 0.4,
+                      display: "inline-flex",
+                      px: 1,
+                      py: 0.2,
+                      borderRadius: "999px",
+                      fontSize: "0.7rem",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.6,
+                      backgroundColor: selectedTier?.color,
+                      color: "rgba(241,245,249,0.95)",
+                    }}
+                  >
+                    {drawChance.toFixed(4)}%
+                  </Box>
                 </Box>
               </Box>
-
               <Box>
-                <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  Draw chance: 
-                </Typography>
-                <Box
-                  sx={{
-                    mt: 0.4,
-                    display: "inline-flex",
-                    px: 1,
-                    py: 0.2,
-                    borderRadius: "999px",
-                    fontSize: "0.7rem",
-                    textTransform: "uppercase",
-                    letterSpacing: 0.6,
-                    backgroundColor: selectedTier?.color,
-                    color: "rgba(241,245,249,0.95)",
-                  }}
-                >
-                  {drawChance.toFixed(4)}%
+                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                    Reputation: 
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      fontSize: "0.7rem",
+                      letterSpacing: 0.6,
+                      backgroundColor: selectedTier?.color,
+                      color: "rgba(241,245,249,0.95)",
+                    }}
+                  >
+                    <VineReputation
+                      walletAddress={selectedWallet ?? null}
+                      daoIdBase58="By2sVGZXwfQq6rAiAM3rNPJ9iQfb5e2QhnF4YjJ4Bip"
+                    />
+                  </Box>
                 </Box>
-              </Box>
-
-              
-            </Box>
+              </>
           )}
 
           <Divider
@@ -2089,6 +2224,19 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
               Markdown copied!
             </Alert>
           </Snackbar>
+
+      <Snackbar
+        open={csvCopied}
+        autoHideDuration={2000}
+        onClose={() => setCsvCopied(false)}
+      >
+        <Alert
+          onClose={() => setCsvCopied(false)}
+          severity="success"
+        >
+          CSV copied!
+        </Alert>
+      </Snackbar>
 
       <Snackbar
         open={open}

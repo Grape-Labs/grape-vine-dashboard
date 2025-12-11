@@ -1,4 +1,5 @@
 export const GRAPE_RPC_ENDPOINT = process.env.NEXT_PUBLIC_RPC_ENDPOINT || 'https://api.mainnet-beta.solana.com';
+export const REACT_APP_RPC_DEVNET_ENDPOINT = process.env.NEXT_PUBLIC_RPC_DEVNET_ENDPOINT || 'https://api.devnet.solana.com';
 
 export const tokens = [
   {
@@ -10,4 +11,4 @@ export const tokens = [
   }
 ]
 
-export const VINE_LOGO = './images/vine.jpg'
+export const VINE_LOGO = './images/vine.jpg';

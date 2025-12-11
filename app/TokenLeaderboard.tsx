@@ -1630,43 +1630,48 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
             </Typography>
           )}
 
-          {/* CSV export actions */}
-          <Tooltip title="Copy holders as CSV" arrow>
-            <IconButton
-              size="small"
-              onClick={handleCopyCsv}
-              sx={{
-                ml: 0.5,
-                borderRadius: "10px",
-                border: "1px solid rgba(148,163,184,0.5)",
-                background: "rgba(15,23,42,0.9)",
-                "&:hover": {
-                  background: "rgba(30,64,175,0.9)",
-                  borderColor: "rgba(191,219,254,0.9)",
-                },
-              }}
-            >
-              <DescriptionIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Tooltip>
+          {(holders && holders.length > 0) && (
+            <>
 
-          <Tooltip title="Download holders CSV" arrow>
-            <IconButton
-              size="small"
-              onClick={handleDownloadCsv}
-              sx={{
-                borderRadius: "10px",
-                border: "1px solid rgba(148,163,184,0.5)",
-                background: "rgba(15,23,42,0.9)",
-                "&:hover": {
-                  background: "rgba(30,64,175,0.9)",
-                  borderColor: "rgba(191,219,254,0.9)",
-                },
-              }}
-            >
-              <DownloadIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Tooltip>
+              {/* CSV export actions */}
+              <Tooltip title="Copy holders as CSV" arrow>
+                <IconButton
+                  size="small"
+                  onClick={handleCopyCsv}
+                  sx={{
+                    ml: 0.5,
+                    borderRadius: "10px",
+                    border: "1px solid rgba(148,163,184,0.5)",
+                    background: "rgba(15,23,42,0.9)",
+                    "&:hover": {
+                      background: "rgba(30,64,175,0.9)",
+                      borderColor: "rgba(191,219,254,0.9)",
+                    },
+                  }}
+                >
+                  <DescriptionIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Download holders CSV" arrow>
+                <IconButton
+                  size="small"
+                  onClick={handleDownloadCsv}
+                  sx={{
+                    borderRadius: "10px",
+                    border: "1px solid rgba(148,163,184,0.5)",
+                    background: "rgba(15,23,42,0.9)",
+                    "&:hover": {
+                      background: "rgba(30,64,175,0.9)",
+                      borderColor: "rgba(191,219,254,0.9)",
+                    },
+                  }}
+                >
+                  <DownloadIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
+              </>
+          )}
         </Box>
       </Box>
 

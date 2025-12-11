@@ -2086,7 +2086,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
 
                 <Box>
                   <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                    Draw chance: 
+                    Draw chance
                   </Typography>
                   <Box
                     sx={{

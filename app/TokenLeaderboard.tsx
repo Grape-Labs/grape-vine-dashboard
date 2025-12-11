@@ -2101,23 +2101,34 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                   </Box>
                 </Box>
               </Box>
-              <Box>
-                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                    Reputation: 
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: "inline-flex",
-                      fontSize: "0.7rem",
-                      letterSpacing: 0.6,
-                      backgroundColor: selectedTier?.color,
-                      color: "rgba(241,245,249,0.95)",
-                    }}
-                  >
-                    <VineReputation
-                      walletAddress={selectedWallet ?? null}
-                      daoIdBase58="By2sVGZXwfQq6rAiAM3rNPJ9iQfb5e2QhnF4YjJ4Bip"
-                    />
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 1.5,
+                  mb: 2,
+                }}
+              >
+                  <Box sx={{ gridColumn: "1 / -1" }}>
+                    <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                      Reputation: 
+                    </Typography>
+                    <br/>
+                    <Box
+                      sx={{
+                        display: "inline-flex",
+                        fontSize: "0.7rem",
+                        letterSpacing: 0.6,
+                        backgroundColor: selectedTier?.color,
+                        color: "rgba(241,245,249,0.95)",
+                        width: "100%",
+                      }}
+                    >
+                      <VineReputation
+                        walletAddress={selectedWallet ?? null}
+                        daoIdBase58="By2sVGZXwfQq6rAiAM3rNPJ9iQfb5e2QhnF4YjJ4Bip"
+                      />
+                    </Box>
                   </Box>
                 </Box>
               </>

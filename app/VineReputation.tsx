@@ -2,8 +2,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Box, Typography, CircularProgress, Tooltip } from "@mui/material";
+import { Box, Typography, CircularProgress, Tooltip, IconButton } from "@mui/material";
 import { Connection, PublicKey } from "@solana/web3.js";
+import { CopyToClipboard } from "react-copy-to-clipboard";
+
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
 import {
   fetchUserReputation,
@@ -28,6 +31,8 @@ const VineReputation: React.FC<VineReputationProps> = ({
   const [config, setConfig] = useState<ReputationConfigAccount | null>(null);
   const [reputation, setReputation] = useState<ReputationAccount | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [isCopied, setIsCopied] = useState(false);
 
   useEffect(() => {
     if (!walletAddress) {
@@ -67,12 +72,20 @@ const VineReputation: React.FC<VineReputationProps> = ({
   // Nothing to show if no wallet yet
   if (!walletAddress) return null;
 
+  const shortWalletAddress = walletAddress
+        ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-6)}`
+        : "";
+  const daoAddressShort = `${config?.daoId.toBase58().slice(0, 6)}...${config?.daoId
+  .toBase58()
+  .slice(-6)}`;
+
   return (
     <Box
       sx={{
         p: 2,
         background: "rgba(15,23,42,0.96)",
         border: "1px solid rgba(148,163,184,0.4)",
+        width: "100%",
       }}
     >
       <Typography
@@ -86,12 +99,16 @@ const VineReputation: React.FC<VineReputationProps> = ({
         Vine Reputation (devnet)
       </Typography>
 
-      <Typography
-        variant="body2"
-        sx={{ mt: 0.5, opacity: 0.85, wordBreak: "break-all" }}
-      >
-        {walletAddress}
-      </Typography>
+      <Tooltip title={walletAddress || ""} arrow>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Typography
+            variant="body2"
+            sx={{ mt: 0.5, opacity: 0.85 }}
+          >
+            {shortWalletAddress}
+          </Typography>
+        </Box>
+      </Tooltip>
 
       {loading && (
         <Box
@@ -124,12 +141,25 @@ const VineReputation: React.FC<VineReputationProps> = ({
           <Typography variant="caption" sx={{ opacity: 0.7 }}>
             DAO:
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{ opacity: 0.9, wordBreak: "break-all" }}
-          >
-            {config.daoId.toBase58()}
-          </Typography>
+          <Tooltip title={config.daoId.toBase58()} arrow>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Typography
+                variant="body2"
+                sx={{ opacity: 0.9 }}
+              >
+                {daoAddressShort}
+              </Typography>
+
+              <CopyToClipboard
+                text={config.daoId.toBase58()}
+                onCopy={() => setIsCopied(true)}
+              >
+                <IconButton size="small" sx={{ p: 0.4 }}>
+                  <ContentCopyIcon sx={{ fontSize: 14 }} />
+                </IconButton>
+              </CopyToClipboard>
+            </Box>
+          </Tooltip>
 
           <Box
             sx={{

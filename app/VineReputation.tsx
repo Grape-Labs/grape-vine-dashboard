@@ -122,7 +122,7 @@ const VineReputation: React.FC<VineReputationProps> = ({
       {!loading && !error && config && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="caption" sx={{ opacity: 0.7 }}>
-            DAO ID:
+            DAO:
           </Typography>
           <Typography
             variant="body2"

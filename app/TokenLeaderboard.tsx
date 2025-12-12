@@ -1,5 +1,5 @@
 // Import necessary modules and components from libraries
-import { FC, useEffect, useState, useRef } from "react";
+import React, { FC, useEffect, useState, useRef } from "react";
 import { PublicKey, Connection } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { GRAPE_RPC_ENDPOINT } from "./constants";
@@ -133,9 +133,15 @@ function TablePaginationActions(props: any) {
 }
 
 // Define a React functional component named TokenLeaderboard
-const TokenLeaderboard: FC<{ programId: string }> = (props) => {
-  const connection = new Connection(GRAPE_RPC_ENDPOINT);
-  const token = new PublicKey(props.programId);
+type TokenLeaderboardProps = {
+  programId: string;              // MAINNET mint
+  activeDaoIdBase58: string;      // DEVNET Vine config DAO
+  activeSeason?: number;          // DEVNET (optional)
+};
+
+const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
+  const connection = React.useMemo(() => new Connection(GRAPE_RPC_ENDPOINT), []);
+  const token = React.useMemo(() => new PublicKey(props.programId), [props.programId]);
 
   // --- STATE ---
   const [tokenInfo, setTokenInfo] = useState<any | null>(null);
@@ -554,7 +560,7 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
         setLoading(false);
       }
     })();
-  }, []); // run once
+  }, [connection, token, props.programId]); // refetch if mint changes
 
   const handleChangePage = (event: any, newPage: number) => {
     setPage(newPage);
@@ -2131,7 +2137,9 @@ const TokenLeaderboard: FC<{ programId: string }> = (props) => {
                     >
                       <VineReputation
                         walletAddress={selectedWallet ?? null}
-                        daoIdBase58="By2sVGZXwfQq6rAiAM3rNPJ9iQfb5e2QhnF4YjJ4Bip"
+                        daoIdBase58={props.activeDaoIdBase58}
+                        season={props.activeSeason}          // optional if you add it
+                        endpoint="https://api.devnet.solana.com" // forces reputation reads to devnet
                       />
                     </Box>
                   </Box>

@@ -165,7 +165,8 @@ export async function fetchConfig(
 export async function fetchUserReputation(
   connection: Connection,
   userPk: PublicKey,
-  daoId: PublicKey = GRAPE_DAO_ID
+  daoId: PublicKey = GRAPE_DAO_ID,
+  season?: number
 ): Promise<{
   config: ReputationConfigAccount;
   reputation: ReputationAccount | null;
@@ -175,11 +176,13 @@ export async function fetchUserReputation(
     throw new Error("Reputation config not found for this DAO");
   }
 
-  const [repPda] = getReputationPda(
-    config.pubkey,
-    userPk,
-    config.currentSeason
-  );
+  // Use passed season if provided, otherwise default to current season
+  const seasonToUse =
+    typeof season === "number" && Number.isFinite(season)
+      ? season
+      : config.currentSeason;
+
+  const [repPda] = getReputationPda(config.pubkey, userPk, seasonToUse);
 
   const accountInfo = await connection.getAccountInfo(repPda);
   if (!accountInfo || !accountInfo.data) {

@@ -70,7 +70,6 @@ const StyledTable = styled(Table)(({ theme }) => ({
   },
 }));
 
-
 function TablePaginationActions(props: any) {
   const theme = useTheme();
   const { count, page, rowsPerPage, onPageChange } = props;

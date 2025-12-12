@@ -7,10 +7,19 @@ export const VINE_REP_PROGRAM_ID = "V1NE6WCWJPRiVFq5DtaN8p87M9DmmUd2zQuVbvLgQwX"
 
 export const tokens = [
   {
-    programId: "8n5buhK82U6Mb5tTwwRJgJWBt1HjEJM2CxhRutw1n6qT",
-    //programId: "GXQdLgaxTMCoAKbHSnQq8M9UtDzYYjHEPkxPUJKiTuYC",
-    //programId: "A6GComqUgUZ7mTqZcDrgnigPEdYDcw5yCumbHaaQxVKK",
+    key: "v3", 
+    mint: "8n5buhK82U6Mb5tTwwRJgJWBt1HjEJM2CxhRutw1n6qT",
     name: "Vine v3",
+    image: "./images/vine.jpg"
+  },  {
+    key: "v2", 
+    mint: "GXQdLgaxTMCoAKbHSnQq8M9UtDzYYjHEPkxPUJKiTuYC",
+    name: "Vine v2",
+    image: "./images/vine.jpg"
+  },  {
+    key: "v1", 
+    mint: "A6GComqUgUZ7mTqZcDrgnigPEdYDcw5yCumbHaaQxVKK",
+    name: "Vine v1",
     image: "./images/vine.jpg"
   }
 ]

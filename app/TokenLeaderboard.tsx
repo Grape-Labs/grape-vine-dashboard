@@ -2133,7 +2133,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                       <VineReputation
                         walletAddress={selectedWallet ?? null}
                         daoIdBase58={props.activeDaoIdBase58}
-                        season={props.activeSeason}          // optional if you add it
+                        //season={props.activeSeason}          // optional if you add it
                         endpoint="https://api.devnet.solana.com" // forces reputation reads to devnet
                       />
                     </Box>

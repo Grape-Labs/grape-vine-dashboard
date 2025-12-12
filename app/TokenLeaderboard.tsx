@@ -9,12 +9,7 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import html2canvas from "html2canvas";
 // @ts-ignore
 import confetti from "canvas-confetti";
-/*
-import {
-  Metadata,
-  MPL_TOKEN_METADATA_PROGRAM_ID,
-} from "@metaplex-foundation/mpl-token-metadata";
-*/
+
 import {
   Paper,
   Grid,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -13,11 +13,12 @@ import {
   Tab,
   Alert,
   Snackbar,
-  useMediaQuery,
-  useTheme, 
-  IconButton, 
-  Tooltip 
+  Typography,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction, SystemProgram, Keypair } from "@solana/web3.js";
 import {
@@ -33,22 +34,11 @@ import {
 } from "@solana/spl-token";
 
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import {
-  createMetadataAccountV3,
-  mplTokenMetadata,
-} from "@metaplex-foundation/mpl-token-metadata";
+import { createMetadataAccountV3, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey as UmiPK, createNoopSigner, none } from "@metaplex-foundation/umi";
 import { toWeb3JsInstruction } from "@metaplex-foundation/umi-web3js-adapters";
-import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
-
-import { createGenericFile } from "@metaplex-foundation/umi";
-import { signerIdentity } from "@metaplex-foundation/umi";
-import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
-import { createSignerFromWalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
 
 import { Buffer } from "buffer";
-
-import TollOutlinedIcon from "@mui/icons-material/TollOutlined"; // nice “coin” style icon
 
 /* ---------------------------------- */
 /* Styles (reuse your glass system)   */
@@ -59,20 +49,6 @@ const glassDialogPaperSx = {
   border: "1px solid rgba(148,163,184,0.28)",
   backdropFilter: "blur(14px)",
   color: "rgba(248,250,252,0.95)",
-};
-
-const glassPillSx = {
-  borderRadius: "999px",
-  background: "rgba(15,23,42,0.9)",
-  border: "1px solid rgba(248,250,252,0.4)",
-  textTransform: "none",
-  fontSize: "0.85rem",
-  px: 1.6,
-  py: 0.8,
-  "&:hover": {
-    background: "rgba(15,23,42,0.95)",
-    borderColor: "rgba(248,250,252,0.55)",
-  },
 };
 
 const glassFieldSx = {
@@ -96,6 +72,12 @@ const glassSecondaryBtnSx = {
   color: "rgba(248,250,252,0.85)",
 };
 
+function shorten(s: string, a = 6, b = 6) {
+  if (!s) return "";
+  if (s.length <= a + b) return s;
+  return `${s.slice(0, a)}…${s.slice(-b)}`;
+}
+
 /* ---------------------------------- */
 /* Helpers                            */
 /* ---------------------------------- */
@@ -107,11 +89,7 @@ function findMetadataPda(mint: PublicKey) {
   )[0];
 }
 
-function TabPanel(props: {
-  value: number;
-  index: number;
-  children: React.ReactNode;
-}) {
+function TabPanel(props: { value: number; index: number; children: React.ReactNode }) {
   if (props.value !== props.index) return null;
   return <Box sx={{ pt: 2, display: "grid", gap: 1.2 }}>{props.children}</Box>;
 }
@@ -119,23 +97,28 @@ function TabPanel(props: {
 /* ---------------------------------- */
 /* Component                          */
 /* ---------------------------------- */
-export default function TokenManager() {
+export interface TokenManagerProps {
+  open: boolean;
+  onClose: () => void;
+  // optional: when you want to pre-fill mint or token details later
+  defaultMintBase58?: string;
+}
+
+const TokenManager: React.FC<TokenManagerProps> = ({ open, onClose, defaultMintBase58 }) => {
   const { connection } = useConnection();
   const { publicKey, sendTransaction, connected } = useWallet();
-
-  // ✅ Fix: internal open state (no function props crossing boundary)
-  const [open, setOpen] = useState(false);
-  const onClose = () => {
-    if (!submitting) setOpen(false);
-  };
 
   const [tab, setTab] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   // mint state
   const [mintPk, setMintPk] = useState<PublicKey | null>(null);
-  const [decimals, setDecimals] = useState(6);
-  const [mintAmount, setMintAmount] = useState(0);
+
+  // keep as number, but validate/clamp
+  const [decimals, setDecimals] = useState<number>(6);
+
+  // store as string so typing "0." doesn't break UX
+  const [mintAmountStr, setMintAmountStr] = useState<string>("");
 
   // metadata
   const [name, setName] = useState("My Token");
@@ -149,69 +132,65 @@ export default function TokenManager() {
   const [snack, setSnack] = useState<{ msg: string; err?: boolean } | null>(null);
   const closeSnack = () => setSnack(null);
 
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const safeClose = () => {
+    if (!submitting) onClose();
+  };
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [description, setDescription] = useState("");
-
-  // optional: reset tab/submission when opening
+  // reset on open (like ReputationManager)
   useEffect(() => {
     if (!open) return;
+
     setTab(0);
     setSubmitting(false);
-  }, [open]);
-/*
-  const uploadMetadataToIrys = async () => {
-    if (!publicKey) throw new Error("Connect wallet");
-    if (!imageFile) throw new Error("Choose an image first");
+    setSnack(null);
 
+    // optional prefill mint
+    if (defaultMintBase58) {
+      try {
+        setMintPk(new PublicKey(defaultMintBase58));
+      } catch {
+        setMintPk(null);
+      }
+    } else {
+      setMintPk(null);
+    }
 
-    const wallet = useWallet(); // from @solana/wallet-adapter-react
+    setDecimals(6);
+    setMintAmountStr("");
 
-    const umi = createUmi(connection)
-      .use(mplTokenMetadata())
-      .use(irysUploader());
+    setName("My Token");
+    setSymbol("TKN");
+    setUri("");
 
-    if (!wallet.wallet?.adapter) throw new Error("Connect wallet");
-    umi.use(walletAdapterIdentity(wallet.wallet.adapter));
+    setNewAuthority("");
+  }, [open, defaultMintBase58]);
 
-    // 2) Convert browser File -> Umi GenericFile
-    const bytes = new Uint8Array(await imageFile.arrayBuffer());
-    const ext = imageFile.name.split(".").pop() || "png";
+  const mintBase58 = useMemo(() => (mintPk ? mintPk.toBase58() : ""), [mintPk]);
 
-    const umiFile = createGenericFile(bytes, imageFile.name, {
-      contentType: imageFile.type || `image/${ext}`,
-      extension: ext,
-    });
-
-    // 3) Upload image to Irys
-    const [imageUri] = await umi.uploader.upload([umiFile]); // returns arweave/irys URL(s)
-    // (this is the standard umi uploader pattern)  [oai_citation:1‡Metaplex Developer Hub](https://developers.metaplex.com/core-candy-machine/preparing-assets?utm_source=chatgpt.com)
-
-    // 4) Build token metadata JSON (Metaplex format)
-    const metadataJson = {
-      name,
-      symbol,
-      description,
-      image: imageUri,
-      properties: {
-        files: [{ uri: imageUri, type: umiFile.contentType }],
-        category: "image",
-      },
-    };
-
-    // 5) Upload JSON to Irys and set your on-chain URI field to it
-    const metadataUri = await umi.uploader.uploadJson(metadataJson);
-
-    setUri(metadataUri);
-    setSnack({ msg: `Uploaded metadata: ${metadataUri}` });
+  const handleCopy = async (txt: string) => {
+    try {
+      await navigator.clipboard.writeText(txt);
+      setSnack({ msg: "Copied to clipboard" });
+    } catch {
+      setSnack({ msg: "Copy failed", err: true });
+    }
   };
-*/
+
+  const parseMintAmount = (): number => {
+    const v = Number(mintAmountStr);
+    if (!Number.isFinite(v)) return 0;
+    return v;
+  };
+
   /* ---------------- CREATE MINT ---------------- */
   const handleCreateMint = async () => {
     try {
       if (!publicKey) throw new Error("Connect wallet");
+
+      const dec = Number(decimals);
+      if (!Number.isInteger(dec) || dec < 0 || dec > 9) {
+        throw new Error("Decimals must be an integer between 0 and 9");
+      }
 
       setSubmitting(true);
 
@@ -228,16 +207,9 @@ export default function TokenManager() {
           lamports,
           programId: TOKEN_PROGRAM_ID,
         }),
-        createInitializeMintInstruction(
-          mintPubkey,
-          decimals,
-          publicKey,
-          publicKey,
-          TOKEN_PROGRAM_ID
-        )
+        createInitializeMintInstruction(mintPubkey, dec, publicKey, publicKey, TOKEN_PROGRAM_ID)
       );
 
-      // ✅ IMPORTANT: sign with mintKeypair
       const sig = await sendTransaction(tx, connection, { signers: [mintKeypair] });
 
       setMintPk(mintPubkey);
@@ -252,7 +224,9 @@ export default function TokenManager() {
   /* ---------------- METADATA ---------------- */
   const handleCreateMetadata = async () => {
     try {
-      if (!publicKey || !mintPk) throw new Error("Missing mint");
+      if (!publicKey) throw new Error("Connect wallet");
+      if (!mintPk) throw new Error("Create or paste a mint first");
+      if (!uri?.trim()) throw new Error("Metadata URI is required (upload metadata.json first)");
 
       setSubmitting(true);
 
@@ -270,7 +244,7 @@ export default function TokenManager() {
         data: {
           name,
           symbol,
-          uri,
+          uri: uri.trim(),
           sellerFeeBasisPoints: 0,
           creators: none(),
           collection: none(),
@@ -293,9 +267,15 @@ export default function TokenManager() {
   /* ---------------- MINT TOKENS ---------------- */
   const handleMintTokens = async () => {
     try {
-      if (!publicKey || !mintPk) throw new Error("Missing mint");
-      if (!Number.isFinite(mintAmount) || mintAmount <= 0) {
-        throw new Error("Amount must be > 0");
+      if (!publicKey) throw new Error("Connect wallet");
+      if (!mintPk) throw new Error("Missing mint");
+
+      const amount = parseMintAmount();
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error("Amount must be > 0");
+
+      const dec = Number(decimals);
+      if (!Number.isInteger(dec) || dec < 0 || dec > 9) {
+        throw new Error("Decimals must be an integer between 0 and 9");
       }
 
       setSubmitting(true);
@@ -310,7 +290,6 @@ export default function TokenManager() {
 
       const tx = new Transaction();
 
-      // ✅ Fix: only create ATA if it doesn't exist
       const ataInfo = await connection.getAccountInfo(ata);
       if (!ataInfo) {
         tx.add(
@@ -325,15 +304,11 @@ export default function TokenManager() {
         );
       }
 
-      tx.add(
-        createMintToCheckedInstruction(
-          mintPk,
-          ata,
-          publicKey,
-          BigInt(Math.floor(mintAmount * Math.pow(10, decimals))),
-          decimals
-        )
-      );
+      // safest conversion: use integer base units; still keep it simple
+      const baseUnits = BigInt(Math.floor(amount * Math.pow(10, dec)));
+      if (baseUnits <= BigInt(0)) throw new Error("Amount too small for the chosen decimals");
+      
+      tx.add(createMintToCheckedInstruction(mintPk, ata, publicKey, baseUnits, dec));
 
       const sig = await sendTransaction(tx, connection);
       setSnack({ msg: `Minted tokens: ${sig}` });
@@ -347,17 +322,20 @@ export default function TokenManager() {
   /* ---------------- TRANSFER AUTH ---------------- */
   const handleTransferAuthority = async () => {
     try {
-      if (!publicKey || !mintPk) throw new Error("Missing mint");
+      if (!publicKey) throw new Error("Connect wallet");
+      if (!mintPk) throw new Error("Missing mint");
       if (!newAuthority.trim()) throw new Error("Enter a new authority pubkey");
 
       setSubmitting(true);
+
+      const nextAuth = new PublicKey(newAuthority.trim());
 
       const tx = new Transaction().add(
         createSetAuthorityInstruction(
           mintPk,
           publicKey,
           0, // AuthorityType.MintTokens
-          new PublicKey(newAuthority.trim())
+          nextAuth
         )
       );
 
@@ -372,49 +350,44 @@ export default function TokenManager() {
 
   return (
     <>
-      {/* ✅ You can swap this for a MenuItem if you want */}
-      {isMobile ? (
-        <Tooltip title="Token manager">
-          <IconButton
-            onClick={() => setOpen(true)}
-            size="small"
-            sx={{
-              ...glassPillSx,
-              borderRadius: "50%",
-              width: 40,
-              height: 40,
-              padding: 0,
-            }}
-          >
-            <TollOutlinedIcon />
-          </IconButton>
-        </Tooltip>
-      ) : (
-        <Button
-          onClick={() => setOpen(true)}
-          startIcon={<TollOutlinedIcon fontSize="small" />}
-          sx={{
-            ...glassPillSx,
-          }}
-        >
-          Token
-        </Button>
-      )}
-
       <Dialog
         open={open}
-        onClose={onClose}
+        onClose={safeClose}
         fullWidth
         maxWidth="md"
         PaperProps={{ sx: glassDialogPaperSx }}
       >
-        <DialogTitle>Token Manager</DialogTitle>
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          Token Manager
+          {mintPk && (
+            <Tooltip title={`Copy mint: ${mintBase58}`}>
+              <IconButton
+                size="small"
+                onClick={() => handleCopy(mintBase58)}
+                sx={{ color: "rgba(248,250,252,0.9)" }}
+              >
+                <ContentCopyIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </DialogTitle>
 
         <DialogContent>
           {!connected && (
             <Alert severity="info" sx={{ borderRadius: "14px", mb: 1.5 }}>
               Connect wallet to manage tokens
             </Alert>
+          )}
+
+          {mintPk && (
+            <Box sx={{ mb: 1.5 }}>
+              <Typography variant="caption" sx={{ opacity: 0.75 }}>
+                Current mint
+              </Typography>
+              <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
+                {shorten(mintBase58, 10, 10)}
+              </Typography>
+            </Box>
           )}
 
           <Tabs value={tab} onChange={(_, v) => setTab(v)}>
@@ -426,17 +399,14 @@ export default function TokenManager() {
 
           <TabPanel value={tab} index={0}>
             <TextField
-              label="Decimals"
+              label="Decimals (0–9)"
               type="number"
               value={decimals}
-              onChange={(e) => setDecimals(+e.target.value)}
+              onChange={(e) => setDecimals(Number(e.target.value))}
               InputProps={{ sx: glassFieldSx }}
             />
-            <Button
-              onClick={handleCreateMint}
-              disabled={submitting || !connected}
-              sx={glassPrimaryBtnSx}
-            >
+
+            <Button onClick={handleCreateMint} disabled={submitting || !connected} sx={glassPrimaryBtnSx}>
               {submitting ? "Working…" : "Create Mint"}
             </Button>
           </TabPanel>
@@ -455,66 +425,21 @@ export default function TokenManager() {
               InputProps={{ sx: glassFieldSx }}
             />
             <TextField
-              label="Metadata URI"
+              label="Metadata URI (from MetadataManager)"
               value={uri}
               onChange={(e) => setUri(e.target.value)}
               InputProps={{ sx: glassFieldSx }}
-            />
-{/*}
-            <Button
-                component="label"
-                variant="outlined"
-                sx={glassPrimaryBtnSx}
-              >
-                Choose image
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={(e) => {
-                    const file = e.currentTarget.files?.[0] ?? null;
-                    setImageFile(file);
-                  }}
-                />
-              </Button>
-
-              {imageFile && (
-                <Alert severity="success" sx={{ borderRadius: "14px" }}>
-                  Selected: {imageFile.name}
-                </Alert>
-              )}
-
-            <TextField
-              label="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              InputProps={{ sx: glassFieldSx }}
+              placeholder="https://.../metadata.json"
             />
 
-            <Button
-              onClick={async () => {
-                try {
-                  setSubmitting(true);
-                  await uploadMetadataToIrys();
-                } catch (e: any) {
-                  setSnack({ msg: e?.message ?? "Upload failed", err: true });
-                } finally {
-                  setSubmitting(false);
-                }
-              }}
-              disabled={submitting || !connected}
-              sx={glassPrimaryBtnSx}
-            >
-              Upload to Irys
-            </Button>
-*/}
             <Button
               onClick={handleCreateMetadata}
-              disabled={submitting || !mintPk}
+              disabled={submitting || !mintPk || !connected}
               sx={glassPrimaryBtnSx}
             >
               Create Metadata
             </Button>
+
             {!mintPk && (
               <Alert severity="warning" sx={{ borderRadius: "14px" }}>
                 Create a mint first.
@@ -526,15 +451,11 @@ export default function TokenManager() {
             <TextField
               label="Amount"
               type="number"
-              value={mintAmount}
-              onChange={(e) => setMintAmount(+e.target.value)}
+              value={mintAmountStr}
+              onChange={(e) => setMintAmountStr(e.target.value)}
               InputProps={{ sx: glassFieldSx }}
             />
-            <Button
-              onClick={handleMintTokens}
-              disabled={submitting || !mintPk}
-              sx={glassPrimaryBtnSx}
-            >
+            <Button onClick={handleMintTokens} disabled={submitting || !mintPk || !connected} sx={glassPrimaryBtnSx}>
               Mint Tokens
             </Button>
           </TabPanel>
@@ -545,10 +466,11 @@ export default function TokenManager() {
               value={newAuthority}
               onChange={(e) => setNewAuthority(e.target.value)}
               InputProps={{ sx: glassFieldSx }}
+              placeholder="Base58 public key"
             />
             <Button
               onClick={handleTransferAuthority}
-              disabled={submitting || !mintPk}
+              disabled={submitting || !mintPk || !connected}
               sx={glassPrimaryBtnSx}
             >
               Transfer Authority
@@ -557,7 +479,7 @@ export default function TokenManager() {
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={onClose} disabled={submitting} sx={glassSecondaryBtnSx}>
+          <Button onClick={safeClose} disabled={submitting} sx={glassSecondaryBtnSx}>
             Close
           </Button>
         </DialogActions>
@@ -572,4 +494,6 @@ export default function TokenManager() {
       )}
     </>
   );
-}
+};
+
+export default TokenManager;

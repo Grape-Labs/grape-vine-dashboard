@@ -20,7 +20,6 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-
 // ------------------ props ------------------
 
 type CreateReputationSpaceProps = {

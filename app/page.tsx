@@ -48,6 +48,7 @@ import grapeTheme from "./utils/config/theme";
 
 import CreateReputationSpace from "./CreateReputationSpace";
 import ReputationManager from "./ReputationManager";
+import TokenManager from './TokenManager';
 
 function Copyright() {
   return (
@@ -405,6 +406,9 @@ const HomeInner: React.FC = () => {
                 })
               )}
             </Menu>
+
+            {/* ✅ Token Manager button */}
+            <TokenManager />
 
             {/* Actions pill */}
             <HeaderActions

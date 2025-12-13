@@ -39,6 +39,10 @@ import {
   type ReputationConfigAccount,
 } from "./utils/grapeTools/vineReputationClient";
 
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+
 //import TokenManager from "./TokenManager";
 
 /** ------------------------------
@@ -202,6 +206,50 @@ async function fetchProjectMetadata(conn: Connection, daoId: PublicKey) {
   return decodeProjectMetadataAccount(metaPda, ai.data);
 }
 
+function PkRow({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {}
+  };
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 1,
+        p: 1.2,
+        borderRadius: "14px",
+        background: "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.12)",
+      }}
+    >
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="caption" sx={{ opacity: 0.75 }}>
+          {label}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ fontFamily: "monospace", mt: 0.25, overflow: "hidden", textOverflow: "ellipsis" }}
+          title={value}
+        >
+          {value}
+        </Typography>
+      </Box>
+
+      <Tooltip title="Copy">
+        <IconButton onClick={copy} size="small" sx={{ color: "rgba(248,250,252,0.85)" }}>
+          <ContentCopyIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+}
+
 /** ------------------------------
  *  Props
  *  ------------------------------ */
@@ -326,6 +374,26 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       return null;
     }
   }, [daoId]);
+
+  const configPda = useMemo(() => {
+    if (!daoPk) return null;
+    try {
+      const [pda] = getConfigPda(daoPk);
+      return pda;
+    } catch {
+      return null;
+    }
+  }, [daoPk]);
+
+  const projectMetaPda = useMemo(() => {
+    if (!daoPk) return null;
+    try {
+      const [pda] = getProjectMetaPda(daoPk);
+      return pda;
+    } catch {
+      return null;
+    }
+  }, [daoPk]);
 
   const isAuthority = useMemo(() => {
     if (!publicKey || !cfg) return false;
@@ -1235,6 +1303,19 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
               }
               FormHelperTextProps={{ sx: { opacity: 0.7 } }}
             />
+
+            <Box
+              sx={{
+                display: "grid",
+                gap: 1,
+                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              }}
+            >
+              <PkRow label="DAO Pubkey" value={daoPk?.toBase58() || ""} />
+              <PkRow label="Config PDA" value={configPda?.toBase58() || ""} />
+              <PkRow label="Project Meta PDA" value={projectMetaPda?.toBase58() || ""} />
+              <PkRow label="Program ID" value={VINE_REP_PROGRAM_ID.toBase58()} />
+            </Box>
 
             {spaceExists && cfg ? (
               <Box

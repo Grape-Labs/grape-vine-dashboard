@@ -42,6 +42,8 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
+import TollOutlinedIcon from "@mui/icons-material/TollOutlined";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 
 import { ThemeProvider } from "@mui/material/styles";
 import grapeTheme from "./utils/config/theme";
@@ -49,6 +51,7 @@ import grapeTheme from "./utils/config/theme";
 import CreateReputationSpace from "./CreateReputationSpace";
 import ReputationManager from "./ReputationManager";
 import TokenManager from './TokenManager';
+import MetadataManager from './MetadataManager';
 
 function Copyright() {
   return (
@@ -90,10 +93,14 @@ function shorten(s: string, a = 6, b = 6) {
 function HeaderActions({
   onCreateSpace,
   onManageSpace,
+  onOpenTokenManager,
+  onOpenMetadataManager,
   manageDisabled,
 }: {
   onCreateSpace: () => void;
   onManageSpace: () => void;
+  onOpenTokenManager: () => void;
+  onOpenMetadataManager: () => void;
   manageDisabled?: boolean;
 }) {
   const { connected } = useWallet();
@@ -180,6 +187,30 @@ function HeaderActions({
           </ListItemIcon>
           Manage reputation space
         </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null);
+            onOpenTokenManager();
+          }}
+        >
+          <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>
+            <TollOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          Token manager
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null);
+            onOpenMetadataManager();
+          }}
+        >
+          <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>
+            <ImageOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          Metadata manager
+        </MenuItem>
       </Menu>
     </>
   );
@@ -188,6 +219,8 @@ function HeaderActions({
 const HomeInner: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [tokenOpen, setTokenOpen] = useState(false);
+  const [metadataOpen, setMetadataOpen] = useState(false);
 
   const { connection } = useConnection();
 
@@ -407,17 +440,28 @@ const HomeInner: React.FC = () => {
               )}
             </Menu>
 
-            {/* ✅ Token Manager button */}
-            <TokenManager />
-
             {/* Actions pill */}
             <HeaderActions
               onCreateSpace={() => setCreateOpen(true)}
               onManageSpace={() => setManageOpen(true)}
+              onOpenTokenManager={() => setTokenOpen(true)}
+              onOpenMetadataManager={() => setMetadataOpen(true)}
               manageDisabled={manageDisabled}
             />
           </Toolbar>
         </AppBar>
+
+        {/* Token Manager Dialog */}
+        <TokenManager
+          open={tokenOpen}
+          onClose={() => setTokenOpen(false)}
+        />
+        
+        {/* Metadata Manager Dialog */}
+        <MetadataManager
+          open={metadataOpen}
+          onClose={() => setMetadataOpen(false)}
+        />
 
         {/* Create Space Dialog */}
         <CreateReputationSpace

@@ -8,7 +8,8 @@ import moment from "moment";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import html2canvas from "html2canvas";
 // @ts-ignore
-import confetti from "canvas-confetti";
+import * as confetti from "canvas-confetti";
+//import confetti from "canvas-confetti";
 
 import {
   Paper,

@@ -233,6 +233,21 @@ const HomeInner: React.FC = () => {
   const [spaceAnchor, setSpaceAnchor] = useState<null | HTMLElement>(null);
   const spaceMenuOpen = Boolean(spaceAnchor);
 
+  function pickDefaultSpace(spaces: VineSpace[]): VineSpace | null {
+    if (!spaces.length) return null;
+
+    // Prefer the earliest / root space
+    return [...spaces].sort((a, b) => {
+      // primary: lowest season
+      if (a.currentSeason !== b.currentSeason) {
+        return a.currentSeason - b.currentSeason;
+      }
+
+      // fallback: DAO pubkey lex order (stable)
+      return a.daoId.toBase58().localeCompare(b.daoId.toBase58());
+    })[0];
+  }
+
   const refreshSpaces = async () => {
     try {
       setSpacesLoading(true);
@@ -242,7 +257,10 @@ const HomeInner: React.FC = () => {
       setSpaces(list);
 
       if (!activeDao && list.length > 0) {
-        setActiveDao(list[0].daoId.toBase58());
+        const defaultSpace = pickDefaultSpace(list);
+        if (defaultSpace) {
+          setActiveDao(defaultSpace.daoId.toBase58());
+        }
       }
     } catch (e) {
       console.error("fetchAllSpaces failed:", e);

@@ -39,6 +39,12 @@ import {
 } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey as UmiPK, createNoopSigner, none } from "@metaplex-foundation/umi";
 import { toWeb3JsInstruction } from "@metaplex-foundation/umi-web3js-adapters";
+import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
+
+import { createGenericFile } from "@metaplex-foundation/umi";
+import { signerIdentity } from "@metaplex-foundation/umi";
+import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
+import { createSignerFromWalletAdapter } from "@metaplex-foundation/umi-signer-wallet-adapters";
 
 import { Buffer } from "buffer";
 
@@ -146,13 +152,62 @@ export default function TokenManager() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [description, setDescription] = useState("");
+
   // optional: reset tab/submission when opening
   useEffect(() => {
     if (!open) return;
     setTab(0);
     setSubmitting(false);
   }, [open]);
+/*
+  const uploadMetadataToIrys = async () => {
+    if (!publicKey) throw new Error("Connect wallet");
+    if (!imageFile) throw new Error("Choose an image first");
 
+
+    const wallet = useWallet(); // from @solana/wallet-adapter-react
+
+    const umi = createUmi(connection)
+      .use(mplTokenMetadata())
+      .use(irysUploader());
+
+    if (!wallet.wallet?.adapter) throw new Error("Connect wallet");
+    umi.use(walletAdapterIdentity(wallet.wallet.adapter));
+
+    // 2) Convert browser File -> Umi GenericFile
+    const bytes = new Uint8Array(await imageFile.arrayBuffer());
+    const ext = imageFile.name.split(".").pop() || "png";
+
+    const umiFile = createGenericFile(bytes, imageFile.name, {
+      contentType: imageFile.type || `image/${ext}`,
+      extension: ext,
+    });
+
+    // 3) Upload image to Irys
+    const [imageUri] = await umi.uploader.upload([umiFile]); // returns arweave/irys URL(s)
+    // (this is the standard umi uploader pattern)  [oai_citation:1‡Metaplex Developer Hub](https://developers.metaplex.com/core-candy-machine/preparing-assets?utm_source=chatgpt.com)
+
+    // 4) Build token metadata JSON (Metaplex format)
+    const metadataJson = {
+      name,
+      symbol,
+      description,
+      image: imageUri,
+      properties: {
+        files: [{ uri: imageUri, type: umiFile.contentType }],
+        category: "image",
+      },
+    };
+
+    // 5) Upload JSON to Irys and set your on-chain URI field to it
+    const metadataUri = await umi.uploader.uploadJson(metadataJson);
+
+    setUri(metadataUri);
+    setSnack({ msg: `Uploaded metadata: ${metadataUri}` });
+  };
+*/
   /* ---------------- CREATE MINT ---------------- */
   const handleCreateMint = async () => {
     try {
@@ -405,6 +460,54 @@ export default function TokenManager() {
               onChange={(e) => setUri(e.target.value)}
               InputProps={{ sx: glassFieldSx }}
             />
+{/*}
+            <Button
+                component="label"
+                variant="outlined"
+                sx={glassPrimaryBtnSx}
+              >
+                Choose image
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    const file = e.currentTarget.files?.[0] ?? null;
+                    setImageFile(file);
+                  }}
+                />
+              </Button>
+
+              {imageFile && (
+                <Alert severity="success" sx={{ borderRadius: "14px" }}>
+                  Selected: {imageFile.name}
+                </Alert>
+              )}
+
+            <TextField
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              InputProps={{ sx: glassFieldSx }}
+            />
+
+            <Button
+              onClick={async () => {
+                try {
+                  setSubmitting(true);
+                  await uploadMetadataToIrys();
+                } catch (e: any) {
+                  setSnack({ msg: e?.message ?? "Upload failed", err: true });
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              disabled={submitting || !connected}
+              sx={glassPrimaryBtnSx}
+            >
+              Upload to Irys
+            </Button>
+*/}
             <Button
               onClick={handleCreateMetadata}
               disabled={submitting || !mintPk}

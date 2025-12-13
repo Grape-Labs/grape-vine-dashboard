@@ -30,12 +30,18 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
+  useTheme, 
+  useMediaQuery, 
+  IconButton,
+  Tooltip
 } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 
 import { ThemeProvider } from "@mui/material/styles";
 import grapeTheme from "./utils/config/theme";
@@ -92,6 +98,8 @@ function HeaderActions({
   const { connected } = useWallet();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   if (!connected) {
     return (
@@ -107,14 +115,29 @@ function HeaderActions({
   }
 
   return (
-    <>
-      <Button
-        onClick={(e) => setAnchorEl(e.currentTarget)}
-        endIcon={<KeyboardArrowDownIcon />}
-        sx={glassPillSx}
-      >
-        Actions
-      </Button>
+          <>
+            {isMobile ? (
+        <IconButton
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          sx={{
+            ...glassPillSx,
+            borderRadius: "50%",
+            width: 40,
+            height: 40,
+            padding: 0,
+          }}
+        >
+          <MoreVertIcon />
+        </IconButton>
+      ) : (
+        <Button
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          endIcon={<KeyboardArrowDownIcon />}
+          sx={glassPillSx}
+        >
+          Actions
+        </Button>
+      )}
 
       <Menu
         anchorEl={anchorEl}
@@ -223,6 +246,13 @@ const HomeInner: React.FC = () => {
     ? "Spaces: Loading…"
     : "Spaces: None";
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const disabledSpaces = spacesLoading || spaces.length === 0;
+  const spaceTitle =
+    activeSpace ? `DAO: ${activeSpace.daoId.toBase58()}` : "No spaces found";
+
   const manageDisabled = !activeDao || !activeSpace;
 
   return (
@@ -291,15 +321,36 @@ const HomeInner: React.FC = () => {
             </Typography>
 
             {/* Space selector pill */}
-            <Button
-              onClick={(e) => setSpaceAnchor(e.currentTarget)}
-              endIcon={<KeyboardArrowDownIcon />}
-              sx={glassPillSx}
-              disabled={spacesLoading || spaces.length === 0}
-              title={activeSpace ? `DAO: ${activeSpace.daoId.toBase58()}` : "No spaces found"}
-            >
-              {spaceLabel}
-            </Button>
+            {isMobile ? (
+              <Tooltip title={spaceTitle}>
+                {/* span keeps Tooltip working when disabled */}
+                <span>
+                  <IconButton
+                    onClick={(e) => setSpaceAnchor(e.currentTarget)}
+                    disabled={disabledSpaces}
+                    sx={{
+                      ...glassPillSx,
+                      borderRadius: "50%",
+                      width: 40,
+                      height: 40,
+                      padding: 0,
+                    }}
+                  >
+                    <LayersOutlinedIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            ) : (
+              <Button
+                onClick={(e) => setSpaceAnchor(e.currentTarget)}
+                endIcon={<KeyboardArrowDownIcon />}
+                sx={glassPillSx}
+                disabled={disabledSpaces}
+                title={spaceTitle}
+              >
+                {spaceLabel}
+              </Button>
+            )}
 
             <Menu
               anchorEl={spaceAnchor}

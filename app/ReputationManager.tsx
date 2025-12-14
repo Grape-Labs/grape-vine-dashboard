@@ -206,7 +206,15 @@ async function fetchProjectMetadata(conn: Connection, daoId: PublicKey) {
   return decodeProjectMetadataAccount(metaPda, ai.data);
 }
 
-function PkRow({ label, value }: { label: string; value?: string | null }) {
+function PkRow({
+  label,
+  value,
+  suffix,
+}: {
+  label: string;
+  value?: string | null;
+  suffix?: string;
+}) {
   if (!value) return null;
 
   const copy = async () => {
@@ -384,6 +392,8 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       return null;
     }
   }, [daoPk]);
+
+  const authorityPk = cfg?.authority ?? null;
 
   const projectMetaPda = useMemo(() => {
     if (!daoPk) return null;
@@ -1314,7 +1324,17 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
               <PkRow label="DAO Pubkey" value={daoPk?.toBase58() || ""} />
               <PkRow label="Config PDA" value={configPda?.toBase58() || ""} />
               <PkRow label="Project Meta PDA" value={projectMetaPda?.toBase58() || ""} />
-              <PkRow label="Program ID" value={VINE_REP_PROGRAM_ID.toBase58()} />
+              {/*<PkRow label="Program ID" value={VINE_REP_PROGRAM_ID.toBase58()} />*/}
+
+              <PkRow
+                  label="Authority"
+                  value={authorityPk?.toBase58() || ""}
+                  suffix={
+                    publicKey && authorityPk?.equals(publicKey)
+                      ? "you"
+                      : undefined
+                  }
+                />
             </Box>
 
             {spaceExists && cfg ? (

@@ -13,6 +13,7 @@ import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { WalletModalProvider, WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 
+  import { getConfigPda } from "./utils/grapeTools/vineReputationClient"; // add
 import TokenLeaderboard from "./TokenLeaderboard";
 import { VINE_LOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "./constants";
 import { fetchAllSpaces, VineSpace } from "./vineRegistry";
@@ -254,16 +255,29 @@ const HomeInner: React.FC = () => {
       const pid = new PublicKey(VINE_REP_PROGRAM_ID);
       const list = await fetchAllSpaces(connection, pid);
 
-      setSpaces(list);
+      // ✅ keep only entries whose config account actually exists and is owned by your program
+      const filtered = (
+        await Promise.all(
+          list.map(async (s) => {
+            try {
+              const [configPda] = getConfigPda(s.daoId);
+              const ai = await connection.getAccountInfo(configPda);
+              if (!ai) return null;
+              if (!ai.owner.equals(pid)) return null; // must be owned by VINE program
+              if (!ai.data || ai.data.length < 8) return null; // must have discriminator
+              return s;
+            } catch {
+              return null;
+            }
+          })
+        )
+      ).filter(Boolean) as VineSpace[];
 
-      if (!activeDao && list.length > 0) {
-        const defaultSpace = pickDefaultSpace(list);
-        if (defaultSpace) {
-          setActiveDao(defaultSpace.daoId.toBase58());
-        }
+      setSpaces(filtered);
+
+      if (!activeDao && filtered.length > 0) {
+        setActiveDao(filtered[0].daoId.toBase58());
       }
-    } catch (e) {
-      console.error("fetchAllSpaces failed:", e);
     } finally {
       setSpacesLoading(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -45,9 +45,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
 
   const [daoId, setDaoId] = useState(defaultDaoIdBase58);
   const [repMint, setRepMint] = useState(defaultRepMintBase58);
-  const [initialSeason, setInitialSeason] = useState<number>(
-    defaultInitialSeason
-  );
+  const [initialSeason, setInitialSeason] = useState<number>(defaultInitialSeason);
   const [metadataUri, setMetadataUri] = useState(defaultMetadataUri);
 
   const [submitting, setSubmitting] = useState(false);
@@ -63,13 +61,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
     setSnackMsg("");
     setSnackError("");
     setSubmitting(false);
-  }, [
-    open,
-    defaultDaoIdBase58,
-    defaultRepMintBase58,
-    defaultInitialSeason,
-    defaultMetadataUri,
-  ]);
+  }, [open, defaultDaoIdBase58, defaultRepMintBase58, defaultInitialSeason, defaultMetadataUri]);
 
   const disabled =
     submitting ||
@@ -106,17 +98,16 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
         throw new Error("Initial season must be 1–65535");
       }
 
-      // prevent “already exists” confusion
+      // prevent “already in use” confusion
       const [configPda] = getConfigPda(daoPubkey);
       const existing = await connection.getAccountInfo(configPda);
       if (existing) {
-        throw new Error(
-          "Config PDA already exists for this DAO. Use Manage Reputation Space instead."
-        );
+        throw new Error("Config PDA already exists for this DAO. Use Manage Reputation Space instead.");
       }
 
       const ixs: TransactionInstruction[] = [];
 
+      // ✅ Build ix using NPM (correct discriminator + accounts)
       // ✅ init config
       ixs.push(
         await buildInitializeConfigIx({
@@ -142,13 +133,20 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
 
       const tx = new Transaction().add(...ixs);
 
-      // (optional) set recent blockhash yourself; wallet adapter usually handles it
+      // (optional, helps some wallets)
+      tx.feePayer = publicKey;
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("finalized");
+      tx.recentBlockhash = blockhash;
+
       const sig = await sendTransaction(tx, connection);
+
+      // (optional confirm)
+      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
 
       setSnackMsg(`✅ Created reputation space. Tx: ${sig}`);
       onClose();
     } catch (e: any) {
-      console.error(e);
+      console.error("CREATE SPACE ERROR", e);
       setSnackError(e?.message ?? "Failed to create reputation space");
     } finally {
       setSubmitting(false);
@@ -181,8 +179,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
             Create Reputation Space
           </Typography>
           <Typography variant="caption" sx={{ opacity: 0.75 }}>
-            Devnet • Your connected wallet is authority + payer • Program{" "}
-            {VINE_REP_PROGRAM_ID.toBase58()}
+            Devnet • Your connected wallet is authority + payer • Program {VINE_REP_PROGRAM_ID.toBase58()}
           </Typography>
         </DialogTitle>
 
@@ -194,12 +191,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
               value={daoId}
               onChange={(e) => setDaoId(e.target.value)}
               disabled={submitting}
-              InputProps={{
-                sx: {
-                  borderRadius: "16px",
-                  background: "rgba(255,255,255,0.06)",
-                },
-              }}
+              InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
             />
 
             <TextField
@@ -208,12 +200,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
               value={repMint}
               onChange={(e) => setRepMint(e.target.value)}
               disabled={submitting}
-              InputProps={{
-                sx: {
-                  borderRadius: "16px",
-                  background: "rgba(255,255,255,0.06)",
-                },
-              }}
+              InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
             />
 
             <TextField
@@ -223,12 +210,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
               value={initialSeason}
               onChange={(e) => setInitialSeason(Number(e.target.value) || 1)}
               disabled={submitting}
-              InputProps={{
-                sx: {
-                  borderRadius: "16px",
-                  background: "rgba(255,255,255,0.06)",
-                },
-              }}
+              InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
               helperText="1–65535"
               FormHelperTextProps={{ sx: { opacity: 0.7 } }}
             />
@@ -240,12 +222,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
               onChange={(e) => setMetadataUri(e.target.value)}
               disabled={submitting}
               placeholder="https://.../metadata.json"
-              InputProps={{
-                sx: {
-                  borderRadius: "16px",
-                  background: "rgba(255,255,255,0.06)",
-                },
-              }}
+              InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
               helperText="If provided, we will upsert project metadata after creating the config."
               FormHelperTextProps={{ sx: { opacity: 0.7 } }}
             />
@@ -262,11 +239,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
           <Button
             onClick={handleClose}
             disabled={submitting}
-            sx={{
-              textTransform: "none",
-              borderRadius: "999px",
-              color: "rgba(248,250,252,0.85)",
-            }}
+            sx={{ textTransform: "none", borderRadius: "999px", color: "rgba(248,250,252,0.85)" }}
           >
             Cancel
           </Button>
@@ -297,11 +270,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
           onClose={handleSnackbarClose}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         >
-          <Alert
-            onClose={handleSnackbarClose}
-            severity={snackSeverity}
-            sx={{ width: "100%" }}
-          >
+          <Alert onClose={handleSnackbarClose} severity={snackSeverity} sx={{ width: "100%" }}>
             {snackText}
           </Alert>
         </Snackbar>

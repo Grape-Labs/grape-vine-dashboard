@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useMemo, useState, useEffect } from "react";
 import { clusterApiUrl, PublicKey } from "@solana/web3.js";
 
@@ -72,6 +73,15 @@ function Copyright() {
       Powered by Grape
     </Typography>
   );
+}
+
+function safePk(s?: string | null) {
+  if (!s) return null;
+  try {
+    return new PublicKey(s.trim());
+  } catch {
+    return null;
+  }
 }
 
 const glassPillSx = {
@@ -221,6 +231,9 @@ function HeaderActions({
 }
 
 const HomeInner: React.FC = () => {
+  const router = useRouter();                 // ✅ NEW
+  const searchParams = useSearchParams();     // ✅ NEW
+
   const [createOpen, setCreateOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [tokenOpen, setTokenOpen] = useState(false);
@@ -237,17 +250,20 @@ const HomeInner: React.FC = () => {
   const [spaceAnchor, setSpaceAnchor] = useState<null | HTMLElement>(null);
   const spaceMenuOpen = Boolean(spaceAnchor);
 
+  // ✅ NEW: read dao from URL once (or when URL changes)
+  const daoFromUrl = searchParams?.get("dao") || "";
+  const daoFromUrlPk = useMemo(() => safePk(daoFromUrl), [daoFromUrl]);
+
+  // ✅ NEW: prevent URL write loops
+  const lastUrlDaoRef = React.useRef<string>("");
+
   function pickDefaultSpace(spaces: VineSpace[]): VineSpace | null {
     if (!spaces.length) return null;
 
-    // Prefer the earliest / root space
     return [...spaces].sort((a, b) => {
-      // primary: lowest season
       if (a.currentSeason !== b.currentSeason) {
         return a.currentSeason - b.currentSeason;
       }
-
-      // fallback: DAO pubkey lex order (stable)
       return a.daoId.toBase58().localeCompare(b.daoId.toBase58());
     })[0];
   }
@@ -258,7 +274,7 @@ const HomeInner: React.FC = () => {
       const pid = new PublicKey(VINE_REP_PROGRAM_ID);
       const list = await fetchAllSpaces(connection, pid);
 
-      // ✅ keep only entries whose config account actually exists and is owned by your program
+      // keep only entries whose config account actually exists and is owned by your program
       const filtered = (
         await Promise.all(
           list.map(async (s) => {
@@ -266,8 +282,8 @@ const HomeInner: React.FC = () => {
               const [configPda] = getConfigPda(s.daoId);
               const ai = await connection.getAccountInfo(configPda);
               if (!ai) return null;
-              if (!ai.owner.equals(pid)) return null; // must be owned by VINE program
-              if (!ai.data || ai.data.length < 8) return null; // must have discriminator
+              if (!ai.owner.equals(pid)) return null;
+              if (!ai.data || ai.data.length < 8) return null;
               return s;
             } catch {
               return null;
@@ -278,8 +294,17 @@ const HomeInner: React.FC = () => {
 
       setSpaces(filtered);
 
-      if (!activeDao && filtered.length > 0) {
-        setActiveDao(filtered[0].daoId.toBase58());
+      // ✅ NEW: choose active space (URL wins, otherwise default)
+      if (filtered.length > 0) {
+        const urlDao = daoFromUrlPk?.toBase58() || "";
+        const urlExists = urlDao && filtered.some((s) => s.daoId.toBase58() === urlDao);
+
+        if (urlExists) {
+          setActiveDao(urlDao);
+        } else if (!activeDao) {
+          // keep your old behavior
+          setActiveDao(filtered[0].daoId.toBase58());
+        }
       }
     } finally {
       setSpacesLoading(false);
@@ -308,6 +333,22 @@ const HomeInner: React.FC = () => {
     if (!mint || mint === zero) return FALLBACK_VINE_MINT;
     return mint;
   }, [activeSpace]);
+
+  // ✅ NEW: whenever activeDao changes, update URL (?dao=...)
+  useEffect(() => {
+    if (!activeDao) return;
+
+    // avoid repeatedly writing the same URL
+    if (lastUrlDaoRef.current === activeDao) return;
+    lastUrlDaoRef.current = activeDao;
+
+    // preserve other params, only set dao
+    const p = new URLSearchParams(searchParams?.toString() || "");
+    p.set("dao", activeDao);
+
+    router.replace(`?${p.toString()}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDao]);
 
   const spaceLabel = activeSpace
     ? `Space: ${shorten(activeSpace.daoId.toBase58(), 5, 5)}`
@@ -392,7 +433,6 @@ const HomeInner: React.FC = () => {
             {/* Space selector pill */}
             {isMobile ? (
               <Tooltip title={spaceTitle}>
-                {/* span keeps Tooltip working when disabled */}
                 <span>
                   <IconButton
                     onClick={(e) => setSpaceAnchor(e.currentTarget)}
@@ -448,7 +488,7 @@ const HomeInner: React.FC = () => {
                       key={dao}
                       selected={dao === activeDao}
                       onClick={() => {
-                        setActiveDao(dao);
+                        setActiveDao(dao);      // ✅ this now also updates the URL via the effect
                         setSpaceAnchor(null);
                       }}
                       sx={{
@@ -487,16 +527,10 @@ const HomeInner: React.FC = () => {
         </AppBar>
 
         {/* Token Manager Dialog */}
-        <TokenManager
-          open={tokenOpen}
-          onClose={() => setTokenOpen(false)}
-        />
-        
+        <TokenManager open={tokenOpen} onClose={() => setTokenOpen(false)} />
+
         {/* Metadata Manager Dialog */}
-        <MetadataManager
-          open={metadataOpen}
-          onClose={() => setMetadataOpen(false)}
-        />
+        <MetadataManager open={metadataOpen} onClose={() => setMetadataOpen(false)} />
 
         {/* Create Space Dialog */}
         <CreateReputationSpace
@@ -530,8 +564,8 @@ const HomeInner: React.FC = () => {
           >
             <TokenLeaderboard
               key={`${activeMint}-${activeDao}`}
-              programId={activeMint}            // MAINNET mint for leaderboard
-              activeDaoIdBase58={activeDao}      // DEVNET dao for VineReputation
+              programId={activeMint}
+              activeDaoIdBase58={activeDao}
             />
           </Paper>
         </Container>

@@ -13,10 +13,8 @@ import {
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { WalletModalProvider, WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
-
-//import { getConfigPda } from "./utils/grapeTools/vineReputationClient"; // add
 import {
-  getConfigPda
+  fetchProjectMetadata, getConfigPda
 } from "@grapenpm/vine-reputation-client";
 import TokenLeaderboard from "./TokenLeaderboard";
 import { VINE_LOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "./constants";
@@ -40,6 +38,8 @@ import {
   IconButton,
   Tooltip
 } from "@mui/material";
+
+import { createTheme } from "@mui/material/styles";
 
 import AddIcon from "@mui/icons-material/Add";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
@@ -257,6 +257,8 @@ const HomeInner: React.FC = () => {
   // ✅ NEW: prevent URL write loops
   const lastUrlDaoRef = React.useRef<string>("");
 
+  const [projectMeta, setProjectMeta] = useState<any | null>(null);
+
   function pickDefaultSpace(spaces: VineSpace[]): VineSpace | null {
     if (!spaces.length) return null;
 
@@ -310,6 +312,66 @@ const HomeInner: React.FC = () => {
       setSpacesLoading(false);
     }
   };
+
+  const resolvedTheme = useMemo(() => {
+    const t = projectMeta?.vine?.theme ?? {};
+
+    return {
+      mode: t.mode ?? "auto",
+      primary: t.primary ?? grapeTheme.palette.primary.main,
+
+      background: {
+        image: t.background_image ?? null,
+        opacity: typeof t.background_opacity === "number" ? t.background_opacity : 0.45,
+        blur: typeof t.background_blur === "number" ? t.background_blur : 12,
+        position: t.background_position ?? "center",
+        size: t.background_size ?? "cover",
+        repeat: t.background_repeat ?? "no-repeat",
+      },
+    };
+  }, [projectMeta]);
+
+  const themedMui = useMemo(() => {
+    const base = grapeTheme;
+
+    return createTheme({
+      ...base,
+      palette: {
+        ...base.palette,
+        primary: {
+          ...base.palette.primary,
+          main: resolvedTheme.primary,
+        },
+        mode:
+          resolvedTheme.mode === "auto"
+            ? base.palette.mode
+            : resolvedTheme.mode,
+      },
+    });
+  }, [resolvedTheme]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      if (!activeDao) {
+        setProjectMeta(null);
+        return;
+      }
+
+      try {
+        const daoPk = new PublicKey(activeDao);
+        const meta = await fetchProjectMetadata(connection, daoPk);
+        if (!cancelled) setProjectMeta(meta);
+      } catch {
+        if (!cancelled) setProjectMeta(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeDao, connection]);
 
   useEffect(() => {
     let cancelled = false;
@@ -371,10 +433,12 @@ const HomeInner: React.FC = () => {
         minHeight: "100vh",
         width: "100vw",
         position: "relative",
-        backgroundImage: `url('/images/background_sample_image.webp')`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
+        backgroundImage: resolvedTheme.background.image
+          ? `url('${resolvedTheme.background.image}')`
+          : `url('/images/background_sample_image.webp')`,
+        backgroundSize: resolvedTheme.background.size,
+        backgroundPosition: resolvedTheme.background.position,
+        backgroundRepeat: resolvedTheme.background.repeat,
         backgroundAttachment: { xs: "scroll", md: "fixed" },
       }}
     >
@@ -382,13 +446,13 @@ const HomeInner: React.FC = () => {
         sx={{
           position: "absolute",
           inset: 0,
-          background: "rgba(0,0,0,0.45)",
-          backdropFilter: "blur(12px)",
+          background: `rgba(0,0,0,${resolvedTheme.background.opacity})`,
+          backdropFilter: `blur(${resolvedTheme.background.blur}px)`,
           zIndex: 1,
         }}
       />
 
-      <ThemeProvider theme={grapeTheme}>
+      <ThemeProvider theme={themedMui}>
         <CssBaseline />
 
         <AppBar

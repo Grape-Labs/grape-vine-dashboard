@@ -15,7 +15,6 @@
     "@emotion/styled": "^11.11.0",
     "@fontsource/roboto": "^5.0.8",
     "@grapenpm/vine-reputation-client": "^0.1.1",
-    "@irys/sdk": "^0.2.11",
     "@irys/upload": "^0.0.15",
     "@irys/upload-solana": "^0.1.8",
     "@metaplex-foundation/mpl-token-metadata": "^3.4.0",

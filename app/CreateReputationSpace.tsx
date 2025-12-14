@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -13,14 +13,15 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import {
-  PublicKey,
-  SystemProgram,
-  TransactionInstruction,
-  Transaction,
-} from "@solana/web3.js";
+import { PublicKey, TransactionInstruction, Transaction } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-// ------------------ props ------------------
+
+import {
+  VINE_REP_PROGRAM_ID,
+  getConfigPda,
+  buildInitializeConfigIx,
+  buildUpsertProjectMetadataIx,
+} from "@grapenpm/vine-reputation-client";
 
 type CreateReputationSpaceProps = {
   open: boolean;
@@ -30,74 +31,6 @@ type CreateReputationSpaceProps = {
   defaultInitialSeason?: number;
   defaultMetadataUri?: string;
 };
-
-// ------------------ program ------------------
-
-export const VINE_REP_PROGRAM_ID = new PublicKey(
-  "V1NE6WCWJPRiVFq5DtaN8p87M9DmmUd2zQuVbvLgQwX"
-);
-
-function getConfigPda(daoId: PublicKey) {
-  return PublicKey.findProgramAddressSync(
-    [Buffer.from("config"), daoId.toBuffer()],
-    VINE_REP_PROGRAM_ID
-  );
-}
-
-function getProjectMetaPda(daoId: PublicKey) {
-  return PublicKey.findProgramAddressSync(
-    [Buffer.from("project_meta"), daoId.toBuffer()],
-    VINE_REP_PROGRAM_ID
-  );
-}
-
-/** ------------------------------
- *  Anchor discriminator helpers
- *  ------------------------------ */
-async function sha256(data: Uint8Array): Promise<Uint8Array> {
-  const copy = new Uint8Array(data.byteLength);
-  copy.set(data);
-  const hashBuf = await crypto.subtle.digest("SHA-256", copy);
-  return new Uint8Array(hashBuf);
-}
-
-const discCache = new Map<string, Uint8Array>();
-
-async function anchorIxDisc(ixName: string): Promise<Uint8Array> {
-  const key = `global:${ixName}`;
-  const cached = discCache.get(key);
-  if (cached) return cached;
-
-  const bytes = new TextEncoder().encode(key);
-  const hash = await sha256(bytes);
-  const disc = hash.slice(0, 8);
-
-  discCache.set(key, disc);
-  return disc;
-}
-
-function u16le(n: number) {
-  const b = new Uint8Array(2);
-  b[0] = n & 0xff;
-  b[1] = (n >> 8) & 0xff;
-  return b;
-}
-
-function u32le(n: number) {
-  const b = new Uint8Array(4);
-  b[0] = n & 0xff;
-  b[1] = (n >> 8) & 0xff;
-  b[2] = (n >> 16) & 0xff;
-  b[3] = (n >> 24) & 0xff;
-  return b;
-}
-
-function encodeAnchorString(s: string) {
-  const bytes = new TextEncoder().encode(s ?? "");
-  return { len: u32le(bytes.length), bytes };
-}
-
-// ------------------ component ------------------
 
 const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
   open,
@@ -112,7 +45,9 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
 
   const [daoId, setDaoId] = useState(defaultDaoIdBase58);
   const [repMint, setRepMint] = useState(defaultRepMintBase58);
-  const [initialSeason, setInitialSeason] = useState<number>(defaultInitialSeason);
+  const [initialSeason, setInitialSeason] = useState<number>(
+    defaultInitialSeason
+  );
   const [metadataUri, setMetadataUri] = useState(defaultMetadataUri);
 
   const [submitting, setSubmitting] = useState(false);
@@ -128,7 +63,13 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
     setSnackMsg("");
     setSnackError("");
     setSubmitting(false);
-  }, [open, defaultDaoIdBase58, defaultRepMintBase58, defaultInitialSeason, defaultMetadataUri]);
+  }, [
+    open,
+    defaultDaoIdBase58,
+    defaultRepMintBase58,
+    defaultInitialSeason,
+    defaultMetadataUri,
+  ]);
 
   const disabled =
     submitting ||
@@ -149,66 +90,6 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
     setSnackError("");
   };
 
-  async function ixInitializeConfig(args: {
-    daoId: PublicKey;
-    repMint: PublicKey;
-    initialSeason: number;
-    authority: PublicKey; // NOT signer (unchecked) in your Rust
-    payer: PublicKey;     // signer
-  }) {
-    const disc = await anchorIxDisc("initialize_config");
-    const data = new Uint8Array(8 + 32 + 32 + 2);
-
-    let o = 0;
-    data.set(disc, o); o += 8;
-    data.set(args.daoId.toBytes(), o); o += 32;
-    data.set(args.repMint.toBytes(), o); o += 32;
-    data.set(u16le(args.initialSeason & 0xffff), o); o += 2;
-
-    const [configPda] = getConfigPda(args.daoId);
-
-    return new TransactionInstruction({
-      programId: VINE_REP_PROGRAM_ID,
-      keys: [
-        { pubkey: configPda, isSigner: false, isWritable: true },
-        { pubkey: args.authority, isSigner: false, isWritable: false }, // ✅ not signer
-        { pubkey: args.payer, isSigner: true, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      data: Buffer.from(data),
-    });
-  }
-
-  async function ixUpsertProjectMetadata(args: {
-    daoId: PublicKey;
-    authority: PublicKey;
-    payer: PublicKey;
-    metadataUri: string;
-  }) {
-    const disc = await anchorIxDisc("upsert_project_metadata");
-    const { len, bytes } = encodeAnchorString(args.metadataUri || "");
-
-    const data = new Uint8Array(8 + 4 + bytes.length);
-    data.set(disc, 0);
-    data.set(len, 8);
-    data.set(bytes, 12);
-
-    const [configPda] = getConfigPda(args.daoId);
-    const [metaPda] = getProjectMetaPda(args.daoId);
-
-    return new TransactionInstruction({
-      programId: VINE_REP_PROGRAM_ID,
-      keys: [
-        { pubkey: configPda, isSigner: false, isWritable: false },
-        { pubkey: metaPda, isSigner: false, isWritable: true },
-        { pubkey: args.authority, isSigner: true, isWritable: false },
-        { pubkey: args.payer, isSigner: true, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      data: Buffer.from(data),
-    });
-  }
-
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
@@ -225,17 +106,20 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
         throw new Error("Initial season must be 1–65535");
       }
 
-      // Optional: prevent “already in use” confusion
+      // prevent “already exists” confusion
       const [configPda] = getConfigPda(daoPubkey);
       const existing = await connection.getAccountInfo(configPda);
       if (existing) {
-        throw new Error("Config PDA already exists for this DAO. Use Manage Reputation Space instead.");
+        throw new Error(
+          "Config PDA already exists for this DAO. Use Manage Reputation Space instead."
+        );
       }
 
       const ixs: TransactionInstruction[] = [];
 
+      // ✅ init config
       ixs.push(
-        await ixInitializeConfig({
+        await buildInitializeConfigIx({
           daoId: daoPubkey,
           repMint: repMintPubkey,
           initialSeason: season,
@@ -244,9 +128,10 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
         })
       );
 
+      // ✅ optional metadata
       if (metadataUri?.trim()) {
         ixs.push(
-          await ixUpsertProjectMetadata({
+          await buildUpsertProjectMetadataIx({
             daoId: daoPubkey,
             authority: publicKey,
             payer: publicKey,
@@ -256,6 +141,8 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
       }
 
       const tx = new Transaction().add(...ixs);
+
+      // (optional) set recent blockhash yourself; wallet adapter usually handles it
       const sig = await sendTransaction(tx, connection);
 
       setSnackMsg(`✅ Created reputation space. Tx: ${sig}`);
@@ -294,7 +181,8 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
             Create Reputation Space
           </Typography>
           <Typography variant="caption" sx={{ opacity: 0.75 }}>
-            Devnet • Your connected wallet is authority + payer
+            Devnet • Your connected wallet is authority + payer • Program{" "}
+            {VINE_REP_PROGRAM_ID.toBase58()}
           </Typography>
         </DialogTitle>
 
@@ -306,7 +194,12 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
               value={daoId}
               onChange={(e) => setDaoId(e.target.value)}
               disabled={submitting}
-              InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
+              InputProps={{
+                sx: {
+                  borderRadius: "16px",
+                  background: "rgba(255,255,255,0.06)",
+                },
+              }}
             />
 
             <TextField
@@ -315,7 +208,12 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
               value={repMint}
               onChange={(e) => setRepMint(e.target.value)}
               disabled={submitting}
-              InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
+              InputProps={{
+                sx: {
+                  borderRadius: "16px",
+                  background: "rgba(255,255,255,0.06)",
+                },
+              }}
             />
 
             <TextField
@@ -325,7 +223,12 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
               value={initialSeason}
               onChange={(e) => setInitialSeason(Number(e.target.value) || 1)}
               disabled={submitting}
-              InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
+              InputProps={{
+                sx: {
+                  borderRadius: "16px",
+                  background: "rgba(255,255,255,0.06)",
+                },
+              }}
               helperText="1–65535"
               FormHelperTextProps={{ sx: { opacity: 0.7 } }}
             />
@@ -337,8 +240,13 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
               onChange={(e) => setMetadataUri(e.target.value)}
               disabled={submitting}
               placeholder="https://.../metadata.json"
-              InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
-              helperText="If provided, we will call upsert_project_metadata after creating the config."
+              InputProps={{
+                sx: {
+                  borderRadius: "16px",
+                  background: "rgba(255,255,255,0.06)",
+                },
+              }}
+              helperText="If provided, we will upsert project metadata after creating the config."
               FormHelperTextProps={{ sx: { opacity: 0.7 } }}
             />
           </Box>
@@ -354,7 +262,11 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
           <Button
             onClick={handleClose}
             disabled={submitting}
-            sx={{ textTransform: "none", borderRadius: "999px", color: "rgba(248,250,252,0.85)" }}
+            sx={{
+              textTransform: "none",
+              borderRadius: "999px",
+              color: "rgba(248,250,252,0.85)",
+            }}
           >
             Cancel
           </Button>
@@ -385,7 +297,11 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
           onClose={handleSnackbarClose}
           anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         >
-          <Alert onClose={handleSnackbarClose} severity={snackSeverity} sx={{ width: "100%" }}>
+          <Alert
+            onClose={handleSnackbarClose}
+            severity={snackSeverity}
+            sx={{ width: "100%" }}
+          >
             {snackText}
           </Alert>
         </Snackbar>

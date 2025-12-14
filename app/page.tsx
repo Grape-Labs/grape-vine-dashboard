@@ -13,7 +13,10 @@ import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { WalletModalProvider, WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 
-  import { getConfigPda } from "./utils/grapeTools/vineReputationClient"; // add
+//import { getConfigPda } from "./utils/grapeTools/vineReputationClient"; // add
+import {
+  getConfigPda
+} from "@grapenpm/vine-reputation-client";
 import TokenLeaderboard from "./TokenLeaderboard";
 import { VINE_LOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "./constants";
 import { fetchAllSpaces, VineSpace } from "./vineRegistry";

@@ -827,6 +827,11 @@
     "@solana/wallet-adapter-base" "^0.9.17"
     bs58 "^5.0.0"
 
+"@grapenpm/vine-reputation-client@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@grapenpm/vine-reputation-client/-/vine-reputation-client-0.1.1.tgz#53eb809f3c9b0eed181309ceedad7e1ad838f2e1"
+  integrity sha512-CteDad6msX+HUM7oz57RGl8csDJ1KvY5hIIo8NPyDMw05L/946vqmhfS67TPrysySZ/DBudAQXsdC1M1Y998dQ==
+
 "@graphql-typed-document-node/core@^3.1.1":
   version "3.2.0"
   resolved "https://registry.npmjs.org/@graphql-typed-document-node/core/-/core-3.2.0.tgz"
@@ -993,22 +998,7 @@
     base64url "^3.0.1"
     bignumber.js "^9.1.2"
 
-"@irys/upload-solana@^0.1.7":
-  version "0.1.8"
-  resolved "https://registry.npmjs.org/@irys/upload-solana/-/upload-solana-0.1.8.tgz"
-  integrity sha512-pJyG8uJ3NIpbIGDA9hYRHij5xF1DrU0QMa4i2mVJlYwbSdQfNdcJ8SdT4ZsrTh1g/+OWMzbo2l/ziMY1Js9HGA==
-  dependencies:
-    "@irys/bundles" "^0.0.3"
-    "@irys/upload" "^0.0.15"
-    "@irys/upload-core" "^0.0.10"
-    "@solana/spl-token" "^0.4.8"
-    "@solana/web3.js" "^1.95.3"
-    async-retry "^1.3.3"
-    bignumber.js "^9.1.2"
-    bs58 "5.0.0"
-    tweetnacl "^1.0.3"
-
-"@irys/upload-solana@^0.1.8":
+"@irys/upload-solana@^0.1.7", "@irys/upload-solana@^0.1.8":
   version "0.1.8"
   resolved "https://registry.yarnpkg.com/@irys/upload-solana/-/upload-solana-0.1.8.tgz#e6779f95c17be0b25ad65b70c75ed6fe6ca54aad"
   integrity sha512-pJyG8uJ3NIpbIGDA9hYRHij5xF1DrU0QMa4i2mVJlYwbSdQfNdcJ8SdT4ZsrTh1g/+OWMzbo2l/ziMY1Js9HGA==

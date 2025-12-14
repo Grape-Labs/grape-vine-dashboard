@@ -5,6 +5,9 @@ export const FALLBACK_VINE_MINT = "8n5buhK82U6Mb5tTwwRJgJWBt1HjEJM2CxhRutw1n6qT"
 // your deployed program id (vine_reputation)
 export const VINE_REP_PROGRAM_ID = "V1NE6WCWJPRiVFq5DtaN8p87M9DmmUd2zQuVbvLgQwX";
 
+// Whatever you passed as `dao_id` in initializeConfig for GRAPE
+export const GRAPE_DAO_ID = "By2sVGZXwfQq6rAiAM3rNPJ9iQfb5e2QhnF4YjJ4Bip";
+
 export const tokens = [
   {
     key: "v3", 

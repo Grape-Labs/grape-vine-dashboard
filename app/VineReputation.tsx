@@ -3,21 +3,40 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Typography, CircularProgress, Divider } from "@mui/material";
 import { Connection, PublicKey } from "@solana/web3.js";
+import { Buffer } from "buffer";
 
 import {
-  fetchUserReputation,
   fetchConfig,
-  GRAPE_DAO_ID,
-} from "./utils/grapeTools/vineReputationClient";
-import { REACT_APP_RPC_DEVNET_ENDPOINT } from "./constants";
+  fetchReputation,
+  getConfigPda,
+  getReputationPda,
+  decodeReputation,
+} from "@grapenpm/vine-reputation-client";
+
+import { REACT_APP_RPC_DEVNET_ENDPOINT, GRAPE_DAO_ID } from "./constants";
 
 type VineReputationProps = {
   walletAddress: string | null;
-  daoIdBase58?: string;          // defaults to GRAPE_DAO_ID
-  endpoint?: string;             // defaults to devnet
-  historyDepth?: number;         // how many seasons back to show (default 3)
-  decayBase?: number;            // decay per season (default 0.7)
+  daoIdBase58?: string; // defaults to GRAPE_DAO_ID
+  endpoint?: string; // defaults to devnet
+  historyDepth?: number; // how many seasons back to show (default 3)
+  decayBase?: number; // decay per season (default 0.7)
 };
+
+function toBuffer(data: Uint8Array | Buffer | ArrayBuffer | ArrayBufferView): Buffer {
+  if (Buffer.isBuffer(data)) return data;
+
+  if (data instanceof Uint8Array) {
+    return Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+  }
+
+  if (ArrayBuffer.isView(data)) {
+    return Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+  }
+
+  // ArrayBuffer
+  return Buffer.from(data);
+}
 
 function shortenPk(base58: string, start = 6, end = 6) {
   if (!base58) return "";
@@ -27,11 +46,8 @@ function shortenPk(base58: string, start = 6, end = 6) {
 
 function bnLikeToNumber(v: any): number {
   if (v == null) return 0;
-  // Anchor BN
-  if (typeof v?.toNumber === "function") return v.toNumber();
-  // Bigint
+  if (typeof v?.toNumber === "function") return v.toNumber(); // Anchor BN
   if (typeof v === "bigint") return Number(v);
-  // string/number
   const n = Number(v.toString?.() ?? v);
   return Number.isFinite(n) ? n : 0;
 }
@@ -42,7 +58,60 @@ type SeasonRow = {
   lastUpdateSlot: number;
   weight: number;
   effectivePoints: number;
+  found: boolean;
 };
+
+function resolveDefaultDaoPk(daoIdBase58?: string) {
+  if (daoIdBase58?.trim()) return new PublicKey(daoIdBase58.trim());
+
+  // GRAPE_DAO_ID might already be a PublicKey or a string
+  try {
+    // @ts-ignore
+    if (GRAPE_DAO_ID instanceof PublicKey) return GRAPE_DAO_ID as PublicKey;
+  } catch {}
+  return new PublicKey((GRAPE_DAO_ID as any).toString());
+}
+
+/**
+ * This wrapper tries a few common signatures for fetchReputation.
+ * If none work, it falls back to PDA -> getAccountInfo -> decodeReputation.
+ */
+async function safeFetchReputation(
+  conn: Connection,
+  daoPk: PublicKey,
+  userPk: PublicKey,
+  season: number
+) {
+  const [configPda] = getConfigPda(daoPk);
+
+  // 1) Try (conn, user, dao, season)  [your current call]
+  try {
+    const r: any = await (fetchReputation as any)(conn, userPk, daoPk, season);
+    if (r) return r;
+  } catch {}
+
+  // 2) Try (conn, dao, user, season)
+  try {
+    const r: any = await (fetchReputation as any)(conn, daoPk, userPk, season);
+    if (r) return r;
+  } catch {}
+
+  // 3) Try (conn, configPda, user, season)  (very common pattern)
+  try {
+    const r: any = await (fetchReputation as any)(conn, configPda, userPk, season);
+    if (r) return r;
+  } catch {}
+
+  // 4) Fallback: compute PDA and decode locally (most reliable)
+  try {
+    const [repPda] = getReputationPda(configPda, userPk, season);
+    const ai = await conn.getAccountInfo(repPda, "confirmed");
+    if (!ai?.data) return null;
+    return decodeReputation(toBuffer(ai.data));
+  } catch {}
+
+  return null;
+}
 
 const VineReputation: React.FC<VineReputationProps> = ({
   walletAddress,
@@ -55,6 +124,7 @@ const VineReputation: React.FC<VineReputationProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const [daoBase58, setDaoBase58] = useState<string>("");
+  const [configBase58, setConfigBase58] = useState<string>("");
   const [currentSeason, setCurrentSeason] = useState<number | null>(null);
   const [rows, setRows] = useState<SeasonRow[]>([]);
 
@@ -76,10 +146,14 @@ const VineReputation: React.FC<VineReputationProps> = ({
 
         setLoading(true);
 
-        const userPk = new PublicKey(walletAddress);
-        const daoPk = daoIdBase58 ? new PublicKey(daoIdBase58) : GRAPE_DAO_ID;
+        const userPk = new PublicKey(walletAddress.trim());
+        const daoPk = resolveDefaultDaoPk(daoIdBase58);
 
         setDaoBase58(daoPk.toBase58());
+
+        // Always compute and show the config PDA
+        const [configPda] = getConfigPda(daoPk);
+        setConfigBase58(configPda.toBase58());
 
         // 1) load config once to get currentSeason
         const cfg = await fetchConfig(conn, daoPk);
@@ -87,6 +161,7 @@ const VineReputation: React.FC<VineReputationProps> = ({
           if (!cancelled) setError("No config found for this DAO.");
           return;
         }
+
         const current = bnLikeToNumber(cfg.currentSeason);
         if (!cancelled) setCurrentSeason(current);
 
@@ -97,14 +172,13 @@ const VineReputation: React.FC<VineReputationProps> = ({
         const seasons: number[] = [];
         for (let s = startSeason; s <= current; s++) seasons.push(s);
 
-        // 3) fetch each season via your working decoder
-        // (sequential keeps it simple + avoids rate limiting)
+        // 3) fetch each season safely (never break the loop)
         const nextRows: SeasonRow[] = [];
+
         for (const s of seasons) {
           if (cancelled) return;
 
-          const r = await fetchUserReputation(conn, userPk, daoPk, s);
-          const rep = r?.reputation;
+          const rep = await safeFetchReputation(conn, daoPk, userPk, s);
 
           const points = bnLikeToNumber(rep?.points);
           const lastUpdateSlot = bnLikeToNumber(rep?.lastUpdateSlot);
@@ -119,6 +193,7 @@ const VineReputation: React.FC<VineReputationProps> = ({
             lastUpdateSlot,
             weight,
             effectivePoints,
+            found: !!rep,
           });
         }
 
@@ -143,7 +218,8 @@ const VineReputation: React.FC<VineReputationProps> = ({
   const totalRaw = rows.reduce((acc, r) => acc + r.points, 0);
   const totalDecayed = rows.reduce((acc, r) => acc + r.effectivePoints, 0);
 
-  const daoShort = shortenPk(daoBase58 || (daoIdBase58 ?? GRAPE_DAO_ID.toBase58()), 6, 6);
+  const daoShort = shortenPk(daoBase58, 6, 6);
+  const cfgShort = shortenPk(configBase58, 6, 6);
   const walletShort = shortenPk(walletAddress, 6, 6);
 
   return (
@@ -166,6 +242,9 @@ const VineReputation: React.FC<VineReputationProps> = ({
       <Typography variant="caption" sx={{ opacity: 0.8, display: "block" }}>
         DAO: <span style={{ fontFamily: "monospace" }}>{daoShort}</span>
       </Typography>
+      <Typography variant="caption" sx={{ opacity: 0.8, display: "block" }}>
+        Config PDA: <span style={{ fontFamily: "monospace" }}>{cfgShort}</span>
+      </Typography>
 
       {loading && (
         <Box sx={{ mt: 1.2, display: "flex", alignItems: "center", gap: 1 }}>
@@ -177,7 +256,11 @@ const VineReputation: React.FC<VineReputationProps> = ({
       )}
 
       {error && !loading && (
-        <Typography variant="caption" color="error" sx={{ mt: 1.2, display: "block" }}>
+        <Typography
+          variant="caption"
+          color="error"
+          sx={{ mt: 1.2, display: "block" }}
+        >
           {error}
         </Typography>
       )}
@@ -195,7 +278,6 @@ const VineReputation: React.FC<VineReputationProps> = ({
 
           <Divider sx={{ my: 1.2, borderColor: "rgba(148,163,184,0.35)" }} />
 
-          {/* Season breakdown */}
           {rows.length === 0 ? (
             <Typography variant="caption" sx={{ opacity: 0.75 }}>
               No reputation history found for the selected seasons.
@@ -204,7 +286,7 @@ const VineReputation: React.FC<VineReputationProps> = ({
             <Box sx={{ display: "grid", gap: 0.8 }}>
               {rows
                 .slice()
-                .reverse() // show latest first
+                .reverse()
                 .map((r) => {
                   const isCurrent = r.season === currentSeason;
                   return (
@@ -214,12 +296,15 @@ const VineReputation: React.FC<VineReputationProps> = ({
                         p: 1,
                         borderRadius: "12px",
                         border: "1px solid rgba(148,163,184,0.25)",
-                        background: isCurrent ? "rgba(56,189,248,0.10)" : "rgba(255,255,255,0.03)",
+                        background: isCurrent
+                          ? "rgba(56,189,248,0.10)"
+                          : "rgba(255,255,255,0.03)",
+                        opacity: r.found ? 1 : 0.65,
                       }}
                     >
                       <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                         <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                          Season {r.season}
+                          Season {r.season} {r.found ? "" : "• (no account)"}
                         </Typography>
                         <Typography variant="caption" sx={{ opacity: 0.8 }}>
                           Weight {r.weight.toFixed(2)}
@@ -235,8 +320,12 @@ const VineReputation: React.FC<VineReputationProps> = ({
                         </Typography>
                       </Box>
 
-                      <Typography variant="caption" sx={{ opacity: 0.65, display: "block", mt: 0.3 }}>
-                        Last update slot: {r.lastUpdateSlot ? r.lastUpdateSlot.toLocaleString() : "—"}
+                      <Typography
+                        variant="caption"
+                        sx={{ opacity: 0.65, display: "block", mt: 0.3 }}
+                      >
+                        Last update slot:{" "}
+                        {r.lastUpdateSlot ? r.lastUpdateSlot.toLocaleString() : "—"}
                       </Typography>
                     </Box>
                   );
@@ -246,7 +335,6 @@ const VineReputation: React.FC<VineReputationProps> = ({
 
           <Divider sx={{ my: 1.2, borderColor: "rgba(148,163,184,0.35)" }} />
 
-          {/* Totals */}
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography variant="caption" sx={{ opacity: 0.7 }}>
               Total (raw)

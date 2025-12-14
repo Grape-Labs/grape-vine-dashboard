@@ -32,12 +32,15 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 import {
   VINE_REP_PROGRAM_ID,
-  GRAPE_DAO_ID,
   getConfigPda,
   getReputationPda,
   fetchConfig,
   type ReputationConfigAccount,
-} from "./utils/grapeTools/vineReputationClient";
+} from "@grapenpm/vine-reputation-client";
+
+import { 
+  GRAPE_DAO_ID 
+} from "./constants";
 
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import IconButton from "@mui/material/IconButton";
@@ -329,7 +332,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
 
   // selection / inputs
   const [daoId, setDaoId] = useState<string>(
-    daoIdBase58 || GRAPE_DAO_ID.toBase58()
+    daoIdBase58 || new PublicKey(GRAPE_DAO_ID).toBase58()
   );
   const [repMint, setRepMint] = useState<string>(defaultRepMintBase58);
   const [initialSeason, setInitialSeason] = useState<number>(
@@ -430,7 +433,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
     setSnackMsg("");
     setSnackError("");
 
-    setDaoId(daoIdBase58 || GRAPE_DAO_ID.toBase58());
+    setDaoId(daoIdBase58 || new PublicKey(GRAPE_DAO_ID).toBase58());
     setRepMint(defaultRepMintBase58 || "");
     setInitialSeason(defaultInitialSeason || 1);
     setMetadataUri(defaultMetadataUri || "");

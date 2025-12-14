@@ -15,15 +15,23 @@ function mustEnv(name: string) {
 export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
-    const provider = url.searchParams.get("provider") || "irys";
+    const provider = (url.searchParams.get("provider") || "irys").toLowerCase();
+
     if (provider !== "irys") {
-      return NextResponse.json({ ok: false, error: "Provider not supported yet" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Provider not supported yet" },
+        { status: 400 }
+      );
     }
 
     const form = await req.formData();
     const file = form.get("file") as File | null;
+
     if (!file) {
-      return NextResponse.json({ ok: false, error: "Missing file" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Missing file" },
+        { status: 400 }
+      );
     }
 
     // File -> Buffer
@@ -35,7 +43,7 @@ export async function POST(req: Request) {
       file.type ||
       "application/octet-stream";
 
-    // ✅ Use @irys/upload (recommended) + Solana adapter
+    // ✅ Use @irys/upload + Solana adapter
     const { Uploader } = require("@irys/upload");
     const { Solana } = require("@irys/upload-solana");
 
@@ -43,22 +51,35 @@ export async function POST(req: Request) {
     const rpcUrl = mustEnv("SOLANA_RPC_URL");
 
     // Your key should be the JSON array from a Solana keypair file
+    // Example env value: [12,34, ...]
     const keyRaw = mustEnv("IRYS_SOLANA_PRIVATE_KEY");
     const walletKey = JSON.parse(keyRaw);
 
-    let uploader = await Uploader(Solana)
-      .withWallet(walletKey)
-      .withRpc(rpcUrl);
+    // 🔑 IMPORTANT: await the FINAL call (devnet()/mainnet()).
+    // If you await earlier, you’ll get "*.devnet is not a function".
+    const uploader =
+      network === "mainnet"
+        ? await Uploader(Solana).withWallet(walletKey).mainnet()
+        : await Uploader(Solana).withWallet(walletKey).withRpc(rpcUrl).devnet();
 
-    // Pick network
-    uploader = network === "mainnet" ? uploader.mainnet() : uploader.devnet();
+    const priceAny = await uploader.getPrice(buffer.length);
+    const balAny = await uploader.getBalance();
 
-    // Optional: auto-fund if needed (simple approach)
+    // Works whether SDK returns bigint or an object with toString()
+    const price = typeof priceAny === "bigint" ? priceAny : BigInt(priceAny.toString());
+    const bal = typeof balAny === "bigint" ? balAny : BigInt(balAny.toString());
+
+    if (bal < price) {
+      const deficit = price - bal;
+      const topUp = deficit + price; // (deficit) + 1 more upload worth
+      await uploader.fund(topUp);
+    }
+
+
+    // Optional: auto-fund if needed (keep off until you want it)
     // const price = await uploader.getPrice(buffer.length);
     // const bal = await uploader.getBalance();
-    // if (bal.lt(price)) {
-    //   await uploader.fund(price);
-    // }
+    // if (bal.lt(price)) await uploader.fund(price);
 
     const receipt = await uploader.upload(buffer, {
       tags: [{ name: "Content-Type", value: contentType }],

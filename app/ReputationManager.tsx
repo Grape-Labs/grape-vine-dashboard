@@ -1299,7 +1299,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
         </DialogTitle>
 
         <DialogContent sx={{ pt: 2 }}>
-          <Box sx={{ display: "grid", gap: 1.5 }}>
+          <Box sx={{ display: "grid", gap: 1.5, mt: 2 }}>
             <TextField
               label="DAO ID (space)"
               fullWidth
@@ -1307,6 +1307,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
               onChange={(e) => setDaoId(e.target.value)}
               disabled={submitting}
               InputProps={{ sx: glassFieldSx }}
+              InputLabelProps={{ shrink: Boolean(daoId) }}
               helperText={
                 loading
                   ? "Loading space…"

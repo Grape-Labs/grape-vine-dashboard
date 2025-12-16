@@ -11,13 +11,22 @@ import {
   useConnection,
 } from "@solana/wallet-adapter-react";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
-import { WalletModalProvider, WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import {
-  fetchProjectMetadata, getConfigPda
-} from "@grapenpm/vine-reputation-client";
+  WalletModalProvider,
+  WalletMultiButton,
+} from "@solana/wallet-adapter-react-ui";
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
+
+import { fetchProjectMetadata, getConfigPda } from "@grapenpm/vine-reputation-client";
 import TokenLeaderboard from "./TokenLeaderboard";
-import { VINE_LOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "./constants";
+import {
+  VINE_LOGO,
+  FALLBACK_VINE_MINT,
+  VINE_REP_PROGRAM_ID,
+} from "./constants";
 import { fetchAllSpaces, VineSpace } from "./vineRegistry";
 
 import {
@@ -33,13 +42,14 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  useTheme, 
-  useMediaQuery, 
+  useTheme,
+  useMediaQuery,
   IconButton,
-  Tooltip
+  Tooltip,
 } from "@mui/material";
 
-import { createTheme } from "@mui/material/styles";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import grapeTheme from "./utils/config/theme";
 
 import AddIcon from "@mui/icons-material/Add";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
@@ -50,13 +60,10 @@ import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 import TollOutlinedIcon from "@mui/icons-material/TollOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 
-import { ThemeProvider } from "@mui/material/styles";
-import grapeTheme from "./utils/config/theme";
-
 import CreateReputationSpace from "./CreateReputationSpace";
 import ReputationManager from "./ReputationManager";
-import TokenManager from './TokenManager';
-import MetadataManager from './MetadataManager';
+import TokenManager from "./TokenManager";
+import MetadataManager from "./MetadataManager";
 
 function Copyright() {
   return (
@@ -84,6 +91,27 @@ function safePk(s?: string | null) {
   }
 }
 
+function shorten(s: string, a = 6, b = 6) {
+  if (!s) return "";
+  if (s.length <= a + b) return s;
+  return `${s.slice(0, a)}…${s.slice(-b)}`;
+}
+
+function hasToBase58(x: any): x is { toBase58: () => string } {
+  return !!x && typeof x.toBase58 === "function";
+}
+
+function isNonZeroPk(pk: PublicKey) {
+  return pk && !pk.equals(PublicKey.default);
+}
+
+// Keep as a “corruption filter” not a protocol rule.
+// Your screenshot shows 30067 which is very likely a bad parse.
+// Adjust upper bound if your protocol can exceed this.
+function isSaneSeason(n: number) {
+  return Number.isFinite(n) && n >= 1 && n <= 10000;
+}
+
 const glassPillSx = {
   borderRadius: "999px",
   background: "rgba(15,23,42,0.9)",
@@ -97,12 +125,6 @@ const glassPillSx = {
     borderColor: "rgba(248,250,252,0.55)",
   },
 };
-
-function shorten(s: string, a = 6, b = 6) {
-  if (!s) return "";
-  if (s.length <= a + b) return s;
-  return `${s.slice(0, a)}…${s.slice(-b)}`;
-}
 
 function HeaderActions({
   onCreateSpace,
@@ -137,8 +159,8 @@ function HeaderActions({
   }
 
   return (
-          <>
-            {isMobile ? (
+    <>
+      {isMobile ? (
         <IconButton
           onClick={(e) => setAnchorEl(e.currentTarget)}
           sx={{
@@ -231,8 +253,8 @@ function HeaderActions({
 }
 
 const HomeInner: React.FC = () => {
-  const router = useRouter();                 // ✅ NEW
-  const searchParams = useSearchParams();     // ✅ NEW
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
@@ -250,34 +272,24 @@ const HomeInner: React.FC = () => {
   const [spaceAnchor, setSpaceAnchor] = useState<null | HTMLElement>(null);
   const spaceMenuOpen = Boolean(spaceAnchor);
 
-  // ✅ NEW: read dao from URL once (or when URL changes)
+  // read dao from URL
   const daoFromUrl = searchParams?.get("dao") || "";
   const daoFromUrlPk = useMemo(() => safePk(daoFromUrl), [daoFromUrl]);
 
-  // ✅ NEW: prevent URL write loops
+  // prevent URL write loops
   const lastUrlDaoRef = React.useRef<string>("");
 
   const [projectMeta, setProjectMeta] = useState<any | null>(null);
 
-  function pickDefaultSpace(spaces: VineSpace[]): VineSpace | null {
-    if (!spaces.length) return null;
-
-    return [...spaces].sort((a, b) => {
-      if (a.currentSeason !== b.currentSeason) {
-        return a.currentSeason - b.currentSeason;
-      }
-      return a.daoId.toBase58().localeCompare(b.daoId.toBase58());
-    })[0];
-  }
-
   const refreshSpaces = async () => {
     try {
       setSpacesLoading(true);
+
       const pid = new PublicKey(VINE_REP_PROGRAM_ID);
       const list = await fetchAllSpaces(connection, pid);
 
-      // keep only entries whose config account actually exists and is owned by your program
-      const filtered = (
+      // 1) verify config exists and is owned by your program
+      const verified = (
         await Promise.all(
           list.map(async (s) => {
             try {
@@ -294,18 +306,61 @@ const HomeInner: React.FC = () => {
         )
       ).filter(Boolean) as VineSpace[];
 
-      setSpaces(filtered);
+      // 2) shape guard (prevents toBase58 crashes)
+      const cleaned = verified.filter((s): s is VineSpace => {
+        if (!s) return false;
+        if (!hasToBase58((s as any).daoId)) return false;
+        if (!hasToBase58((s as any).repMint)) return false;
+        if (!Number.isFinite((s as any).currentSeason)) return false;
+        return true;
+      });
 
-      // ✅ NEW: choose active space (URL wins, otherwise default)
-      if (filtered.length > 0) {
+      // 3) dedupe by DAO
+      const byDao: Record<string, VineSpace> = {};
+      const meta: Record<string, { sane: boolean }> = {};
+
+      for (const s of cleaned) {
+        const dao = s.daoId.toBase58();
+        const sane = isSaneSeason(s.currentSeason) && isNonZeroPk(s.repMint);
+
+        const prev = byDao[dao];
+        if (!prev) {
+          byDao[dao] = s;
+          meta[dao] = { sane };
+          continue;
+        }
+
+        const prevSane = meta[dao]?.sane ?? false;
+
+        // Prefer sane over insane
+        if (sane && !prevSane) {
+          byDao[dao] = s;
+          meta[dao] = { sane };
+          continue;
+        }
+
+        // If both sane, prefer higher season
+        if (sane && prevSane && s.currentSeason > prev.currentSeason) {
+          byDao[dao] = s;
+          continue;
+        }
+
+        // Otherwise keep existing (stable)
+      }
+
+      const finalSpaces = Object.values(byDao);
+      setSpaces(finalSpaces);
+
+      // 4) choose active space
+      if (finalSpaces.length > 0) {
         const urlDao = daoFromUrlPk?.toBase58() || "";
-        const urlExists = urlDao && filtered.some((s) => s.daoId.toBase58() === urlDao);
+        const urlExists =
+          !!urlDao && finalSpaces.some((s) => s.daoId.toBase58() === urlDao);
 
         if (urlExists) {
           setActiveDao(urlDao);
         } else if (!activeDao) {
-          // keep your old behavior
-          setActiveDao(filtered[0].daoId.toBase58());
+          setActiveDao(finalSpaces[0].daoId.toBase58());
         }
       }
     } finally {
@@ -313,43 +368,17 @@ const HomeInner: React.FC = () => {
     }
   };
 
-  const resolvedTheme = useMemo(() => {
-    const t = projectMeta?.vine?.theme ?? {};
+  const activeSpace =
+    spaces.find((s) => s.daoId.toBase58() === activeDao) || null;
 
-    return {
-      mode: t.mode ?? "auto",
-      primary: t.primary ?? grapeTheme.palette.primary.main,
+  const activeMint = useMemo(() => {
+    const mint = activeSpace?.repMint?.toBase58?.() || "";
+    const zero = PublicKey.default.toBase58();
+    if (!mint || mint === zero) return FALLBACK_VINE_MINT;
+    return mint;
+  }, [activeSpace]);
 
-      background: {
-        image: t.background_image ?? null,
-        opacity: typeof t.background_opacity === "number" ? t.background_opacity : 0.45,
-        blur: typeof t.background_blur === "number" ? t.background_blur : 12,
-        position: t.background_position ?? "center",
-        size: t.background_size ?? "cover",
-        repeat: t.background_repeat ?? "no-repeat",
-      },
-    };
-  }, [projectMeta]);
-
-  const themedMui = useMemo(() => {
-    const base = grapeTheme;
-
-    return createTheme({
-      ...base,
-      palette: {
-        ...base.palette,
-        primary: {
-          ...base.palette.primary,
-          main: resolvedTheme.primary,
-        },
-        mode:
-          resolvedTheme.mode === "auto"
-            ? base.palette.mode
-            : resolvedTheme.mode,
-      },
-    });
-  }, [resolvedTheme]);
-
+  // fetch project metadata (theme) for active dao
   useEffect(() => {
     let cancelled = false;
 
@@ -373,6 +402,7 @@ const HomeInner: React.FC = () => {
     };
   }, [activeDao, connection]);
 
+  // initial load spaces
   useEffect(() => {
     let cancelled = false;
 
@@ -387,43 +417,62 @@ const HomeInner: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connection]);
 
-  const activeSpace = spaces.find((s) => s.daoId.toBase58() === activeDao) || null;
-
-  const activeMint = useMemo(() => {
-    const mint = activeSpace?.repMint?.toBase58?.() || "";
-    const zero = PublicKey.default.toBase58();
-    if (!mint || mint === zero) return FALLBACK_VINE_MINT;
-    return mint;
-  }, [activeSpace]);
-
-  // ✅ NEW: whenever activeDao changes, update URL (?dao=...)
+  // keep URL (?dao=...) in sync with activeDao
   useEffect(() => {
     if (!activeDao) return;
-
-    // avoid repeatedly writing the same URL
     if (lastUrlDaoRef.current === activeDao) return;
     lastUrlDaoRef.current = activeDao;
 
-    // preserve other params, only set dao
     const p = new URLSearchParams(searchParams?.toString() || "");
     p.set("dao", activeDao);
-
     router.replace(`?${p.toString()}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDao]);
 
-  const spaceLabel = activeSpace
-    ? `Space: ${shorten(activeSpace.daoId.toBase58(), 5, 5)}`
-    : spacesLoading
-    ? "Spaces: Loading…"
-    : "Spaces: None";
+  // theme resolve
+  const resolvedTheme = useMemo(() => {
+    const t = projectMeta?.vine?.theme ?? {};
+
+    return {
+      mode: t.mode ?? "auto",
+      primary: t.primary ?? grapeTheme.palette.primary.main,
+      background: {
+        image: t.background_image ?? null,
+        opacity: typeof t.background_opacity === "number" ? t.background_opacity : 0.45,
+        blur: typeof t.background_blur === "number" ? t.background_blur : 12,
+        position: t.background_position ?? "center",
+        size: t.background_size ?? "cover",
+        repeat: t.background_repeat ?? "no-repeat",
+      },
+    };
+  }, [projectMeta]);
+
+  const themedMui = useMemo(() => {
+    const base = grapeTheme;
+
+    return createTheme({
+      ...base,
+      palette: {
+        ...base.palette,
+        primary: {
+          ...base.palette.primary,
+          main: resolvedTheme.primary,
+        },
+        mode: resolvedTheme.mode === "auto" ? base.palette.mode : resolvedTheme.mode,
+      },
+    });
+  }, [resolvedTheme]);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const disabledSpaces = spacesLoading || spaces.length === 0;
-  const spaceTitle =
-    activeSpace ? `DAO: ${activeSpace.daoId.toBase58()}` : "No spaces found";
+  const spaceTitle = activeSpace ? `DAO: ${activeSpace.daoId.toBase58()}` : "No spaces found";
+  const spaceLabel = activeSpace
+    ? `Space: ${shorten(activeSpace.daoId.toBase58(), 5, 5)}`
+    : spacesLoading
+    ? "Spaces: Loading…"
+    : "Spaces: None";
 
   const manageDisabled = !activeDao || !activeSpace;
 
@@ -474,7 +523,12 @@ const HomeInner: React.FC = () => {
               sx={{ ml: 1, mr: 1 }}
             >
               <Avatar>
-                <img src={VINE_LOGO} width="50px" className="header-logo" alt="Powered by Grape" />
+                <img
+                  src={VINE_LOGO}
+                  width="50px"
+                  className="header-logo"
+                  alt="Powered by Grape"
+                />
               </Avatar>
             </Typography>
 
@@ -542,17 +596,22 @@ const HomeInner: React.FC = () => {
               }}
             >
               {spaces.length === 0 ? (
-                <MenuItem disabled>{spacesLoading ? "Loading…" : "No spaces found on-chain"}</MenuItem>
+                <MenuItem disabled>
+                  {spacesLoading ? "Loading…" : "No spaces found on-chain"}
+                </MenuItem>
               ) : (
                 spaces.map((s) => {
-                  const dao = s.daoId.toBase58();
-                  const mint = s.repMint.toBase58();
+                  // Guard: never let a bad row crash UI
+                  const dao = s.daoId?.toBase58?.();
+                  const mint = s.repMint?.toBase58?.();
+                  if (!dao || !mint) return null;
+
                   return (
                     <MenuItem
                       key={dao}
                       selected={dao === activeDao}
                       onClick={() => {
-                        setActiveDao(dao);      // ✅ this now also updates the URL via the effect
+                        setActiveDao(dao);
                         setSpaceAnchor(null);
                       }}
                       sx={{
@@ -615,7 +674,11 @@ const HomeInner: React.FC = () => {
           }}
         />
 
-        <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 6, position: "relative", zIndex: 2 }}>
+        <Container
+          component="main"
+          maxWidth="lg"
+          sx={{ mt: 4, mb: 6, position: "relative", zIndex: 2 }}
+        >
           <Paper
             elevation={0}
             sx={{

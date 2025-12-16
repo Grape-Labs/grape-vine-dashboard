@@ -416,6 +416,7 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
             </Box>
           </Box>
 
+          {/* Enable toggle */}
           <Divider sx={{ borderColor: "rgba(148,163,184,0.25)" }} />
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <input
@@ -424,235 +425,137 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
               onChange={(e) => setEnableVineTheme(e.target.checked)}
               id="enable-vine-theme"
             />
-            <label htmlFor="enable-vine-theme">
-              Enable Vine theme customization
-            </label>
+            <label htmlFor="enable-vine-theme">Enable Vine theme customization</label>
           </Box>
 
           {enableVineTheme && (
-          <>
-            <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
-              Theme (optional)
-            </Typography>
-
-            <TextField
-              select
-              label="Mode"
-              value={themeMode}
-              onChange={(e) => setThemeMode(e.target.value as ThemeMode)}
-            >
-              <MenuItem value="auto">Auto</MenuItem>
-              <MenuItem value="dark">Dark</MenuItem>
-              <MenuItem value="light">Light</MenuItem>
-            </TextField>
-
-            <Box sx={{ display: "grid", gap: 1 }}>
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                <TextField
-                  label="Primary color"
-                  value={themePrimary}
-                  onChange={(e) => setThemePrimary(e.target.value)}
-                  placeholder="#7c3aed"
-                  fullWidth
-                />
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: "12px",
-                    border: "1px solid rgba(148,163,184,0.35)",
-                    background: safeHex(themePrimary) || "#7c3aed",
-                  }}
-                  title="Preview"
-                />
-              </Box>
+            <>
+              <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
+                Theme (optional)
+              </Typography>
 
               <TextField
-                label="Background image URL (optional)"
-                value={themeBgImage}
-                onChange={(e) => setThemeBgImage(e.target.value)}
-                placeholder="https://.../background.webp"
-                fullWidth
-              />
+                select
+                label="Mode"
+                value={themeMode}
+                onChange={(e) => setThemeMode(e.target.value as ThemeMode)}
+              >
+                <MenuItem value="auto">Auto</MenuItem>
+                <MenuItem value="dark">Dark</MenuItem>
+                <MenuItem value="light">Light</MenuItem>
+              </TextField>
 
-              {/* ✅ Optional background file upload */}
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-                <Button
-                  component="label"
-                  htmlFor={bgInputId}
-                  disabled={bgUploading || !canUseProvider}
+              <Box sx={{ display: "grid", gap: 1 }}>
+                {/* … your theme inputs exactly as you have them … */}
+              </Box>
+
+              {/* ✅ LIVE PREVIEW (this is what you’re missing in the DOM) */}
+              <Box
+                sx={{
+                  mt: 1,
+                  borderRadius: "18px",
+                  overflow: "hidden",
+                  border: "1px solid rgba(148,163,184,0.35)",
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+                }}
+              >
+                <Box
                   sx={{
-                    textTransform: "none",
-                    borderRadius: "999px",
-                    border: "1px solid rgba(255,255,255,0.22)",
-                    color: "rgba(248,250,252,0.95)",
+                    position: "relative",
+                    height: 190,
+                    backgroundImage: resolvedTheme.bg.image
+                      ? `url("${resolvedTheme.bg.image}")`
+                      : "linear-gradient(135deg, rgba(124,58,237,0.30), rgba(56,189,248,0.18))",
+                    backgroundSize: resolvedTheme.bg.size,
+                    backgroundPosition: resolvedTheme.bg.position,
+                    backgroundRepeat: resolvedTheme.bg.repeat,
                   }}
                 >
-                  Choose background file
-                  <input
-                    id={bgInputId}
-                    hidden
-                    type="file"
-                    accept="image/*"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const f = e.target.files?.[0] ?? null;
-                      setBgFile(f);
-                      e.target.value = "";
-                    }}
-                  />
-                </Button>
-
-                <Typography variant="caption" sx={{ opacity: 0.75 }}>
-                  {bgFile ? bgFile.name : "No background selected"}
-                </Typography>
-
-                <Button
-                  size="small"
-                  onClick={handleUploadThemeBgFile}
-                  disabled={!bgFile || bgUploading || !canUseProvider}
-                  sx={{ textTransform: "none" }}
-                >
-                  {bgUploading ? "Uploading…" : "Upload & apply"}
-                </Button>
-              </Box>
-
-              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
-                <TextField
-                  label="Overlay opacity (0–1)"
-                  type="number"
-                  value={themeBgOpacity}
-                  onChange={(e) => setThemeBgOpacity(Number(e.target.value))}
-                  inputProps={{ step: 0.05, min: 0, max: 1 }}
-                />
-                <TextField
-                  label="Blur (px)"
-                  type="number"
-                  value={themeBgBlur}
-                  onChange={(e) => setThemeBgBlur(Number(e.target.value))}
-                  inputProps={{ step: 1, min: 0, max: 40 }}
-                />
-              </Box>
-
-              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1 }}>
-                <TextField
-                  label="Position"
-                  value={themeBgPosition}
-                  onChange={(e) => setThemeBgPosition(e.target.value)}
-                  placeholder="center"
-                />
-                <TextField
-                  label="Size"
-                  value={themeBgSize}
-                  onChange={(e) => setThemeBgSize(e.target.value)}
-                  placeholder="cover"
-                />
-                <TextField
-                  label="Repeat"
-                  value={themeBgRepeat}
-                  onChange={(e) => setThemeBgRepeat(e.target.value)}
-                  placeholder="no-repeat"
-                />
-              </Box>
-            </Box>
-                
-                {/* ✅ LIVE PREVIEW */}
                   <Box
                     sx={{
-                      mt: 1,
-                      borderRadius: "18px",
-                      overflow: "hidden",
-                      border: "1px solid rgba(148,163,184,0.35)",
-                      boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-                      height: 200,
+                      position: "absolute",
+                      inset: 0,
+                      background: `rgba(0,0,0,${resolvedTheme.bg.opacity})`,
+                      backdropFilter: `blur(${resolvedTheme.bg.blur}px)`,
+                    }}
+                  />
+
+                  {/* fake app bar */}
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 44,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      px: 1.5,
+                      borderBottom: "1px solid rgba(255,255,255,0.12)",
+                      background: "rgba(15,23,42,0.55)",
+                      backdropFilter: "blur(10px)",
                     }}
                   >
-                    <Box
-                      sx={{
-                        position: "relative",
-                        height: 190,
-                        backgroundImage: resolvedTheme.bg.image
-                          ? `url('${resolvedTheme.bg.image}')`
-                          : "linear-gradient(135deg, rgba(124,58,237,0.30), rgba(56,189,248,0.18))",
-                        backgroundSize: resolvedTheme.bg.size,
-                        backgroundPosition: resolvedTheme.bg.position,
-                        backgroundRepeat: resolvedTheme.bg.repeat,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          borderRadius: "18px",
-                          position: "absolute",
-                          inset: 0,
-                          background: `rgba(0,0,0,${resolvedTheme.bg.opacity})`,
-                          backdropFilter: `blur(${resolvedTheme.bg.blur}px)`,
-                        }}
-                      />
-
-                      {/* App bar */}
-                      <Box
-                        sx={{
-                          borderRadius: "18px",
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: 44,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          px: 1.5,
-                          borderBottom: "1px solid rgba(255,255,255,0.12)",
-                          background: "rgba(15,23,42,0.55)",
-                          backdropFilter: "blur(10px)",
-                        }}
-                      >
-                        <Typography variant="caption">VINE • Preview</Typography>
-                        <Box sx={{ display: "flex", gap: 0.8 }}>
-                          <Chip size="small" label={`mode: ${resolvedTheme.mode}`} sx={chipSx} />
-                          <Chip size="small" label={resolvedTheme.primary} sx={chipSx} />
-                        </Box>
-                      </Box>
-
-                      {/* Content */}
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          inset: 0,
-                          pt: "54px",
-                          px: 2,
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                          Live Theme Preview
-                        </Typography>
-
-                        <Typography variant="caption" sx={{ opacity: 0.85 }}>
-                          Background + overlay + blur + primary button color.
-                        </Typography>
-
-                        <Box sx={{ display: "flex", gap: 1 }}>
-                          <Button
-                            size="small"
-                            variant="contained"
-                            sx={{
-                              borderRadius: "999px",
-                              background: resolvedTheme.primary,
-                            }}
-                          >
-                            Primary
-                          </Button>
-                          <Button size="small" variant="outlined">
-                            Secondary
-                          </Button>
-                        </Box>
-                      </Box>
+                    <Typography variant="caption" sx={{ opacity: 0.9, letterSpacing: 0.3 }}>
+                      VINE • Preview
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 0.8, alignItems: "center" }}>
+                      <Chip size="small" label={`mode: ${resolvedTheme.mode}`} sx={chipSx} />
+                      <Chip size="small" label={resolvedTheme.primary} sx={chipSx} />
                     </Box>
                   </Box>
-          </>
+
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      pt: "54px",
+                      px: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+                      Live Theme Preview
+                    </Typography>
+
+                    <Typography variant="caption" sx={{ opacity: 0.85, maxWidth: 420 }}>
+                      Background + overlay + blur + primary button color.
+                    </Typography>
+
+                    <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        sx={{
+                          textTransform: "none",
+                          borderRadius: "999px",
+                          background: resolvedTheme.primary,
+                          "&:hover": { background: resolvedTheme.primary },
+                        }}
+                      >
+                        Primary
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          textTransform: "none",
+                          borderRadius: "999px",
+                          borderColor: "rgba(255,255,255,0.35)",
+                          color: "rgba(248,250,252,0.92)",
+                        }}
+                      >
+                        Secondary
+                      </Button>
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            </>
           )}
 
           

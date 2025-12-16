@@ -1075,6 +1075,14 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       if (!cfg) throw new Error("Config not found");
       if (!isAuthority) throw new Error("Only authority can update metadata");
 
+      const MAX_URI_BYTES = 200; // must match program allocation
+      const uri = metadataUri.trim();
+      const byteLen = new TextEncoder().encode(uri).length;
+
+      if (byteLen > MAX_URI_BYTES) {
+        throw new Error(`URI too long (${byteLen} bytes). Max ${MAX_URI_BYTES}.`);
+      }
+
       return [
         await ixUpsertProjectMetadata({
           daoId: daoPk,

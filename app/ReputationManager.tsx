@@ -193,6 +193,9 @@ function decodeProjectMetadataAccount(
   const strLen = data.readUInt32LE(o);
   o += 4;
 
+  if (o + strLen > data.length - 1) {
+    throw new Error("ProjectMetadata string length out of bounds");
+  }
   const strBytes = data.slice(o, o + strLen);
   o += strLen;
 
@@ -487,6 +490,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
 
         const m = await fetchProjectMetadata(connection, daoPk);
         setMeta(m);
+        setMetadataUri(m?.metadataUri ?? ""); // ✅ keep field in sync with chain
 
         if (c) {
           setNewSeason(c.currentSeason + 1);
@@ -1077,6 +1081,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
 
       const MAX_URI_BYTES = 200; // must match program allocation
       const uri = metadataUri.trim();
+      if (!uri) throw new Error("Metadata URI cannot be empty");
       const byteLen = new TextEncoder().encode(uri).length;
 
       if (byteLen > MAX_URI_BYTES) {

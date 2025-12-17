@@ -35,6 +35,9 @@ import {
   getConfigPda,
   getReputationPda,
   fetchConfig,
+  //fetchProjectMetadata
+  buildSetDecayBpsIx,
+  buildAddReputationIx,
   type ReputationConfigAccount,
 } from "@grapenpm/vine-reputation-client";
 
@@ -181,11 +184,17 @@ function decodeProjectMetadataAccount(
   data: Buffer
 ): ProjectMetadataAccount {
   const DISC = 8;
-  if (data.length < DISC + 32 + 4 + 1) {
+
+  // need: disc + version + dao + strlen + bump at least
+  if (data.length < DISC + 1 + 32 + 4 + 1) {
     throw new Error("ProjectMetadata data too small");
   }
 
   let o = DISC;
+
+  // ✅ version byte exists on-chain
+  const version = data.readUInt8(o);
+  o += 1;
 
   const daoId = new PublicKey(data.slice(o, o + 32));
   o += 32;
@@ -193,13 +202,18 @@ function decodeProjectMetadataAccount(
   const strLen = data.readUInt32LE(o);
   o += 4;
 
-  if (o + strLen > data.length - 1) {
-    throw new Error("ProjectMetadata string length out of bounds");
+  // ✅ allow padding after bump; only require that the string bytes exist
+  if (o + strLen > data.length) {
+    throw new Error(`ProjectMetadata string length out of bounds (len=${strLen}, dataLen=${data.length})`);
   }
+
   const strBytes = data.slice(o, o + strLen);
   o += strLen;
 
   const metadataUri = new TextDecoder().decode(strBytes);
+
+  // bump is 1 byte after the string
+  if (o + 1 > data.length) throw new Error("ProjectMetadata bump out of bounds");
   const bump = data.readUInt8(o);
 
   return { pubkey, daoId, metadataUri, bump };
@@ -354,6 +368,10 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
   const [repOldWallet, setRepOldWallet] = useState<string>("");
   const [repNewWallet, setRepNewWallet] = useState<string>("");
 
+  // decay
+  const [decayBps, setDecayBps] = useState<number>(0);
+  const [decayPct, setDecayPct] = useState<number>(0); // 0..100 UI convenience
+
   // danger zone (close)
   const [closeRecipient, setCloseRecipient] = useState<string>("");
   const [closeConfirm, setCloseConfirm] = useState<string>("");
@@ -450,6 +468,9 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
     setRepOldWallet("");
     setRepNewWallet("");
 
+    setDecayBps(0);
+    setDecayPct(0);
+
     // bulk defaults
     setBulkText("");
     setBulkSeason(0);
@@ -498,6 +519,10 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
           setNewAuthority(c.authority.toBase58());
           setBulkSeason(c.currentSeason);
 
+          const bps = (c as any).decayBps ?? 0; // if your type already includes it, remove "as any"
+          setDecayBps(bps);
+          setDecayPct(Math.round((bps / 10000) * 100 * 100) / 100); // ex 3000 -> 30.00
+
           // danger defaults
           setCloseRepSeason(c.currentSeason);
 
@@ -545,6 +570,35 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
         { pubkey: args.authority, isSigner: false, isWritable: false }, // unchecked in Rust
         { pubkey: args.payer, isSigner: true, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: Buffer.from(data),
+    });
+  }
+
+  async function ixSetDecayBps(args: {
+    daoId: PublicKey;
+    authority: PublicKey;
+    decayBps: number; // 0..=10000
+  }) {
+    const decay = Math.floor(Number(args.decayBps));
+    if (!Number.isFinite(decay) || decay < 0 || decay > 10_000) {
+      throw new Error("decayBps must be 0..=10000");
+    }
+
+    // IMPORTANT: this must be the snake_case on-chain name
+    const disc = await anchorIxDisc("set_decay_bps");
+
+    const data = new Uint8Array(8 + 2);
+    data.set(disc, 0);
+    data.set(u16le(decay), 8);
+
+    const [configPda] = getConfigPda(args.daoId);
+
+    return new TransactionInstruction({
+      programId: VINE_REP_PROGRAM_ID,
+      keys: [
+        { pubkey: configPda, isSigner: false, isWritable: true },
+        { pubkey: args.authority, isSigner: true, isWritable: false },
       ],
       data: Buffer.from(data),
     });
@@ -883,6 +937,22 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
     }
   };
 
+  const handleSetDecay = async () => {
+    await runTx("Updated decay", async () => {
+      if (!publicKey || !daoPk) throw new Error("Missing wallet/DAO");
+      if (!cfg) throw new Error("Config not found");
+      if (!isAuthority) throw new Error("Only authority can update decay");
+
+      return [
+        await ixSetDecayBps({
+          daoId: daoPk,
+          authority: publicKey,
+          decayBps,
+        }),
+      ];
+    });
+  };
+
   const handleCreate = async () => {
     await runTx("Created reputation space", async () => {
       if (!publicKey || !daoPk) throw new Error("Missing wallet/DAO");
@@ -977,6 +1047,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
             );
           }
 
+          /*
           ixs.push(
             await ixAddReputation({
               daoId: daoPk,
@@ -985,6 +1056,17 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
               user,
               amount: BigInt(r.amount),
               currentSeason: season,
+            })
+          );*/
+          ixs.push(
+            await buildAddReputationIx({
+              conn: connection,
+              daoId: daoPk,
+              authority: publicKey,
+              payer: publicKey,
+              user: publicKey,
+              amount: BigInt(r.amount),
+              season: season,
             })
           );
         }
@@ -1313,24 +1395,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
 
         <DialogContent sx={{ pt: 2 }}>
           <Box sx={{ display: "grid", gap: 1.5, mt: 2 }}>
-            <TextField
-              label="DAO ID (space)"
-              fullWidth
-              value={daoId}
-              onChange={(e) => setDaoId(e.target.value)}
-              disabled={submitting}
-              InputProps={{ sx: glassFieldSx }}
-              InputLabelProps={{ shrink: Boolean(daoId) }}
-              helperText={
-                loading
-                  ? "Loading space…"
-                  : spaceExists
-                  ? "Space exists"
-                  : "No config found (you can create it)"
-              }
-              FormHelperTextProps={{ sx: { opacity: 0.7 } }}
-            />
-
+            
             <Box
               sx={{
                 display: "grid",
@@ -1379,6 +1444,15 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
                     sx={{ mt: 0.3, fontFamily: "monospace" }}
                   >
                     {shorten(cfg.repMint.toBase58(), 10, 10)}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ p: 1.5, borderRadius: "16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                  <Typography variant="caption" sx={{ opacity: 0.75 }}>
+                    Decay (per season)
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.3 }}>
+                    {(( (cfg as any)?.decayBps ?? 0) / 100).toFixed(2)}% ({(cfg as any)?.decayBps ?? 0} bps)
                   </Typography>
                 </Box>
 
@@ -1478,6 +1552,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
                   <Tab label="Mint" />
                   <Tab label="Authority" />
                   <Tab label="Metadata" />
+                  <Tab label="Decay" />
                   <Tab label="Reputation Ops" />
                   <Tab label="Danger" />
                 </Tabs>
@@ -1600,6 +1675,51 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
                 </TabPanel>
 
                 <TabPanel value={tab} index={4}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 650, mb: 1 }}>
+                    Seasonal decay
+                  </Typography>
+
+                  <Box sx={{ display: "grid", gap: 1.2, maxWidth: 520 }}>
+                    <TextField
+                      label="Decay (%)"
+                      type="number"
+                      value={decayPct}
+                      onChange={(e) => {
+                        const pct = Number(e.target.value);
+                        const safePct = Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 0;
+                        setDecayPct(safePct);
+                        setDecayBps(Math.round((safePct / 100) * 10_000)); // percent -> bps
+                      }}
+                      disabled={submitting}
+                      InputProps={{ sx: glassFieldSx }}
+                      helperText={`Stored on-chain as ${decayBps} bps. Current: ${(cfg as any)?.decayBps ?? 0} bps`}
+                      FormHelperTextProps={{ sx: { opacity: 0.7 } }}
+                    />
+
+                    <Typography variant="caption" sx={{ opacity: 0.75 }}>
+                      Weight formula used by UI: weight = (1 - decay) ^ seasonsAgo
+                      {" "}→ multiplier = {(1 - decayBps / 10000).toFixed(4)}
+                      {" "}→ prev season weight ≈ {(1 - decayBps / 10000).toFixed(2)}
+                    </Typography>
+
+                    <Button
+                      onClick={handleSetDecay}
+                      disabled={!isAuthority || submitting || decayBps < 0 || decayBps > 10_000}
+                      variant="contained"
+                      sx={glassPrimaryBtnSx}
+                    >
+                      Update decay
+                    </Button>
+
+                    {!isAuthority && (
+                      <Alert severity="warning" sx={{ borderRadius: "14px" }}>
+                        Admin actions require the authority wallet.
+                      </Alert>
+                    )}
+                  </Box>
+                </TabPanel>
+
+                <TabPanel value={tab} index={5}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 650, mb: 1 }}>
                     Reputation ops (current season: {cfg.currentSeason})
                   </Typography>
@@ -1812,7 +1932,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
                 </TabPanel>
 
                 {/* ---------------- Danger ---------------- */}
-                <TabPanel value={tab} index={5}>
+                <TabPanel value={tab} index={6}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
                     Danger zone
                   </Typography>

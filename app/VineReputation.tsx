@@ -3,11 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Typography, CircularProgress, Divider } from "@mui/material";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { Buffer } from "buffer";
 
 import {
   fetchConfig,
-  fetchReputation,
   getConfigPda,
   getReputationPda,
   decodeReputation,
@@ -17,26 +15,11 @@ import { REACT_APP_RPC_DEVNET_ENDPOINT, GRAPE_DAO_ID } from "./constants";
 
 type VineReputationProps = {
   walletAddress: string | null;
-  daoIdBase58?: string; // defaults to GRAPE_DAO_ID
-  endpoint?: string; // defaults to devnet
-  historyDepth?: number; // how many seasons back to show (default 3)
-  decayBase?: number; // decay per season (default 0.7)
+  daoIdBase58?: string;
+  endpoint?: string;
+  historyDepth?: number; // default 3
+  decayBase?: number; // fallback only if config.decayBps missing
 };
-
-function toBuffer(data: Uint8Array | Buffer | ArrayBuffer | ArrayBufferView): Buffer {
-  if (Buffer.isBuffer(data)) return data;
-
-  if (data instanceof Uint8Array) {
-    return Buffer.from(data.buffer, data.byteOffset, data.byteLength);
-  }
-
-  if (ArrayBuffer.isView(data)) {
-    return Buffer.from(data.buffer, data.byteOffset, data.byteLength);
-  }
-
-  // ArrayBuffer
-  return Buffer.from(data);
-}
 
 function shortenPk(base58: string, start = 6, end = 6) {
   if (!base58) return "";
@@ -44,27 +27,8 @@ function shortenPk(base58: string, start = 6, end = 6) {
   return `${base58.slice(0, start)}...${base58.slice(-end)}`;
 }
 
-function bnLikeToNumber(v: any): number {
-  if (v == null) return 0;
-  if (typeof v?.toNumber === "function") return v.toNumber(); // Anchor BN
-  if (typeof v === "bigint") return Number(v);
-  const n = Number(v.toString?.() ?? v);
-  return Number.isFinite(n) ? n : 0;
-}
-
-type SeasonRow = {
-  season: number;
-  points: number;
-  lastUpdateSlot: number;
-  weight: number;
-  effectivePoints: number;
-  found: boolean;
-};
-
 function resolveDefaultDaoPk(daoIdBase58?: string) {
   if (daoIdBase58?.trim()) return new PublicKey(daoIdBase58.trim());
-
-  // GRAPE_DAO_ID might already be a PublicKey or a string
   try {
     // @ts-ignore
     if (GRAPE_DAO_ID instanceof PublicKey) return GRAPE_DAO_ID as PublicKey;
@@ -73,44 +37,127 @@ function resolveDefaultDaoPk(daoIdBase58?: string) {
 }
 
 /**
- * This wrapper tries a few common signatures for fetchReputation.
- * If none work, it falls back to PDA -> getAccountInfo -> decodeReputation.
+ * Convert BN / bigint / number / string -> bigint
+ * (No bigint literals used)
  */
-async function safeFetchReputation(
+function toBigIntSafe(v: any): bigint {
+  const ZERO = BigInt(0);
+
+  if (v == null) return ZERO;
+  if (typeof v === "bigint") return v;
+
+  // Anchor BN
+  if (typeof v?.toArrayLike === "function") {
+    try {
+      // take 8 bytes LE
+      const buf: Uint8Array = v.toArrayLike(Uint8Array, "le", 8);
+      let x = BigInt(0);
+      for (let i = 7; i >= 0; i--) {
+        x = (x << BigInt(8)) + BigInt(buf[i]);
+      }
+      return x;
+    } catch {
+      return ZERO;
+    }
+  }
+
+  try {
+    return BigInt(v.toString?.() ?? v);
+  } catch {
+    return ZERO;
+  }
+}
+
+/**
+ * Display bigint nicely without bigint literals
+ */
+function formatBigInt(bi: bigint): string {
+  // BigInt supports toLocaleString in modern runtimes.
+  try {
+    return bi.toLocaleString("en-US");
+  } catch {
+    return bi.toString();
+  }
+}
+
+type SeasonRow = {
+  season: number;
+  points: bigint;
+  lastUpdateSlot: bigint;
+  weight: number;
+  effectivePoints: bigint;
+  found: boolean;
+};
+
+/**
+ * Anti-garbage guards:
+ * - slot must be <= (current chain slot + small buffer)
+ * - points must be <= a very generous ceiling
+ *
+ * Tune these if you ever want.
+ */
+const MAX_POINTS_REASONABLE = BigInt("1000000000000"); // 1e12 points (absurdly generous)
+const SLOT_FUTURE_TOLERANCE = 5000; // slots
+
+async function safeFetchReputationAccount(
   conn: Connection,
   daoPk: PublicKey,
   userPk: PublicKey,
-  season: number
-) {
+  season: number,
+  currentChainSlot: number
+): Promise<{ points: bigint; lastUpdateSlot: bigint } | null> {
   const [configPda] = getConfigPda(daoPk);
+  const [repPda] = getReputationPda(configPda, userPk, season);
 
-  // 1) Try (conn, user, dao, season)  [your current call]
+  const ai = await conn.getAccountInfo(repPda, "confirmed");
+  if (!ai?.data) return null;
+
   try {
-    const r: any = await (fetchReputation as any)(conn, userPk, daoPk, season);
-    if (r) return r;
-  } catch {}
+    const rep: any = await decodeReputation(ai.data as any);
 
-  // 2) Try (conn, dao, user, season)
-  try {
-    const r: any = await (fetchReputation as any)(conn, daoPk, userPk, season);
-    if (r) return r;
-  } catch {}
+    const points = toBigIntSafe(rep?.points);
+    const lastUpdateSlot = toBigIntSafe(rep?.lastUpdateSlot);
 
-  // 3) Try (conn, configPda, user, season)  (very common pattern)
-  try {
-    const r: any = await (fetchReputation as any)(conn, configPda, userPk, season);
-    if (r) return r;
-  } catch {}
+    // guard: absurd slot (far in the future) => treat as garbage
+    const maxSlotAllowed = BigInt(String(currentChainSlot + SLOT_FUTURE_TOLERANCE));
+    if (lastUpdateSlot > maxSlotAllowed) return null;
 
-  // 4) Fallback: compute PDA and decode locally (most reliable)
-  try {
-    const [repPda] = getReputationPda(configPda, userPk, season);
-    const ai = await conn.getAccountInfo(repPda, "confirmed");
-    if (!ai?.data) return null;
-    return decodeReputation(toBuffer(ai.data));
-  } catch {}
+    // guard: absurd points => treat as garbage
+    if (points > MAX_POINTS_REASONABLE) return null;
 
-  return null;
+    return { points, lastUpdateSlot };
+  } catch {
+    return null;
+  }
+}
+
+function parseSeasonU16Like(v: any): number | null {
+  // season is u16 in your program; accept 1..65535
+  let n: number;
+
+  if (typeof v === "number") n = v;
+  else {
+    const s = (v?.toString?.() ?? String(v)).trim();
+    n = Number(s);
+  }
+
+  if (!Number.isFinite(n)) return null;
+  n = Math.floor(n);
+
+  if (n < 1 || n > 65535) return null;
+  return n;
+}
+
+function parseDecayBps(v: any): number | null {
+  let n: number;
+  if (typeof v === "number") n = v;
+  else n = Number((v?.toString?.() ?? String(v)).trim());
+
+  if (!Number.isFinite(n)) return null;
+  n = Math.floor(n);
+
+  if (n < 0 || n > 10000) return null;
+  return n;
 }
 
 const VineReputation: React.FC<VineReputationProps> = ({
@@ -151,41 +198,59 @@ const VineReputation: React.FC<VineReputationProps> = ({
 
         setDaoBase58(daoPk.toBase58());
 
-        // Always compute and show the config PDA
         const [configPda] = getConfigPda(daoPk);
         setConfigBase58(configPda.toBase58());
 
-        // 1) load config once to get currentSeason
-        const cfg = await fetchConfig(conn, daoPk);
+        const cfg: any = await fetchConfig(conn, daoPk);
         if (!cfg) {
           if (!cancelled) setError("No config found for this DAO.");
           return;
         }
 
-        const current = bnLikeToNumber(cfg.currentSeason);
-        if (!cancelled) setCurrentSeason(current);
+        const seasonNow = parseSeasonU16Like(cfg.currentSeason);
+        if (!seasonNow) {
+          if (!cancelled) setError("Config currentSeason is invalid.");
+          return;
+        }
+        if (!cancelled) setCurrentSeason(seasonNow);
 
-        // 2) choose seasons to show
+        // Use on-chain decayBps if present; otherwise fall back to decayBase prop
+        const decayBps = parseDecayBps(cfg.decayBps);
+        const perSeasonFactor =
+          decayBps == null
+            ? decayBase
+            : Math.max(0, Math.min(1, 1 - decayBps / 10000));
+
         const depth = Math.max(1, Math.floor(historyDepth));
-        const startSeason = Math.max(1, current - depth + 1);
+        const startSeason = Math.max(1, seasonNow - depth + 1);
 
-        const seasons: number[] = [];
-        for (let s = startSeason; s <= current; s++) seasons.push(s);
+        // get chain slot once (used for sanity checks)
+        const chainSlot = await conn.getSlot("confirmed");
 
-        // 3) fetch each season safely (never break the loop)
         const nextRows: SeasonRow[] = [];
 
-        for (const s of seasons) {
+        for (let s = startSeason; s <= seasonNow; s++) {
           if (cancelled) return;
 
-          const rep = await safeFetchReputation(conn, daoPk, userPk, s);
+          const rep = await safeFetchReputationAccount(conn, daoPk, userPk, s, chainSlot);
 
-          const points = bnLikeToNumber(rep?.points);
-          const lastUpdateSlot = bnLikeToNumber(rep?.lastUpdateSlot);
+          const points = rep?.points ?? BigInt(0);
+          const lastUpdateSlot = rep?.lastUpdateSlot ?? BigInt(0);
 
-          const diff = current - s;
-          const weight = diff < 0 ? 0 : Math.pow(decayBase, diff);
-          const effectivePoints = Math.round(points * weight);
+          const diff = seasonNow - s;
+          const weight = diff < 0 ? 0 : Math.pow(perSeasonFactor, diff);
+
+          // effectivePoints as bigint:
+          // we can only safely apply weight if points fits into JS number safely.
+          // Otherwise show raw points as “effective” to avoid lying.
+          let effectivePoints = BigInt(0);
+          const maxSafe = BigInt(String(Number.MAX_SAFE_INTEGER));
+          if (points <= maxSafe) {
+            const eff = Math.round(Number(points) * weight);
+            effectivePoints = BigInt(String(Math.max(0, eff)));
+          } else {
+            effectivePoints = points;
+          }
 
           nextRows.push({
             season: s,
@@ -215,8 +280,8 @@ const VineReputation: React.FC<VineReputationProps> = ({
 
   if (!walletAddress) return null;
 
-  const totalRaw = rows.reduce((acc, r) => acc + r.points, 0);
-  const totalDecayed = rows.reduce((acc, r) => acc + r.effectivePoints, 0);
+  const totalRaw = rows.reduce((acc, r) => acc + r.points, BigInt(0));
+  const totalDecayed = rows.reduce((acc, r) => acc + r.effectivePoints, BigInt(0));
 
   const daoShort = shortenPk(daoBase58, 6, 6);
   const cfgShort = shortenPk(configBase58, 6, 6);
@@ -256,11 +321,7 @@ const VineReputation: React.FC<VineReputationProps> = ({
       )}
 
       {error && !loading && (
-        <Typography
-          variant="caption"
-          color="error"
-          sx={{ mt: 1.2, display: "block" }}
-        >
+        <Typography variant="caption" color="error" sx={{ mt: 1.2, display: "block" }}>
           {error}
         </Typography>
       )}
@@ -313,10 +374,10 @@ const VineReputation: React.FC<VineReputationProps> = ({
 
                       <Box sx={{ mt: 0.4, display: "flex", justifyContent: "space-between" }}>
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                          {r.points.toLocaleString()} pts
+                          {r.found ? `${formatBigInt(r.points)} pts` : "—"}
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                          {r.effectivePoints.toLocaleString()} effective
+                          {r.found ? `${formatBigInt(r.effectivePoints)} effective` : "—"}
                         </Typography>
                       </Box>
 
@@ -325,7 +386,9 @@ const VineReputation: React.FC<VineReputationProps> = ({
                         sx={{ opacity: 0.65, display: "block", mt: 0.3 }}
                       >
                         Last update slot:{" "}
-                        {r.lastUpdateSlot ? r.lastUpdateSlot.toLocaleString() : "—"}
+                        {r.found && r.lastUpdateSlot > BigInt(0)
+                          ? formatBigInt(r.lastUpdateSlot)
+                          : "—"}
                       </Typography>
                     </Box>
                   );
@@ -340,7 +403,7 @@ const VineReputation: React.FC<VineReputationProps> = ({
               Total (raw)
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 800 }}>
-              {totalRaw.toLocaleString()}
+              {formatBigInt(totalRaw)}
             </Typography>
           </Box>
 
@@ -349,7 +412,7 @@ const VineReputation: React.FC<VineReputationProps> = ({
               Total (decayed)
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 800 }}>
-              {totalDecayed.toLocaleString()}
+              {formatBigInt(totalDecayed)}
             </Typography>
           </Box>
         </>

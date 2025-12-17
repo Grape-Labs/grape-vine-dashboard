@@ -15,6 +15,8 @@ import {
   Typography,
   Divider,
   Chip,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 
 type Provider = "irys" | "pinata" | "arweave";
@@ -28,6 +30,7 @@ export type MetadataJson = {
   external_url?: string;
   attributes?: Array<{ trait_type: string; value: string | number }>;
   properties?: any;
+
   vine?: {
     theme?: {
       mode?: ThemeMode;
@@ -41,6 +44,7 @@ export type MetadataJson = {
     };
     [k: string]: any;
   };
+
   [k: string]: any;
 };
 
@@ -91,6 +95,14 @@ function safeNum(v: any, fallback: number) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+const chipSx = {
+  height: 24,
+  color: "rgba(248,250,252,0.92)",
+  background: "rgba(15,23,42,0.55)",
+  border: "1px solid rgba(148,163,184,0.30)",
+  backdropFilter: "blur(8px)",
+} as const;
+
 const MetadataManager: React.FC<MetadataManagerProps> = ({
   open,
   onClose,
@@ -114,7 +126,8 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
 
-  // ✅ Theme fields
+  // Vine Theme fields
+  const [enableVineTheme, setEnableVineTheme] = useState(false);
   const [themeMode, setThemeMode] = useState<ThemeMode>("auto");
   const [themePrimary, setThemePrimary] = useState<string>("#7c3aed");
   const [themeBgImage, setThemeBgImage] = useState<string>("");
@@ -124,20 +137,11 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
   const [themeBgSize, setThemeBgSize] = useState<string>("cover");
   const [themeBgRepeat, setThemeBgRepeat] = useState<string>("no-repeat");
 
-  // ✅ Optional: allow user to upload a background image file (it will upload to Irys and set themeBgImage)
+  // Optional bg upload
   const [bgFile, setBgFile] = useState<File | null>(null);
   const [bgUploading, setBgUploading] = useState(false);
-  const [enableVineTheme, setEnableVineTheme] = useState(false);
 
-  const [customJson, setCustomJson] = useState<string>(
-    JSON.stringify(
-      {
-        // vine: { theme: { ... } }
-      },
-      null,
-      2
-    )
-  );
+  const [customJson, setCustomJson] = useState<string>(JSON.stringify({}, null, 2));
 
   const [submitting, setSubmitting] = useState(false);
   const [snack, setSnack] = useState<{ msg: string; err?: boolean } | null>(null);
@@ -159,6 +163,7 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
     setSnack(null);
 
     // Theme defaults
+    setEnableVineTheme(false);
     setThemeMode("auto");
     setThemePrimary("#7c3aed");
     setThemeBgImage("");
@@ -170,7 +175,9 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
 
     setBgFile(null);
     setBgUploading(false);
-    setEnableVineTheme(false); // ✅ opt-in reset
+
+    // keep custom json stable but reset to empty object
+    setCustomJson(JSON.stringify({}, null, 2));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultProvider, defaultName, defaultSymbol, defaultDescription]);
 
@@ -183,13 +190,11 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
   function safeParseCustomJson(): any {
     const raw = (customJson || "").trim();
     if (!raw) return {};
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") return parsed;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       throw new Error("Custom JSON must be an object");
-    } catch {
-      throw new Error("Custom JSON is not valid JSON");
     }
+    return parsed;
   }
 
   async function uploadViaApi(file: File, contentType?: string): Promise<string> {
@@ -209,7 +214,6 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
     return json.url as string;
   }
 
-  // ✅ Resolved theme (for preview + metadata)
   const resolvedTheme = useMemo(() => {
     const primary = safeHex(themePrimary) || "#7c3aed";
     const opacity = clamp01(safeNum(themeBgOpacity, 0.45));
@@ -219,7 +223,7 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
       mode: themeMode,
       primary,
       bg: {
-        image: (themeBgImage || "").trim() || "",
+        image: (themeBgImage || "").trim(),
         opacity,
         blur,
         position: (themeBgPosition || "center").trim() || "center",
@@ -242,11 +246,11 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
     try {
       if (!canUseProvider) throw new Error(`${provider} not enabled yet`);
       if (!bgFile) throw new Error("Choose a background image file first");
-      setBgUploading(true);
 
+      setBgUploading(true);
       const url = await uploadViaApi(bgFile, bgFile.type || "image/*");
       setThemeBgImage(url);
-      setSnack({ msg: "Background image uploaded & applied to preview" });
+      setSnack({ msg: "Background image uploaded & applied" });
     } catch (e: any) {
       setSnack({ msg: e?.message ?? "Background upload failed", err: true });
     } finally {
@@ -261,12 +265,13 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
 
       setSubmitting(true);
 
-      // 1) Upload token/project image
+      // 1) Upload image
       const imageUrl = await uploadViaApi(imageFile, imageFile.type || "image/*");
 
-      // 2) Build metadata JSON
+      // 2) Merge custom JSON
       const extra = safeParseCustomJson();
 
+      // 3) Optional vine theme
       const vineTheme = {
         mode: resolvedTheme.mode,
         primary: resolvedTheme.primary,
@@ -285,6 +290,7 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
         ...(externalUrl ? { external_url: externalUrl } : {}),
         image: imageUrl,
 
+        // common NFT-ish fields (keep if you use them)
         seller_fee_basis_points: extra?.seller_fee_basis_points ?? 0,
         animation_url: extra?.animation_url,
         attributes: extra?.attributes ?? [],
@@ -294,10 +300,10 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
           files: [
             { uri: imageUrl, type: imageFile.type || "image/*" },
             ...(enableVineTheme &&
-              resolvedTheme.bg.image &&
-              resolvedTheme.bg.image !== imageUrl
-                ? [{ uri: resolvedTheme.bg.image, type: "image/*" }]
-                : []),
+            resolvedTheme.bg.image &&
+            resolvedTheme.bg.image !== imageUrl
+              ? [{ uri: resolvedTheme.bg.image, type: "image/*" }]
+              : []),
           ],
           category: "image",
         },
@@ -308,16 +314,17 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
                 ...(extra?.vine ?? {}),
                 theme: {
                   ...vineTheme,
-                  ...(extra?.vine?.theme ?? {}),
+                  ...(extra?.vine?.theme ?? {}), // allow override/extra keys
                 },
               },
             }
           : {}),
 
+        // finally spread extra (so custom top-level keys survive)
         ...extra,
       };
 
-      // 3) Upload metadata.json
+      // 4) Upload metadata.json
       const metaFile = new File([JSON.stringify(metadata, null, 2)], "metadata.json", {
         type: "application/json",
       });
@@ -334,18 +341,15 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
     }
   };
 
-  // ✅ Chips readable on dark preview
-  const chipSx = {
-    height: 24,
-    color: "rgba(248,250,252,0.92)",
-    background: "rgba(15,23,42,0.55)",
-    border: "1px solid rgba(148,163,184,0.30)",
-    backdropFilter: "blur(8px)",
-  } as const;
-
   return (
     <>
-      <Dialog open={open} onClose={safeClose} fullWidth maxWidth="sm" PaperProps={{ sx: dialogPaperSx }}>
+      <Dialog
+        open={open}
+        onClose={safeClose}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: dialogPaperSx }}
+      >
         <DialogTitle>{title ?? "Metadata Manager"}</DialogTitle>
 
         <DialogContent sx={{ display: "grid", gap: 1.4, pt: 2 }}>
@@ -356,8 +360,12 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
             onChange={(e) => setProvider(e.target.value as Provider)}
           >
             <MenuItem value="irys">Irys (recommended)</MenuItem>
-            <MenuItem value="pinata" disabled>Pinata (coming soon)</MenuItem>
-            <MenuItem value="arweave" disabled>Arweave direct (coming soon)</MenuItem>
+            <MenuItem value="pinata" disabled>
+              Pinata (coming soon)
+            </MenuItem>
+            <MenuItem value="arweave" disabled>
+              Arweave direct (coming soon)
+            </MenuItem>
           </TextField>
 
           {!canUseProvider && (
@@ -383,7 +391,9 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
 
           {/* Token/project image */}
           <Box sx={{ display: "grid", gap: 0.6 }}>
-            <Typography variant="body2" sx={{ opacity: 0.85 }}>Image</Typography>
+            <Typography variant="body2" sx={{ opacity: 0.85 }}>
+              Image
+            </Typography>
             <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
               <Button
                 component="label"
@@ -416,149 +426,233 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
             </Box>
           </Box>
 
-          {/* Enable toggle */}
           <Divider sx={{ borderColor: "rgba(148,163,184,0.25)" }} />
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <input
-              type="checkbox"
-              checked={enableVineTheme}
-              onChange={(e) => setEnableVineTheme(e.target.checked)}
-              id="enable-vine-theme"
-            />
-            <label htmlFor="enable-vine-theme">Enable Vine theme customization</label>
-          </Box>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={enableVineTheme}
+                onChange={(e) => setEnableVineTheme(e.target.checked)}
+              />
+            }
+            label="Enable Vine theme customization"
+          />
 
           {enableVineTheme && (
             <>
-              <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
-                Theme (optional)
-              </Typography>
+              <Box sx={{ display: "grid", gap: 1.1 }}>
+                <TextField
+                  select
+                  label="Theme mode"
+                  value={themeMode}
+                  onChange={(e) => setThemeMode(e.target.value as ThemeMode)}
+                >
+                  <MenuItem value="auto">Auto</MenuItem>
+                  <MenuItem value="dark">Dark</MenuItem>
+                  <MenuItem value="light">Light</MenuItem>
+                </TextField>
 
-              <TextField
-                select
-                label="Mode"
-                value={themeMode}
-                onChange={(e) => setThemeMode(e.target.value as ThemeMode)}
-              >
-                <MenuItem value="auto">Auto</MenuItem>
-                <MenuItem value="dark">Dark</MenuItem>
-                <MenuItem value="light">Light</MenuItem>
-              </TextField>
+                <TextField
+                  label="Primary color (hex)"
+                  value={themePrimary}
+                  onChange={(e) => setThemePrimary(e.target.value)}
+                  placeholder="#7c3aed"
+                  helperText="Supports #RGB, #RRGGBB, #RRGGBBAA"
+                />
 
-              <Box sx={{ display: "grid", gap: 1 }}>
-                {/* … your theme inputs exactly as you have them … */}
-              </Box>
+                <TextField
+                  label="Background image URL (optional)"
+                  value={themeBgImage}
+                  onChange={(e) => setThemeBgImage(e.target.value)}
+                  placeholder="https://..."
+                />
 
-              {/* ✅ LIVE PREVIEW (this is what you’re missing in the DOM) */}
-              <Box
-                sx={{
-                  mt: 1,
-                  borderRadius: "18px",
-                  overflow: "hidden",
-                  border: "1px solid rgba(148,163,184,0.35)",
-                  boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-                }}
-              >
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+                  <Button
+                    component="label"
+                    htmlFor={bgInputId}
+                    disabled={submitting || bgUploading}
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: "999px",
+                      border: "1px solid rgba(255,255,255,0.22)",
+                      color: "rgba(248,250,252,0.95)",
+                    }}
+                  >
+                    Choose BG file
+                    <input
+                      id={bgInputId}
+                      hidden
+                      type="file"
+                      accept="image/*"
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const f = e.target.files?.[0] ?? null;
+                        setBgFile(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </Button>
+
+                  <Typography variant="caption" sx={{ opacity: 0.75 }}>
+                    {bgFile ? bgFile.name : "No BG file selected"}
+                  </Typography>
+
+                  <Button
+                    onClick={handleUploadThemeBgFile}
+                    disabled={!canUseProvider || submitting || bgUploading || !bgFile}
+                    sx={{ ...primaryBtnSx, py: 0.7 }}
+                  >
+                    {bgUploading ? "Uploading…" : "Upload BG"}
+                  </Button>
+                </Box>
+
                 <Box
                   sx={{
-                    position: "relative",
-                    height: 190,
-                    backgroundImage: resolvedTheme.bg.image
-                      ? `url("${resolvedTheme.bg.image}")`
-                      : "linear-gradient(135deg, rgba(124,58,237,0.30), rgba(56,189,248,0.18))",
-                    backgroundSize: resolvedTheme.bg.size,
-                    backgroundPosition: resolvedTheme.bg.position,
-                    backgroundRepeat: resolvedTheme.bg.repeat,
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                    gap: 1.1,
+                  }}
+                >
+                  <TextField
+                    label="Background opacity (0..1)"
+                    type="number"
+                    value={themeBgOpacity}
+                    onChange={(e) => setThemeBgOpacity(safeNum(e.target.value, 0.45))}
+                  />
+                  <TextField
+                    label="Background blur (px)"
+                    type="number"
+                    value={themeBgBlur}
+                    onChange={(e) => setThemeBgBlur(Math.max(0, safeNum(e.target.value, 12)))}
+                  />
+                  <TextField
+                    label="Background position"
+                    value={themeBgPosition}
+                    onChange={(e) => setThemeBgPosition(e.target.value)}
+                    placeholder="center / top / 50% 50%"
+                  />
+                  <TextField
+                    label="Background size"
+                    value={themeBgSize}
+                    onChange={(e) => setThemeBgSize(e.target.value)}
+                    placeholder="cover / contain / 100% 100%"
+                  />
+                  <TextField
+                    label="Background repeat"
+                    value={themeBgRepeat}
+                    onChange={(e) => setThemeBgRepeat(e.target.value)}
+                    placeholder="no-repeat / repeat"
+                  />
+                </Box>
+
+                {/* Live preview */}
+                <Box
+                  sx={{
+                    mt: 0.5,
+                    borderRadius: "18px",
+                    overflow: "hidden",
+                    border: "1px solid rgba(148,163,184,0.35)",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
                   }}
                 >
                   <Box
                     sx={{
-                      position: "absolute",
-                      inset: 0,
-                      background: `rgba(0,0,0,${resolvedTheme.bg.opacity})`,
-                      backdropFilter: `blur(${resolvedTheme.bg.blur}px)`,
-                    }}
-                  />
-
-                  {/* fake app bar */}
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: 44,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      px: 1.5,
-                      borderBottom: "1px solid rgba(255,255,255,0.12)",
-                      background: "rgba(15,23,42,0.55)",
-                      backdropFilter: "blur(10px)",
+                      position: "relative",
+                      height: 190,
+                      backgroundImage: resolvedTheme.bg.image
+                        ? `url("${resolvedTheme.bg.image}")`
+                        : "linear-gradient(135deg, rgba(124,58,237,0.30), rgba(56,189,248,0.18))",
+                      backgroundSize: resolvedTheme.bg.size,
+                      backgroundPosition: resolvedTheme.bg.position,
+                      backgroundRepeat: resolvedTheme.bg.repeat,
                     }}
                   >
-                    <Typography variant="caption" sx={{ opacity: 0.9, letterSpacing: 0.3 }}>
-                      VINE • Preview
-                    </Typography>
-                    <Box sx={{ display: "flex", gap: 0.8, alignItems: "center" }}>
-                      <Chip size="small" label={`mode: ${resolvedTheme.mode}`} sx={chipSx} />
-                      <Chip size="small" label={resolvedTheme.primary} sx={chipSx} />
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        inset: 0,
+                        background: `rgba(0,0,0,${resolvedTheme.bg.opacity})`,
+                        backdropFilter: `blur(${resolvedTheme.bg.blur}px)`,
+                      }}
+                    />
+
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 44,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        px: 1.5,
+                        borderBottom: "1px solid rgba(255,255,255,0.12)",
+                        background: "rgba(15,23,42,0.55)",
+                        backdropFilter: "blur(10px)",
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ opacity: 0.9, letterSpacing: 0.3 }}>
+                        VINE • Preview
+                      </Typography>
+                      <Box sx={{ display: "flex", gap: 0.8, alignItems: "center" }}>
+                        <Chip size="small" label={`mode: ${resolvedTheme.mode}`} sx={chipSx} />
+                        <Chip size="small" label={resolvedTheme.primary} sx={chipSx} />
+                      </Box>
                     </Box>
-                  </Box>
 
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      inset: 0,
-                      pt: "54px",
-                      px: 2,
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
-                      Live Theme Preview
-                    </Typography>
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        inset: 0,
+                        pt: "54px",
+                        px: 2,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+                        Live Theme Preview
+                      </Typography>
 
-                    <Typography variant="caption" sx={{ opacity: 0.85, maxWidth: 420 }}>
-                      Background + overlay + blur + primary button color.
-                    </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.85, maxWidth: 420 }}>
+                        Background + overlay + blur + primary color.
+                      </Typography>
 
-                    <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        sx={{
-                          textTransform: "none",
-                          borderRadius: "999px",
-                          background: resolvedTheme.primary,
-                          "&:hover": { background: resolvedTheme.primary },
-                        }}
-                      >
-                        Primary
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                          textTransform: "none",
-                          borderRadius: "999px",
-                          borderColor: "rgba(255,255,255,0.35)",
-                          color: "rgba(248,250,252,0.92)",
-                        }}
-                      >
-                        Secondary
-                      </Button>
+                      <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          sx={{
+                            textTransform: "none",
+                            borderRadius: "999px",
+                            background: resolvedTheme.primary,
+                            "&:hover": { background: resolvedTheme.primary },
+                          }}
+                        >
+                          Primary
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            textTransform: "none",
+                            borderRadius: "999px",
+                            borderColor: "rgba(255,255,255,0.35)",
+                            color: "rgba(248,250,252,0.92)",
+                          }}
+                        >
+                          Secondary
+                        </Button>
+                      </Box>
                     </Box>
                   </Box>
                 </Box>
               </Box>
             </>
           )}
-
-          
 
           <Divider sx={{ borderColor: "rgba(148,163,184,0.25)" }} />
 
@@ -651,6 +745,6 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
       )}
     </>
   );
-}
+};
 
 export default MetadataManager;

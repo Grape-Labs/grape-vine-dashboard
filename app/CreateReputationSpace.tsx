@@ -13,7 +13,7 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import { PublicKey, TransactionInstruction, Transaction } from "@solana/web3.js";
+import { PublicKey, TransactionInstruction, Transaction, SendTransactionError } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 import {
@@ -41,7 +41,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
   defaultMetadataUri = "",
 }) => {
   const { connection } = useConnection();
-  const { publicKey, sendTransaction, connected } = useWallet();
+  const { publicKey, sendTransaction, connected, signTransaction } = useWallet();
 
   const [daoId, setDaoId] = useState(defaultDaoIdBase58);
   const [repMint, setRepMint] = useState(defaultRepMintBase58);
@@ -82,76 +82,74 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
     setSnackError("");
   };
 
-  const handleSubmit = async () => {
-    try {
-      setSubmitting(true);
-      setSnackMsg("");
-      setSnackError("");
+const handleSubmit = async () => {
+  try {
+    setSubmitting(true);
+    setSnackMsg("");
+    setSnackError("");
 
-      if (!publicKey) throw new Error("Connect a wallet first.");
+    if (!publicKey) throw new Error("Connect a wallet first.");
+    if (!signTransaction) throw new Error("Wallet does not support signTransaction().");
 
-      const daoPubkey = new PublicKey(daoId.trim());
-      const repMintPubkey = new PublicKey(repMint.trim());
-      const season = Number(initialSeason);
+    const daoPubkey = new PublicKey(daoId.trim());
+    const repMintPubkey = new PublicKey(repMint.trim());
+    const season = Number(initialSeason);
 
-      if (!Number.isFinite(season) || season <= 0 || season > 65535) {
-        throw new Error("Initial season must be 1–65535");
-      }
+    const [configPda] = getConfigPda(daoPubkey);
+    const existing = await connection.getAccountInfo(configPda, "confirmed");
+    if (existing) throw new Error("Config PDA already exists for this DAO.");
 
-      // prevent “already in use” confusion
-      const [configPda] = getConfigPda(daoPubkey);
-      const existing = await connection.getAccountInfo(configPda);
-      if (existing) {
-        throw new Error("Config PDA already exists for this DAO. Use Manage Reputation Space instead.");
-      }
+    const ixs: TransactionInstruction[] = [];
+    ixs.push(await buildInitializeConfigIx({
+      daoId: daoPubkey,
+      repMint: repMintPubkey,
+      initialSeason: season,
+      authority: publicKey,
+      payer: publicKey,
+    }));
 
-      const ixs: TransactionInstruction[] = [];
-
-      // ✅ Build ix using NPM (correct discriminator + accounts)
-      // ✅ init config
-      ixs.push(
-        await buildInitializeConfigIx({
-          daoId: daoPubkey,
-          repMint: repMintPubkey,
-          initialSeason: season,
-          authority: publicKey,
-          payer: publicKey,
-        })
-      );
-
-      // ✅ optional metadata
-      if (metadataUri?.trim()) {
-        ixs.push(
-          await buildUpsertProjectMetadataIx({
-            daoId: daoPubkey,
-            authority: publicKey,
-            payer: publicKey,
-            metadataUri: metadataUri.trim(),
-          })
-        );
-      }
-
-      const tx = new Transaction().add(...ixs);
-
-      // (optional, helps some wallets)
-      tx.feePayer = publicKey;
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("finalized");
-      tx.recentBlockhash = blockhash;
-
-      const sig = await sendTransaction(tx, connection);
-
-      // (optional confirm)
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
-
-      setSnackMsg(`✅ Created reputation space. Tx: ${sig}`);
-      onClose();
-    } catch (e: any) {
-      console.error("CREATE SPACE ERROR", e);
-      setSnackError(e?.message ?? "Failed to create reputation space");
-    } finally {
-      setSubmitting(false);
+    if (metadataUri?.trim()) {
+      ixs.push(await buildUpsertProjectMetadataIx({
+        daoId: daoPubkey,
+        authority: publicKey,
+        payer: publicKey,
+        metadataUri: metadataUri.trim(),
+      }));
     }
-  };
+
+    const tx = new Transaction().add(...ixs);
+    tx.feePayer = publicKey;
+
+    const latest = await connection.getLatestBlockhash("confirmed");
+    tx.recentBlockhash = latest.blockhash;
+
+    const signed = await signTransaction(tx);
+
+    let sig: string;
+    try {
+      sig = await connection.sendRawTransaction(signed.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: "confirmed",
+        maxRetries: 3,
+      });
+    } catch (e: any) {
+      if (e instanceof SendTransactionError) {
+        const logs = await e.getLogs(connection);
+        console.error("SEND logs:\n" + (logs || []).join("\n"));
+      }
+      throw e;
+    }
+
+    await connection.confirmTransaction({ signature: sig, ...latest }, "confirmed");
+    setSnackMsg(`✅ Created reputation space. Tx: ${sig}`);
+    onClose();
+  } catch (e: any) {
+    console.error("CREATE SPACE ERROR", e);
+    setSnackError(e?.message ?? "Failed to create reputation space");
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const hasSnack = Boolean(snackMsg || snackError);
   const snackText = snackError || snackMsg;

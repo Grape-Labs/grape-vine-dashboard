@@ -147,6 +147,9 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
   const [snack, setSnack] = useState<{ msg: string; err?: boolean } | null>(null);
   const closeSnack = () => setSnack(null);
 
+  const [logoObjectUrl, setLogoObjectUrl] = useState<string | null>(null);
+  const [bgObjectUrl, setBgObjectUrl] = useState<string | null>(null);
+
   useEffect(() => {
     if (!open) return;
 
@@ -341,6 +344,197 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
     }
   };
 
+  // --- helpers (add near your other helpers) ---
+function rgbToHex(r: number, g: number, b: number) {
+  const to = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
+function clamp(n: number, a: number, b: number) {
+  return Math.max(a, Math.min(b, n));
+}
+function rgbToHsl(r: number, g: number, b: number) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d !== 0) {
+    s = d / (1 - Math.abs(2*l - 1));
+    switch (max) {
+      case r: h = ((g - b) / d) % 6; break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h *= 60; if (h < 0) h += 360;
+  }
+  return { h, s, l };
+}
+
+async function loadImageToCanvas(src: string): Promise<HTMLCanvasElement> {
+  const img = new Image();
+  img.crossOrigin = "anonymous"; // works if server allows CORS; for local object URLs it's fine
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("Failed to load image for color analysis"));
+    img.src = src;
+  });
+
+  const canvas = document.createElement("canvas");
+    const maxW = 320;
+    const scale = Math.min(1, maxW / img.width);
+    canvas.width = Math.max(1, Math.floor(img.width * scale));
+    canvas.height = Math.max(1, Math.floor(img.height * scale));
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) throw new Error("Canvas not supported");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+
+  function srgbToLinear(c: number) {
+    c /= 255;
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  }
+  function relLuminance(r: number, g: number, b: number) {
+    const R = srgbToLinear(r), G = srgbToLinear(g), B = srgbToLinear(b);
+    return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+  }
+  function contrastRatio(l1: number, l2: number) {
+    const L1 = Math.max(l1, l2), L2 = Math.min(l1, l2);
+    return (L1 + 0.05) / (L2 + 0.05);
+  }
+  function hexToRgb(hex: string) {
+    const h = hex.replace("#", "");
+    const v = h.length === 3
+      ? h.split("").map(ch => ch + ch).join("")
+      : h.length >= 6
+        ? h.slice(0, 6)
+        : "";
+    if (!v) return null;
+    const n = parseInt(v, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+  function mix(a: number, b: number, t: number) {
+    return Math.round(a + (b - a) * t);
+  }
+  function mixRgb(rgb: {r:number;g:number;b:number}, target: {r:number;g:number;b:number}, t: number) {
+    return { r: mix(rgb.r, target.r, t), g: mix(rgb.g, target.g, t), b: mix(rgb.b, target.b, t) };
+  }
+
+  // Given a background color, choose a readable foreground.
+  // Prefers white/black, otherwise nudges the accent toward contrast.
+  function readableOn(bgHex: string, prefer: "white" | "black" = "white") {
+    const bg = hexToRgb(bgHex);
+    if (!bg) return "#ffffff";
+
+    const Lbg = relLuminance(bg.r, bg.g, bg.b);
+
+    const white = { r: 255, g: 255, b: 255 };
+    const black = { r: 0, g: 0, b: 0 };
+    const Lw = relLuminance(255,255,255);
+    const Lb = relLuminance(0,0,0);
+
+    const crWhite = contrastRatio(Lbg, Lw);
+    const crBlack = contrastRatio(Lbg, Lb);
+
+    // aim for >= 4.5:1 (WCAG normal text). For small nav buttons, this matters.
+    if (crWhite >= 4.5 && crBlack >= 4.5) {
+      return prefer === "white" ? "#ffffff" : "#000000";
+    }
+    if (crWhite >= 4.5) return "#ffffff";
+    if (crBlack >= 4.5) return "#000000";
+
+    // If neither passes (rare mid-gray), nudge toward the better one.
+    return crWhite > crBlack ? "#ffffff" : "#000000";
+  }
+
+  function pickAccentFromCanvas(canvas: HTMLCanvasElement) {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+    const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    const buckets = new Map<string, { count: number; r: number; g: number; b: number; score: number }>();
+
+    const step = Math.max(1, Math.floor((width * height) / 9000));
+    for (let i = 0; i < data.length; i += 4 * step) {
+      const a = data[i + 3] / 255;
+      if (a < 0.6) continue;
+
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      const { s, l } = rgbToHsl(r, g, b);
+
+      if (l < 0.08 || l > 0.92) continue;
+      if (s < 0.18) continue;
+
+      const rq = (r >> 4), gq = (g >> 4), bq = (b >> 4);
+      const key = `${rq}-${gq}-${bq}`;
+
+      const score = (s * 0.75) + ((1 - Math.abs(l - 0.55)) * 0.25);
+
+      const cur = buckets.get(key);
+      if (!cur) buckets.set(key, { count: 1, r, g, b, score });
+      else {
+        cur.count += 1;
+        cur.r = cur.r + (r - cur.r) / cur.count;
+        cur.g = cur.g + (g - cur.g) / cur.count;
+        cur.b = cur.b + (b - cur.b) / cur.count;
+        cur.score = Math.max(cur.score, score);
+      }
+    }
+
+    let best: any = null;
+    buckets.forEach((b) => {
+      const v = b.count * b.score;
+      if (!best || v > best.v) best = { ...b, v };
+    });
+
+    const accent = best
+      ? rgbToHex(clamp(Math.round(best.r), 0, 255), clamp(Math.round(best.g), 0, 255), clamp(Math.round(best.b), 0, 255))
+      : "#7c3aed";
+
+    // IMPORTANT: since your "primary" is used as TEXT/BORDER color,
+    // return a readable inverse against the button fill (accent).
+    return readableOn(accent, "white");
+  }
+
+
+
+  const handleRecommendPrimary = async () => {
+    try {
+      // Prefer logo first (your governance mark defines brand). Fall back to BG.
+      const src =
+        logoObjectUrl ||
+        (themeBgImage.startsWith("blob:") ? themeBgImage : "") ||
+        bgObjectUrl ||
+        (themeBgImage || "");
+
+      if (!src) throw new Error("Upload a logo or background image first.");
+
+      const canvas = await loadImageToCanvas(src);
+      const hex = pickAccentFromCanvas(canvas);
+      setThemePrimary(hex);
+      setSnack({ msg: `Recommended primary: ${hex}` });
+    } catch (e: any) {
+      setSnack({ msg: e?.message ?? "Could not recommend a color", err: true });
+    }
+  };
+
+  useEffect(() => {
+    // logo (imageFile)
+    if (imageFile) {
+      const u = URL.createObjectURL(imageFile);
+      setLogoObjectUrl(u);
+      return () => URL.revokeObjectURL(u);
+    } else setLogoObjectUrl(null);
+  }, [imageFile]);
+
+  useEffect(() => {
+    // bg file
+    if (bgFile) {
+      const u = URL.createObjectURL(bgFile);
+      setBgObjectUrl(u);
+      return () => URL.revokeObjectURL(u);
+    } else setBgObjectUrl(null);
+  }, [bgFile]);
+
   return (
     <>
       <Dialog
@@ -452,13 +646,52 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
                   <MenuItem value="light">Light</MenuItem>
                 </TextField>
 
-                <TextField
-                  label="Primary color (hex)"
-                  value={themePrimary}
-                  onChange={(e) => setThemePrimary(e.target.value)}
-                  placeholder="#cccccc"
-                  helperText="Supports #RGB, #RRGGBB, #RRGGBBAA"
-                />
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+                  <TextField
+                    label="Primary color"
+                    value={themePrimary}
+                    onChange={(e) => setThemePrimary(e.target.value)}
+                    placeholder="#7c3aed"
+                    helperText="Pick or paste hex (#RGB, #RRGGBB, #RRGGBBAA)"
+                    sx={{ flex: 1, minWidth: 240 }}
+                  />
+
+                  {/* Native picker */}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "10px",
+                        border: "1px solid rgba(255,255,255,0.22)",
+                        background: safeHex(themePrimary) || "#cccccc",
+                        boxShadow: `0 0 0 4px rgba(0,0,0,0.18)`,
+                      }}
+                    />
+                    <input
+                      type="color"
+                      value={safeHex(themePrimary) || "#cccccc"}
+                      onChange={(e) => setThemePrimary(e.target.value)}
+                      style={{
+                        width: 42,
+                        height: 42,
+                        border: "none",
+                        background: "transparent",
+                        padding: 0,
+                        cursor: "pointer",
+                      }}
+                      aria-label="Pick primary color"
+                    />
+                  </Box>
+
+                  <Button
+                    onClick={handleRecommendPrimary}
+                    disabled={submitting || bgUploading}
+                    sx={{ ...primaryBtnSx, py: 0.9 }}
+                  >
+                    Recommend
+                  </Button>
+                </Box>
 
                 <TextField
                   label="Background image URL (optional)"

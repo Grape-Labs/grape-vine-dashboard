@@ -13,8 +13,13 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import { PublicKey, TransactionInstruction, Transaction, SendTransactionError } from "@solana/web3.js";
+import { Keypair, PublicKey, TransactionInstruction, Transaction, SendTransactionError } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import Tooltip from "@mui/material/Tooltip";
 
 import {
   VINE_REP_PROGRAM_ID,
@@ -45,19 +50,24 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
 
   const [daoId, setDaoId] = useState(defaultDaoIdBase58);
   const [repMint, setRepMint] = useState(defaultRepMintBase58);
-  const [initialSeason, setInitialSeason] = useState<number>(defaultInitialSeason);
+  const [initialSeason, setInitialSeason] = useState<number>(1);
   const [metadataUri, setMetadataUri] = useState(defaultMetadataUri);
 
   const [submitting, setSubmitting] = useState(false);
   const [snackMsg, setSnackMsg] = useState<string>("");
   const [snackError, setSnackError] = useState<string>("");
-
+  
   useEffect(() => {
     if (!open) return;
-    setDaoId(defaultDaoIdBase58 || "");
-    setRepMint(defaultRepMintBase58 || "");
-    setInitialSeason(defaultInitialSeason || 1);
-    setMetadataUri(defaultMetadataUri || "");
+
+    // if caller passes a dao id, respect it; otherwise recommend a new one
+    const nextDao = (defaultDaoIdBase58 || "").trim() || recommendNewDaoId();
+
+    setDaoId(nextDao);
+    setRepMint((defaultRepMintBase58 || "").trim());
+    setInitialSeason(1);
+    setMetadataUri((defaultMetadataUri || "").trim());
+
     setSnackMsg("");
     setSnackError("");
     setSubmitting(false);
@@ -151,6 +161,10 @@ const handleSubmit = async () => {
   }
 };
 
+function recommendNewDaoId(): string {
+  return Keypair.generate().publicKey.toBase58();
+}
+
   const hasSnack = Boolean(snackMsg || snackError);
   const snackText = snackError || snackMsg;
   const snackSeverity: "success" | "error" = snackError ? "error" : "success";
@@ -183,14 +197,45 @@ const handleSubmit = async () => {
 
         <DialogContent sx={{ pt: 2 }}>
           <Box sx={{ display: "grid", gap: 1.5 }}>
-            <TextField
-              label="DAO ID (realm / governance pk)"
-              fullWidth
-              value={daoId}
-              onChange={(e) => setDaoId(e.target.value)}
-              disabled={submitting}
-              InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
-            />
+            <Box sx={{ display: "flex", gap: 1, mt:2, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <TextField
+                label="DAO ID (multi-sig / governance pk)"
+                fullWidth
+                value={daoId}
+                onChange={(e) => setDaoId(e.target.value)}
+                disabled={submitting}
+                helperText="We recommend a fresh DAO ID by default. You can paste an existing Multi-Sig Governance pk if you have one."
+                FormHelperTextProps={{ sx: { opacity: 0.7 } }}
+                InputProps={{
+                  sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Tooltip title="Recommend a new DAO ID">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            const next = recommendNewDaoId();
+                            setDaoId(next);
+                            setSnackMsg("Suggested new DAO ID");
+                            setSnackError("");
+                          }}
+                          disabled={submitting}
+                          sx={{
+                            mr: 0.25,
+                            borderRadius: "10px",
+                            border: "1px solid rgba(255,255,255,0.18)",
+                            background: "rgba(255,255,255,0.06)",
+                            "&:hover": { background: "rgba(255,255,255,0.10)" },
+                          }}
+                        >
+                          <AutoAwesomeIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
 
             <TextField
               label="Reputation mint"

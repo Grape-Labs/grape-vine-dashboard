@@ -478,12 +478,31 @@ const HomeInner: React.FC = () => {
     ? `DAO: ${activeSpace.daoId.toBase58()}`
     : "No spaces found";
   const spaceLabel = activeSpace
-    ? `Space: ${shorten(activeSpace.daoId.toBase58(), 5, 5)}`
+    ? (activeUi?.offchain?.name
+        ? `${activeUi.offchain.name}${activeUi.offchain.symbol ? ` • ${activeUi.offchain.symbol}` : ""}`
+        : `Space: ${shorten(activeSpace.daoId.toBase58(), 5, 5)}`)
     : spacesLoading
     ? "Spaces: Loading…"
     : "Spaces: None";
 
   const manageDisabled = !activeDao || !activeSpace;
+
+  const brandLogo = activeUi?.offchain?.image || VINE_LOGO;
+  const brandName = activeUi?.offchain?.name || "Vine Dashboard";
+  const brandSymbol = activeUi?.offchain?.symbol || "";
+  const brandDesc = activeUi?.offchain?.description || "";
+
+  useEffect(() => {
+    if (!brandName) return;
+    document.title = brandSymbol ? `${brandName} (${brandSymbol})` : brandName;
+  }, [brandName, brandSymbol]);
+
+  const headerBg = `linear-gradient(90deg,
+    rgba(0,0,0,0.20),
+    ${resolvedTheme.primary}22
+  )`;
+
+
 
   return (
     <Box
@@ -517,38 +536,92 @@ const HomeInner: React.FC = () => {
           elevation={0}
           position="static"
           sx={{
-            borderBottom: "1px solid rgba(255,255,255,0.12)",
+            borderBottom: `1px solid ${resolvedTheme.primary}33`,
             zIndex: 2,
             position: "relative",
+            background: headerBg,
+            backdropFilter: "blur(10px)",
           }}
         >
           <Toolbar sx={{ gap: 1 }}>
-            <Typography
-              component="h1"
-              variant="h6"
-              color="inherit"
-              display="flex"
-              sx={{ ml: 1, mr: 1 }}
-            >
-              <Avatar>
-                <img src={VINE_LOGO} width="50px" alt="Powered by Grape" />
-              </Avatar>
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexGrow: 1, minWidth: 0 }}>
+              <Avatar
+                src={brandLogo}
+                variant="rounded"
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "12px",
+                  border: `1px solid ${resolvedTheme.primary}55`,
+                  bgcolor: "rgba(0,0,0,0.25)",
+                }}
+                imgProps={{ referrerPolicy: "no-referrer" }}
+              />
 
-            <Typography
-              variant="h6"
-              color="inherit"
-              sx={{
-                ml: 1,
-                mr: 1,
-                flexGrow: 1,
-                textShadow: "1px 1px 2px black",
-              }}
-            >
-              <div className="vine-title">
-                <div data-text="Vine">{activeName}</div>
-              </div>
-            </Typography>
+              <Box sx={{ minWidth: 0 }}>
+                <Box sx={{ display: "flex", alignItems: "baseline", gap: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 800,
+                      letterSpacing: 0.2,
+                      textShadow: "0 1px 2px rgba(0,0,0,0.45)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      lineHeight: 1.05,
+                    }}
+                  >
+                    {brandName}
+                  </Typography>
+
+                  {!!brandSymbol && (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        opacity: 0.85,
+                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.8,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <Box
+                        component="span"
+                        sx={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          background: resolvedTheme.primary,
+                          boxShadow: `0 0 0 3px ${resolvedTheme.primary}22`,
+                          display: "inline-block",
+                        }}
+                      />
+                      <Box component="span" sx={{ fontFamily: "monospace", opacity: 0.9 }}>
+                        {brandSymbol}
+                      </Box>
+                    </Typography>
+                  )}
+                </Box>
+
+                {!isMobile && !!brandDesc && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mt: 0.35,
+                      opacity: 0.8,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: 680,
+                    }}
+                  >
+                    {brandDesc}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
 
             {/* Space selector */}
             {isMobile ? (

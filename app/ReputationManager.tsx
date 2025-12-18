@@ -1047,14 +1047,15 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
                 currentSeason: season,
               })
             );*/
-            ixs.push(
-              await buildResetReputationIx({
-                daoId: daoPk,
-                authority: publicKey,
-                user: publicKey,
-                season: season,
-              })
-            );
+            const { ix: resetIx } = await buildResetReputationIx({
+              conn: connection,
+              daoId: daoPk,
+              authority: publicKey,
+              user: publicKey,
+              season: season,
+            });
+
+            ixs.push(resetIx);
           }
 
           /*
@@ -1068,17 +1069,17 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
               currentSeason: season,
             })
           );*/
-          ixs.push(
-            await buildAddReputationIx({
-              conn: connection,
-              daoId: daoPk,
-              authority: publicKey,
-              payer: publicKey,
-              user: publicKey,
-              amount: BigInt(r.amount),
-              season: season,
-            })
-          );
+          const { ix: addIx } = await buildAddReputationIx({
+            conn: connection,
+            daoId: daoPk,
+            authority: publicKey,
+            payer: publicKey,
+            user: publicKey,
+            amount: BigInt(r.amount),
+            season: season, // optional
+          });
+
+          ixs.push(addIx);
         }
 
         setBulkProgress(`Sending ${bi + 1}/${batches.length}…`);
@@ -1200,29 +1201,18 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       const user = new PublicKey(repUser.trim());
       const amt = BigInt(Math.max(0, Math.floor(Number(repAmount || 0))));
 
-      return [
-        /*
-        await ixAddReputation({
-          daoId: daoPk,
-          authority: publicKey,
-          payer: publicKey,
-          user,
-          amount: amt,
-          currentSeason: cfg.currentSeason,
-        }),
-        */
-       
-        await buildAddReputationIx({
-          conn: connection,
-          daoId: daoPk,
-          authority: publicKey,
-          payer: publicKey,
-          user: publicKey,
-          amount: amt,
-          season: cfg.currentSeason,
-        })
-          
-      ];
+      const { ix: addIx } = await buildAddReputationIx({
+        conn: connection,
+        daoId: daoPk,
+        authority: publicKey,
+        payer: publicKey,
+        user,                 // ✅ use the user you parsed
+        amount: amt,
+        // season optional; if you pass it, make sure it's a number
+        season: Number(cfg.currentSeason),
+      });
+
+      return [addIx]; // ✅ TransactionInstruction[]
     });
   };
 
@@ -1233,22 +1223,16 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       if (!isAuthority) throw new Error("Only authority can reset reputation");
 
       const user = new PublicKey(repUser.trim());
-      return [
-        /*
-        await ixResetReputation({
-          daoId: daoPk,
-          authority: publicKey,
-          user,
-          currentSeason: cfg.currentSeason,
-        }),
-        */
-        await buildResetReputationIx({
-          daoId: daoPk,
-          authority: publicKey,
-          user: publicKey,
-          season: cfg.currentSeason,
-        }),    
-      ];
+
+      const { ix: resetIx } = await buildResetReputationIx({
+        conn: connection,            // ✅ required now (reads config.currentSeason)
+        daoId: daoPk,
+        authority: publicKey,
+        user,                        // ✅ reset the target user
+        season: Number(cfg.currentSeason), // optional; must match config if provided
+      });
+
+      return [resetIx];
     });
   };
 

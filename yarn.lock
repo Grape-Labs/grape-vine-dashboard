@@ -755,9 +755,9 @@
     bs58 "^5.0.0"
 
 "@grapenpm/vine-reputation-client@^0.1.1":
-  version "0.1.22"
-  resolved "https://registry.yarnpkg.com/@grapenpm/vine-reputation-client/-/vine-reputation-client-0.1.22.tgz#bcd3140d050e8e5b18207e0664098aea46fde206"
-  integrity sha512-CkIXTmFX3BwMVadbm1mKo5PmcYgEQpkyea2eRKagVjaQjDP8bLarECdcCFpw0oWsyTqRVaG0zT71c3bArkEyDA==
+  version "0.1.24"
+  resolved "https://registry.yarnpkg.com/@grapenpm/vine-reputation-client/-/vine-reputation-client-0.1.24.tgz#6712a77355ba733956c2fe9fee1da90429527281"
+  integrity sha512-Vb0iOyD2QTBS4z9W7kVZGkdg4ru69hJQrvAXITwUSLCvpjcOiBZq5P9og7dA1RgKvYnVT9qJgVcba7oAhe7poQ==
 
 "@graphql-typed-document-node/core@^3.1.1":
   version "3.2.0"

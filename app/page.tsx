@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { clusterApiUrl, PublicKey } from "@solana/web3.js";
 
@@ -51,6 +51,7 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
+import { keyframes } from "@mui/system";
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import grapeTheme from "./utils/config/theme";
@@ -68,6 +69,18 @@ import CreateReputationSpace from "./CreateReputationSpace";
 import ReputationManager from "./ReputationManager";
 import TokenManager from "./TokenManager";
 import MetadataManager from "./MetadataManager";
+
+const float = keyframes`
+  0% { transform: translateY(0px); opacity: 0.85; }
+  50% { transform: translateY(-6px); opacity: 1; }
+  100% { transform: translateY(0px); opacity: 0.85; }
+`;
+
+const shimmer = keyframes`
+  0% { transform: translateX(-60%); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateX(60%); opacity: 0; }
+`;
 
 type VineTheme = {
   mode?: "auto" | "light" | "dark";
@@ -294,7 +307,7 @@ const HomeInner: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { connection } = useConnection();
-
+  
   const [createOpen, setCreateOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [tokenOpen, setTokenOpen] = useState(false);
@@ -306,17 +319,32 @@ const HomeInner: React.FC = () => {
 
   const [spaceUiMeta, setSpaceUiMeta] = useState<Record<string, SpaceUiMeta>>({});
 
+  const params = useParams<{ dao?: string }>();
+  const daoFromUrl = (params?.dao as string) || "";
+  const daoFromUrlPk = useMemo(() => safePk(daoFromUrl), [daoFromUrl]);
+
   // keep latest activeDao to avoid stale closure in refreshSpaces
   const activeDaoRef = useRef("");
   useEffect(() => {
     activeDaoRef.current = activeDao;
   }, [activeDao]);
 
+  useEffect(() => {
+    if (!activeDao) return;
+    if (!spaces.some((s) => s.daoId.toBase58() === activeDao)) return;
+
+    // only update if path is different
+    const current = (params?.dao as string) || "";
+    if (current === activeDao) return;
+
+    router.replace(`/dao/${activeDao}`, { scroll: false });
+  }, [activeDao, spaces, router, params]);
+
   const [spaceAnchor, setSpaceAnchor] = useState<null | HTMLElement>(null);
   const spaceMenuOpen = Boolean(spaceAnchor);
 
-  const daoFromUrl = searchParams?.get("dao") || "";
-  const daoFromUrlPk = useMemo(() => safePk(daoFromUrl), [daoFromUrl]);
+  //const daoFromUrl = searchParams?.get("dao") || "";
+  //const daoFromUrlPk = useMemo(() => safePk(daoFromUrl), [daoFromUrl]);
 
   const [projectMeta, setProjectMeta] = useState<any | null>(null);
 
@@ -442,6 +470,9 @@ const HomeInner: React.FC = () => {
 
   const activeName = activeUi?.offchain?.name ?? "Reputation Dashboard";
 
+  const uiReady = !!activeDao && !!activeSpace && !!activeUi?.offchain; 
+  const appReady = !spacesLoading && uiReady;
+
   const resolvedTheme = useMemo(() => {
     const t = activeUi?.offchain?.vine?.theme ?? {};
     return {
@@ -502,7 +533,75 @@ const HomeInner: React.FC = () => {
     ${resolvedTheme.primary}22
   )`;
 
+  if (!appReady) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          width: "100vw",
+          display: "grid",
+          placeItems: "center",
+          position: "relative",
+          overflow: "hidden",
+          background:
+            "radial-gradient(1200px 600px at 20% 0%, rgba(124,58,237,0.18), transparent 60%), rgba(2,6,23,1)",
+          color: "rgba(248,250,252,0.92)",
+        }}
+      >
+        {/* subtle animated orb */}
+        <Box
+          sx={{
+            position: "absolute",
+            width: 520,
+            height: 520,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle at 30% 25%, rgba(56,189,248,0.18), transparent 55%), radial-gradient(circle at 70% 65%, rgba(124,58,237,0.22), transparent 60%)",
+            filter: "blur(28px)",
+            animation: `${float} 2.8s ease-in-out infinite`,
+            opacity: 0.9,
+          }}
+        />
 
+        <Box sx={{ textAlign: "center", position: "relative", zIndex: 1, px: 3 }}>
+          <Typography sx={{ fontWeight: 800, letterSpacing: 0.2 }}>
+            Loading space…
+          </Typography>
+
+          <Typography variant="caption" sx={{ opacity: 0.75 }}>
+            Fetching on-chain config + metadata
+          </Typography>
+
+          {/* shimmer progress bar */}
+          <Box
+            sx={{
+              mt: 2,
+              mx: "auto",
+              width: 220,
+              height: 6,
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.10)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                width: "60%",
+                margin: "0 auto",
+                background:
+                  "linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent)",
+                animation: `${shimmer} 1.25s ease-in-out infinite`,
+              }}
+            />
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box

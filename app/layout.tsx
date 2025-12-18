@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Vine Dashboard | Grape DAO',
-  description: 'The Vine Dashboard, showing DAO participation metrics',
+  title: 'Reputation Dashboard | Grape DAO',
+  description: 'The Reputation Dashboard, showing DAO participation metrics',
 }
 
 export default function RootLayout({

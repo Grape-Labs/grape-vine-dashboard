@@ -1,2 +1,6 @@
-import Home from "../../page"; // reuse your existing page component
-export default Home;
+import DaoApp from "../../components/DaoApp";
+
+export default function Page() {
+  // server-rendered shell
+  return <DaoApp />;
+}

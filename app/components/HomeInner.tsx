@@ -864,7 +864,12 @@ const HomeInner: React.FC = () => {
           >
             {/* Keep the UI mounted; optionally dim while switching */}
             <Box sx={{ opacity: uiReady ? 1 : 0.65, transition: "opacity 180ms ease" }}>
-              <TokenLeaderboard programId={activeMint} activeDaoIdBase58={activeDao} meta={activeUi?.offchain ?? null} />
+              <TokenLeaderboard 
+                programId={activeMint} 
+                activeDaoIdBase58={activeDao} 
+                meta={activeUi?.offchain ?? null}
+                resolvedTheme={resolvedTheme}
+              />
             </Box>
           </Paper>
         </Container>

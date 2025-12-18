@@ -11,6 +11,7 @@ type VineReputationProps = {
   walletAddress: string | null;
   daoIdBase58?: string;          // defaults to GRAPE_DAO_ID
   endpoint?: string;             // defaults to devnet
+  season?: number;          
   historyDepth?: number;         // how many seasons back to show (default 3)
   decayBase?: number;            // OPTIONAL override; if omitted, use config.decayBps
 };

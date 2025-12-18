@@ -440,7 +440,7 @@ const HomeInner: React.FC = () => {
     return spaceUiMeta[activeDao] ?? null;
   }, [activeDao, spaceUiMeta]);
 
-  const activeName = activeUi?.offchain?.name ?? "Vine Dashboard";
+  const activeName = activeUi?.offchain?.name ?? "Reputation Dashboard";
 
   const resolvedTheme = useMemo(() => {
     const t = activeUi?.offchain?.vine?.theme ?? {};
@@ -488,7 +488,7 @@ const HomeInner: React.FC = () => {
   const manageDisabled = !activeDao || !activeSpace;
 
   const brandLogo = activeUi?.offchain?.image || VINE_LOGO;
-  const brandName = activeUi?.offchain?.name || "Vine Dashboard";
+  const brandName = activeUi?.offchain?.name || "Reputation Dashboard";
   const brandSymbol = activeUi?.offchain?.symbol || "";
   const brandDesc = activeUi?.offchain?.description || "";
 
@@ -681,8 +681,12 @@ const HomeInner: React.FC = () => {
                   const name = ui?.offchain?.name ?? shorten(dao, 8, 8);
                   const sym = ui?.offchain?.symbol ? ` • ${ui.offchain.symbol}` : "";
                   const img = ui?.offchain?.image ?? null;
-                  /*
-                  <MenuItem
+                  const bg = ui?.offchain?.vine?.theme?.background_image ?? "";
+                  const bgOpacity = ui?.offchain?.vine?.theme?.background_opacity ?? 0.55;
+                  const bgBlur = ui?.offchain?.vine?.theme?.background_blur ?? 8;
+                  
+                  return (
+                    <MenuItem
                       key={dao}
                       selected={dao === activeDao}
                       onClick={() => {
@@ -690,39 +694,78 @@ const HomeInner: React.FC = () => {
                         setSpaceAnchor(null);
                       }}
                       sx={{
+                        position: "relative",
+                        overflow: "hidden",
+                        borderRadius: "16px",
+                        mx: 1,
+                        my: 0.6,
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "flex-start",
                         gap: 0.3,
-                        py: 1,
+                        py: 1.1,
+                        px: 1.2,
+
+                        // subtle border like your screenshot
+                        border: "1px solid rgba(255,255,255,0.10)",
+
+                        // ✅ ensure pseudo layers match the same rounded corners
+                        "&::before, &::after": {
+                          borderRadius: "inherit",
+                        },
+
+                        ...(bg
+                          ? {
+                              "&::before": {
+                                content: '""',
+                                position: "absolute",
+                                inset: 0,
+                                borderRadius: "inherit",
+                                backgroundImage: `url("${bg}")`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                                backgroundRepeat: "no-repeat",
+                                filter: `blur(${bgBlur}px)`,
+                                transform: "scale(1.05)", // prevents edge blur cutoff
+                                opacity: 1,
+                                zIndex: 0,
+                              },
+                              "&::after": {
+                                content: '""',
+                                position: "absolute",
+                                inset: 0,
+                                borderRadius: "inherit",
+                                background: `linear-gradient(
+                                  180deg,
+                                  rgba(2,6,23,${Math.min(0.95, bgOpacity + 0.25)}) 0%,
+                                  rgba(2,6,23,${Math.min(0.98, bgOpacity + 0.45)}) 100%
+                                )`,
+                                backdropFilter: `blur(${bgBlur}px) saturate(0.85)`,
+                                WebkitBackdropFilter: `blur(${bgBlur}px) saturate(0.85)`,
+                                zIndex: 0,
+                              },
+                            }
+                          : {
+                              background: "rgba(255,255,255,0.04)",
+                            }),
+
+                        // ensure content sits above pseudo layers
+                        "& > *": { position: "relative", zIndex: 1 },
+
+                        // selected state (nice, but not too loud)
+                        ...(dao === activeDao
+                          ? {
+                              border: "1px solid rgba(255,255,255,0.18)",
+                              boxShadow: "0 10px 30px rgba(0,0,0,0.30)",
+                            }
+                          : {}),
+
+                        "&:hover": {
+                          backgroundColor: "transparent",
+                          border: "1px solid rgba(255,255,255,0.16)",
+                        },
                       }}
                     >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <SwapHorizIcon fontSize="small" sx={{ opacity: 0.8 }} />
-                        <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
-                          {shorten(dao, 8, 8)}
-                        </Typography>
-                      </Box>
-                      <Typography variant="caption" sx={{ opacity: 0.75 }}>
-                        Season {s.currentSeason} • Mint {shorten(mint, 6, 6)} • Auth{" "}
-                        {shorten(auth, 6, 6)}
-                      </Typography>
-                    </MenuItem>
-                    */
-                  return (
-                    <MenuItem key={dao}
-                      selected={dao === activeDao}
-                      onClick={() => {
-                        setActiveDao(dao);
-                        setSpaceAnchor(null);
-                      }}
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-start",
-                        gap: 0.3,
-                        py: 1,
-                      }}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         {img ? (
                           <Avatar src={img} sx={{ width: 28, height: 28 }} />

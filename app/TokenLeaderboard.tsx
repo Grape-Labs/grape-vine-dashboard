@@ -817,12 +817,6 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
       }}
     >
       <Box>
-        <Typography
-          variant="overline"
-          sx={{ letterSpacing: 4, opacity: 0.7 }}
-        >
-          VINE
-        </Typography>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           Live Draw
         </Typography>
@@ -1063,6 +1057,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
             gap: 1.5,
           }}
         >
+          {/*
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
             {meta?.image ? (
               <Avatar src={meta.image} sx={{ width: 44, height: 44 }} />
@@ -1081,6 +1076,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
               ) : null}
             </Box>
           </Box>
+          */}
 
           {/* TOKEN ADDRESS PANEL */}
           <CopyToClipboard text={token.toBase58()} onCopy={handleCopy}>

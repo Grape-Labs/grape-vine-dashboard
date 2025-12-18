@@ -38,6 +38,7 @@ import {
   //fetchProjectMetadata
   buildSetDecayBpsIx,
   buildAddReputationIx,
+  buildResetReputationIx,
   type ReputationConfigAccount,
 } from "@grapenpm/vine-reputation-client";
 
@@ -1037,12 +1038,21 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
           const user = new PublicKey(r.wallet);
 
           if (bulkMode === "resetAdd") {
+            /*
             ixs.push(
               await ixResetReputation({
                 daoId: daoPk,
                 authority: publicKey,
                 user,
                 currentSeason: season,
+              })
+            );*/
+            ixs.push(
+              await buildResetReputationIx({
+                daoId: daoPk,
+                authority: publicKey,
+                user: publicKey,
+                season: season,
               })
             );
           }
@@ -1191,6 +1201,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       const amt = BigInt(Math.max(0, Math.floor(Number(repAmount || 0))));
 
       return [
+        /*
         await ixAddReputation({
           daoId: daoPk,
           authority: publicKey,
@@ -1199,6 +1210,18 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
           amount: amt,
           currentSeason: cfg.currentSeason,
         }),
+        */
+       
+        await buildAddReputationIx({
+          conn: connection,
+          daoId: daoPk,
+          authority: publicKey,
+          payer: publicKey,
+          user: publicKey,
+          amount: amt,
+          season: cfg.currentSeason,
+        })
+          
       ];
     });
   };
@@ -1211,12 +1234,20 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
 
       const user = new PublicKey(repUser.trim());
       return [
+        /*
         await ixResetReputation({
           daoId: daoPk,
           authority: publicKey,
           user,
           currentSeason: cfg.currentSeason,
         }),
+        */
+        await buildResetReputationIx({
+          daoId: daoPk,
+          authority: publicKey,
+          user: publicKey,
+          season: cfg.currentSeason,
+        }),    
       ];
     });
   };

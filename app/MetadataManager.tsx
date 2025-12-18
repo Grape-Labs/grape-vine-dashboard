@@ -165,7 +165,7 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
     // Theme defaults
     setEnableVineTheme(false);
     setThemeMode("auto");
-    setThemePrimary("#7c3aed");
+    setThemePrimary("#cccccc");
     setThemeBgImage("");
     setThemeBgOpacity(0.45);
     setThemeBgBlur(12);
@@ -215,7 +215,7 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
   }
 
   const resolvedTheme = useMemo(() => {
-    const primary = safeHex(themePrimary) || "#7c3aed";
+    const primary = safeHex(themePrimary) || "#cccccc";
     const opacity = clamp01(safeNum(themeBgOpacity, 0.45));
     const blur = Math.max(0, safeNum(themeBgBlur, 12));
 
@@ -456,7 +456,7 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
                   label="Primary color (hex)"
                   value={themePrimary}
                   onChange={(e) => setThemePrimary(e.target.value)}
-                  placeholder="#7c3aed"
+                  placeholder="#cccccc"
                   helperText="Supports #RGB, #RRGGBB, #RRGGBBAA"
                 />
 

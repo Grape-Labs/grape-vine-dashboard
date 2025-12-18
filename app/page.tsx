@@ -69,6 +69,55 @@ import ReputationManager from "./ReputationManager";
 import TokenManager from "./TokenManager";
 import MetadataManager from "./MetadataManager";
 
+type VineTheme = {
+  mode?: "auto" | "light" | "dark";
+  primary?: string;
+  background_image?: string | null;
+  background_opacity?: number;
+  background_blur?: number;
+  background_position?: string;
+  background_size?: string;
+  background_repeat?: string;
+};
+
+type OffchainTokenMeta = {
+  name?: string;
+  symbol?: string;
+  description?: string;
+  image?: string;
+  vine?: { theme?: VineTheme };
+};
+
+type SpaceUiMeta = {
+  dao: string;
+  uri?: string | null;
+  offchain?: OffchainTokenMeta | null;
+};
+
+function extractMetadataUri(projectMeta: any): string | null {
+  // Try a few common shapes (adjust as your client returns)
+  return (
+    projectMeta?.metadataUri ??
+    projectMeta?.metadata_uri ??
+    projectMeta?.vine?.metadataUri ??
+    projectMeta?.vine?.metadata_uri ??
+    projectMeta?.token?.metadataUri ??
+    projectMeta?.token?.metadata_uri ??
+    projectMeta?.token?.uri ??
+    null
+  );
+}
+
+async function fetchOffchainJson(uri: string, signal?: AbortSignal): Promise<OffchainTokenMeta | null> {
+  try {
+    const r = await fetch(uri, { cache: "no-store", signal });
+    if (!r.ok) return null;
+    return (await r.json()) as OffchainTokenMeta;
+  } catch {
+    return null;
+  }
+}
+
 function Copyright() {
   return (
     <Typography
@@ -255,6 +304,8 @@ const HomeInner: React.FC = () => {
   const [spacesLoading, setSpacesLoading] = useState(false);
   const [activeDao, setActiveDao] = useState<string>("");
 
+  const [spaceUiMeta, setSpaceUiMeta] = useState<Record<string, SpaceUiMeta>>({});
+
   // keep latest activeDao to avoid stale closure in refreshSpaces
   const activeDaoRef = useRef("");
   useEffect(() => {
@@ -271,14 +322,46 @@ const HomeInner: React.FC = () => {
 
   const refreshSpaces = useCallback(async () => {
     setSpacesLoading(true);
+
+    // cancel previous hydrate if needed
+    const ac = new AbortController();
+
     try {
       const pid = new PublicKey(VINE_REP_PROGRAM_ID);
       const list = await fetchAllSpaces(connection, pid); // on-chain
       setSpaces(list);
 
+      // --- NEW: hydrate ui metadata (project meta + offchain json) ---
+      // Do it in parallel but safely; you can also add a concurrency limiter later.
+      const results = await Promise.allSettled(
+        list.map(async (s) => {
+          const dao = s.daoId.toBase58();
+          const pm = await fetchProjectMetadata(connection, s.daoId);
+          const uri = extractMetadataUri(pm);
+
+          const offchain = uri ? await fetchOffchainJson(uri, ac.signal) : null;
+
+          return {
+            dao,
+            uri,
+            offchain,
+          } as SpaceUiMeta;
+        })
+      );
+
+      setSpaceUiMeta((prev) => {
+        const next = { ...prev };
+        for (const res of results) {
+          if (res.status === "fulfilled") {
+            next[res.value.dao] = res.value;
+          }
+        }
+        return next;
+      });
+
+      // --- your existing "pick activeDao" logic ---
       const urlDao = daoFromUrlPk?.toBase58() || "";
-      const urlExists =
-        !!urlDao && list.some((s) => s.daoId.toBase58() === urlDao);
+      const urlExists = !!urlDao && list.some((s) => s.daoId.toBase58() === urlDao);
 
       let nextDao = "";
       if (list.length > 0) {
@@ -293,13 +376,12 @@ const HomeInner: React.FC = () => {
         }
       }
 
-      // ✅ only set if changed (prevents loops + rerenders)
-      if (nextDao !== activeDaoRef.current) {
-        setActiveDao(nextDao);
-      }
+      if (nextDao !== activeDaoRef.current) setActiveDao(nextDao);
     } finally {
       setSpacesLoading(false);
     }
+
+    return () => ac.abort();
   }, [connection, daoFromUrlPk]);
 
   const activeSpace = useMemo(
@@ -353,22 +435,28 @@ const HomeInner: React.FC = () => {
     };
   }, [activeDao, connection]);
 
+  const activeUi = useMemo(() => {
+    if (!activeDao) return null;
+    return spaceUiMeta[activeDao] ?? null;
+  }, [activeDao, spaceUiMeta]);
+
+  const activeName = activeUi?.offchain?.name ?? "Vine Dashboard";
+
   const resolvedTheme = useMemo(() => {
-    const t = projectMeta?.vine?.theme ?? {};
+    const t = activeUi?.offchain?.vine?.theme ?? {};
     return {
       mode: t.mode ?? "auto",
       primary: t.primary ?? grapeTheme.palette.primary.main,
       background: {
         image: t.background_image ?? null,
-        opacity:
-          typeof t.background_opacity === "number" ? t.background_opacity : 0.45,
+        opacity: typeof t.background_opacity === "number" ? t.background_opacity : 0.45,
         blur: typeof t.background_blur === "number" ? t.background_blur : 12,
         position: t.background_position ?? "center",
         size: t.background_size ?? "cover",
         repeat: t.background_repeat ?? "no-repeat",
       },
     };
-  }, [projectMeta]);
+  }, [activeUi]);
 
   const themedMui = useMemo(() => {
     const base = grapeTheme;
@@ -458,7 +546,7 @@ const HomeInner: React.FC = () => {
               }}
             >
               <div className="vine-title">
-                <div data-text="Vine">Vine Dashboard</div>
+                <div data-text="Vine">{activeName}</div>
               </div>
             </Typography>
 
@@ -516,10 +604,12 @@ const HomeInner: React.FC = () => {
               ) : (
                 spaces.map((s) => {
                   const dao = s.daoId.toBase58();
-                  const mint = s.repMint.toBase58();
-                  const auth = s.authority.toBase58();
-                  return (
-                    <MenuItem
+                  const ui = spaceUiMeta[dao];
+                  const name = ui?.offchain?.name ?? shorten(dao, 8, 8);
+                  const sym = ui?.offchain?.symbol ? ` • ${ui.offchain.symbol}` : "";
+                  const img = ui?.offchain?.image ?? null;
+                  /*
+                  <MenuItem
                       key={dao}
                       selected={dao === activeDao}
                       onClick={() => {
@@ -543,6 +633,36 @@ const HomeInner: React.FC = () => {
                       <Typography variant="caption" sx={{ opacity: 0.75 }}>
                         Season {s.currentSeason} • Mint {shorten(mint, 6, 6)} • Auth{" "}
                         {shorten(auth, 6, 6)}
+                      </Typography>
+                    </MenuItem>
+                    */
+                  return (
+                    <MenuItem key={dao}
+                      selected={dao === activeDao}
+                      onClick={() => {
+                        setActiveDao(dao);
+                        setSpaceAnchor(null);
+                      }}
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        gap: 0.3,
+                        py: 1,
+                      }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        {img ? (
+                          <Avatar src={img} sx={{ width: 28, height: 28 }} />
+                        ) : (
+                          <Avatar sx={{ width: 28, height: 28 }}>{name.slice(0, 1)}</Avatar>
+                        )}
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {name}{sym}
+                        </Typography>
+                      </Box>
+
+                      <Typography variant="caption" sx={{ opacity: 0.75 }}>
+                        DAO {shorten(dao, 6, 6)} • Season {s.currentSeason}
                       </Typography>
                     </MenuItem>
                   );
@@ -599,7 +719,11 @@ const HomeInner: React.FC = () => {
             }}
           >
             {/* ✅ no forced remount on dao changes */}
-            <TokenLeaderboard programId={activeMint} activeDaoIdBase58={activeDao} />
+            <TokenLeaderboard
+              programId={activeMint}
+              activeDaoIdBase58={activeDao}
+              meta={activeUi?.offchain ?? null}
+            />
           </Paper>
         </Container>
 

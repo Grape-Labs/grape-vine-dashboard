@@ -12,6 +12,7 @@ import * as confetti from "canvas-confetti";
 //import confetti from "canvas-confetti";
 
 import {
+  Avatar,
   Paper,
   Grid,
   Box,
@@ -133,11 +134,18 @@ type TokenLeaderboardProps = {
   programId: string;              // MAINNET mint
   activeDaoIdBase58: string;      // DEVNET Vine config DAO
   activeSeason?: number;          // DEVNET (optional)
+  meta?: {
+    name?: string;
+    symbol?: string;
+    description?: string;
+    image?: string;
+  } | null;
 };
 
 const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
   const connection = React.useMemo(() => new Connection(GRAPE_RPC_ENDPOINT), []);
   const token = React.useMemo(() => new PublicKey(props.programId), [props.programId]);
+  const meta = props.meta || null;
 
   // --- STATE ---
   const [tokenInfo, setTokenInfo] = useState<any | null>(null);
@@ -839,32 +847,32 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
     </Box>
 
       <Box
-    sx={{
-      position: "relative",
-      display: "inline-flex",
-      alignItems: "center",
-      px: 3,
-      py: 1.8,
-      borderRadius: "999px",
-      background: "rgba(15,23,42,0.95)",
-      border: "1px solid rgba(148,163,184,0.7)",
-      backdropFilter: "blur(12px)",
-      minWidth: 360,
-      justifyContent: "center",
-      animation: loadingSpin ? "winnerGlow 1.4s ease-out infinite" : "none",
-      "&::before": loadingSpin
-        ? {
-            content: '""',
-            position: "absolute",
-            inset: -10,
-            borderRadius: "999px",
-            border: "1px solid rgba(56,189,248,0.65)",
-            boxShadow: "0 0 26px rgba(56,189,248,0.55)",
-            opacity: 0.7,
-          }
-        : {},
-    }}
-  >
+        sx={{
+          position: "relative",
+          display: "inline-flex",
+          alignItems: "center",
+          px: 3,
+          py: 1.8,
+          borderRadius: "999px",
+          background: "rgba(15,23,42,0.95)",
+          border: "1px solid rgba(148,163,184,0.7)",
+          backdropFilter: "blur(12px)",
+          minWidth: 360,
+          justifyContent: "center",
+          animation: loadingSpin ? "winnerGlow 1.4s ease-out infinite" : "none",
+          "&::before": loadingSpin
+            ? {
+                content: '""',
+                position: "absolute",
+                inset: -10,
+                borderRadius: "999px",
+                border: "1px solid rgba(56,189,248,0.65)",
+                boxShadow: "0 0 26px rgba(56,189,248,0.55)",
+                opacity: 0.7,
+              }
+            : {},
+        }}
+      >
     {(() => {
       // While spinning, show the live roulette address.
       // After spin, show the locked winner from winners[].
@@ -1055,6 +1063,25 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
             gap: 1.5,
           }}
         >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+            {meta?.image ? (
+              <Avatar src={meta.image} sx={{ width: 44, height: 44 }} />
+            ) : (
+              <Avatar sx={{ width: 44, height: 44 }}>V</Avatar>
+            )}
+            <Box>
+              <Typography variant="h6" sx={{ lineHeight: 1.1 }}>
+                {meta?.name ?? "Reputation Leaderboard"}
+                {meta?.symbol ? ` • ${meta.symbol}` : ""}
+              </Typography>
+              {meta?.description ? (
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  {meta.description}
+                </Typography>
+              ) : null}
+            </Box>
+          </Box>
+
           {/* TOKEN ADDRESS PANEL */}
           <CopyToClipboard text={token.toBase58()} onCopy={handleCopy}>
             <Box

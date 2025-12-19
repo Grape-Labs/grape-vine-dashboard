@@ -2182,7 +2182,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
           {/* External Links */}
           {selectedWallet && (
             <Stack spacing={1.2} sx={{ mt: 2 }}>
-              {/*
+              
               <Button
                 variant="outlined"
                 color="inherit"
@@ -2208,8 +2208,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
               >
                 Open public reputation card
               </Button>
-              */}
-
+              
               {/* Solscan */}
               <Button
                 variant="outlined"

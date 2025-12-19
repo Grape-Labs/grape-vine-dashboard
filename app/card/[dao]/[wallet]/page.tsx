@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import VineReputationShareCard from "./ui";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { fetchProjectMetadata } from "@grapenpm/vine-reputation-client";
-//import grapeTheme from "@/app/utils/config/theme";
 
 type VineTheme = {
   primary?: string;
@@ -28,6 +27,12 @@ function extractMetadataUri(projectMeta: any): string | null {
   );
 }
 
+function shortenPk(base58: string, start = 6, end = 6) {
+  if (!base58) return "";
+  if (base58.length <= start + end) return base58;
+  return `${base58.slice(0, start)}…${base58.slice(-end)}`;
+}
+
 async function fetchOffchainJson(uri: string) {
   try {
     const r = await fetch(uri, { cache: "no-store" });
@@ -38,7 +43,19 @@ async function fetchOffchainJson(uri: string) {
   }
 }
 
-// ✅ IMPORTANT: set this to your deployed origin
+/**
+ * TODO: Replace this with your real reputation read.
+ * Return a number (effective points) or null if unavailable.
+ *
+ * Examples of what you might do here:
+ * - call your vine-reputation-client account fetch for (dao, wallet)
+ * - compute effective points from season history / decay
+ */
+async function fetchEffectivePoints(_endpoint: string, _dao: string, _wallet: string): Promise<number | null> {
+  return null; // <-- replace
+}
+
+// ✅ IMPORTANT: set this to your deployed origin (https)
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://vine.governance.so";
 
 export async function generateMetadata(
@@ -50,27 +67,57 @@ export async function generateMetadata(
   const endpoint =
     (searchParams?.endpoint as string) || "https://api.devnet.solana.com";
 
-  let title = "Reputation Card";
+  // Defaults
+  let daoName = "Vine Reputation";
+  let daoSymbol = "";
   let description = "Proof of participation • DAO reputation score";
   let logo: string | null = null;
+
+  // Optional share “value”
+  let effectivePts: number | null = null;
 
   try {
     const conn = new Connection(endpoint, "confirmed");
     const daoPk = new PublicKey(dao);
+
     const pm = await fetchProjectMetadata(conn, daoPk);
     const uri = extractMetadataUri(pm);
 
     if (uri) {
       const offchain = await fetchOffchainJson(uri);
-      if (offchain?.name) title = offchain.name;
+      if (offchain?.name) daoName = offchain.name;
+      if (offchain?.symbol) daoSymbol = offchain.symbol;
       if (offchain?.description) description = offchain.description;
       if (offchain?.image) logo = offchain.image;
     }
+
+    // Try to fetch points (safe if it fails)
+    effectivePts = await fetchEffectivePoints(endpoint, dao, wallet);
   } catch {
     // ignore
   }
 
-  // ✅ This is the key: give Discord an OG image URL that your server generates.
+  const shortWallet = shortenPk(wallet);
+
+  // ✅ Make compact iMessage preview useful by putting info in the TITLE
+  // Keep it short — iMessage truncates aggressively.
+  const titleParts: string[] = [];
+
+  // prefer showing points first (most useful)
+  if (typeof effectivePts === "number" && Number.isFinite(effectivePts)) {
+    titleParts.push(`${Math.round(effectivePts)} pts`);
+  } else {
+    // fallback: brand name
+    titleParts.push(daoName);
+  }
+
+  titleParts.push(shortWallet);
+
+  // Optionally add symbol if it fits
+  const symbolSuffix = daoSymbol ? ` • ${daoSymbol}` : "";
+  const title = `${titleParts.join(" • ")}${symbolSuffix}`;
+
+  // ✅ OG image URL (generated server-side)
   const ogImage = new URL(`/api/og/card`, SITE_URL);
   ogImage.searchParams.set("dao", dao);
   ogImage.searchParams.set("wallet", wallet);
@@ -103,8 +150,25 @@ export async function generateMetadata(
       description,
       images: [ogImage.toString()],
     },
-    // optional: also provide a fallback icon
-    icons: logo ? [{ url: logo }] : undefined,
+
+    /**
+     * ✅ iMessage compact bubble uses the apple-touch-icon/favicon a lot.
+     * Put branded icons in /public:
+     * - /public/apple-touch-icon.png (180x180)
+     * - /public/favicon-32x32.png
+     *
+     * If you want per-DAO icons, you can keep `logo` too — but iMessage
+     * is more consistent with static app icons.
+     */
+    icons: {
+      apple: "/apple-touch-icon.png",
+      icon: [
+        { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+        { url: "/favicon.ico" },
+      ],
+      // keep this if you still want the per-DAO logo as a hint
+      ...(logo ? { other: [{ rel: "image_src", url: logo }] } : {}),
+    },
   };
 }
 
@@ -149,7 +213,9 @@ export default async function Page({ params, searchParams }: any) {
         },
       };
     }
-  } catch {}
+  } catch {
+    // ignore
+  }
 
   return (
     <div style={{ padding: 24, display: "flex", justifyContent: "center" }}>

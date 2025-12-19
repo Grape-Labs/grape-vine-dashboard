@@ -1,8 +1,9 @@
 // app/card/[dao]/[wallet]/page.tsx
+import type { Metadata } from "next";
 import VineReputationShareCard from "./ui";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { fetchProjectMetadata } from "@grapenpm/vine-reputation-client";
-import type { Metadata } from "next";
+//import grapeTheme from "@/app/utils/config/theme";
 
 type VineTheme = {
   primary?: string;
@@ -37,32 +38,73 @@ async function fetchOffchainJson(uri: string) {
   }
 }
 
-export async function generateMetadata({ params, searchParams }: any): Promise<Metadata> {
+// ✅ IMPORTANT: set this to your deployed origin
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://vine.governance.so";
+
+export async function generateMetadata(
+  { params, searchParams }: any
+): Promise<Metadata> {
   const dao = params.dao as string;
   const wallet = params.wallet as string;
 
-  const endpoint = (searchParams?.endpoint as string) || "https://api.devnet.solana.com";
+  const endpoint =
+    (searchParams?.endpoint as string) || "https://api.devnet.solana.com";
 
-  // This points to your OG image route
-  const ogImage = `/card/${dao}/${wallet}/opengraph-image?endpoint=${encodeURIComponent(endpoint)}`;
+  let title = "Reputation Card";
+  let description = "Proof of participation • DAO reputation score";
+  let logo: string | null = null;
 
-  const title = "Vine Reputation Card";
-  const description = "Vine Reputation share card";
+  try {
+    const conn = new Connection(endpoint, "confirmed");
+    const daoPk = new PublicKey(dao);
+    const pm = await fetchProjectMetadata(conn, daoPk);
+    const uri = extractMetadataUri(pm);
+
+    if (uri) {
+      const offchain = await fetchOffchainJson(uri);
+      if (offchain?.name) title = offchain.name;
+      if (offchain?.description) description = offchain.description;
+      if (offchain?.image) logo = offchain.image;
+    }
+  } catch {
+    // ignore
+  }
+
+  // ✅ This is the key: give Discord an OG image URL that your server generates.
+  const ogImage = new URL(`/api/og/card`, SITE_URL);
+  ogImage.searchParams.set("dao", dao);
+  ogImage.searchParams.set("wallet", wallet);
+  ogImage.searchParams.set("endpoint", endpoint);
+
+  const pageUrl = new URL(`/card/${dao}/${wallet}`, SITE_URL);
+  if (searchParams?.endpoint) pageUrl.searchParams.set("endpoint", String(searchParams.endpoint));
+  if (searchParams?.d) pageUrl.searchParams.set("d", String(searchParams.d));
 
   return {
+    metadataBase: new URL(SITE_URL),
     title,
     description,
     openGraph: {
+      type: "website",
+      url: pageUrl.toString(),
       title,
       description,
-      images: [{ url: ogImage, width: 1200, height: 630 }],
+      images: [
+        {
+          url: ogImage.toString(),
+          width: 1200,
+          height: 630,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [ogImage],
+      images: [ogImage.toString()],
     },
+    // optional: also provide a fallback icon
+    icons: logo ? [{ url: logo }] : undefined,
   };
 }
 
@@ -70,7 +112,6 @@ export default async function Page({ params, searchParams }: any) {
   const dao = params.dao as string;
   const wallet = params.wallet as string;
 
-  // allow ?endpoint=... override, else devnet default
   const endpoint =
     (searchParams?.endpoint as string) || "https://api.devnet.solana.com";
 
@@ -83,7 +124,6 @@ export default async function Page({ params, searchParams }: any) {
     const daoPk = new PublicKey(dao);
     const pm = await fetchProjectMetadata(conn, daoPk);
     const uri = extractMetadataUri(pm);
-    const FALLBACK_PRIMARY = "#cccccc";
 
     if (uri) {
       const offchain = await fetchOffchainJson(uri);
@@ -98,7 +138,7 @@ export default async function Page({ params, searchParams }: any) {
 
       const t: VineTheme = offchain?.vine?.theme ?? {};
       resolvedTheme = {
-        primary: t.primary ?? FALLBACK_PRIMARY,
+        primary: (t.primary ? { primary: t.primary } : {}),
         background: {
           image: t.background_image ?? null,
           opacity: typeof t.background_opacity === "number" ? t.background_opacity : 0.55,
@@ -109,9 +149,7 @@ export default async function Page({ params, searchParams }: any) {
         },
       };
     }
-  } catch {
-    // ignore; card still works without theme
-  }
+  } catch {}
 
   return (
     <div style={{ padding: 24, display: "flex", justifyContent: "center" }}>

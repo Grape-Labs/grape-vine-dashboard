@@ -140,6 +140,17 @@ type TokenLeaderboardProps = {
     description?: string;
     image?: string;
   } | null;
+  resolvedTheme?: {
+    primary: string;
+    background: {
+      image: string | null;
+      opacity: number;
+      blur: number;
+      position: string;
+      size: string;
+      repeat: string;
+    } | null; 
+  } | null;
 };
 
 const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
@@ -2166,13 +2177,37 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
               </>
           )}
 
-          <Divider
-            sx={{ mb: 2, borderColor: "rgba(148,163,184,0.4)" }}
-          />
+          <Divider sx={{ mb: 2, borderColor: "rgba(148,163,184,0.4)" }} />
 
           {/* External Links */}
           {selectedWallet && (
             <Stack spacing={1.2} sx={{ mt: 2 }}>
+              
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                href={`/card/${props.activeDaoIdBase58}/${selectedWallet}`}
+                target="_blank"
+                rel="noreferrer"
+                sx={{
+                  borderRadius: "12px",
+                  justifyContent: "space-between",
+                  textTransform: "none",
+                  px: 1.5,
+                  py: 0.8,
+                  background: "rgba(255,255,255,0.03)",
+                  borderColor: "rgba(148,163,184,0.35)",
+                  "&:hover": {
+                    background: "rgba(255,255,255,0.07)",
+                    borderColor: "rgba(255,255,255,0.6)",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all .18s ease",
+                }}
+              >
+                Open public reputation card
+              </Button>
               
               {/* Solscan */}
               <Button

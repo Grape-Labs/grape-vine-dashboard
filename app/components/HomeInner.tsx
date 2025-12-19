@@ -45,6 +45,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 import TollOutlinedIcon from "@mui/icons-material/TollOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 import CreateReputationSpace from "../CreateReputationSpace";
 import ReputationManager from "../ReputationManager";
@@ -173,11 +174,11 @@ function HeaderActions(props: {
   onOpenMetadataManager: () => void;
   manageDisabled?: boolean;
 }) {
-  const { connected } = useWallet();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { connected, disconnect } = useWallet();
 
   if (!connected) {
     return (
@@ -275,6 +276,21 @@ function HeaderActions(props: {
           </ListItemIcon>
           Metadata manager
         </MenuItem>
+        {connected && (
+            <MenuItem
+                onClick={async () => {
+                setAnchorEl(null);
+                try {
+                    await disconnect();
+                } catch {}
+                }}
+            >
+                <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>
+                <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                Disconnect wallet
+            </MenuItem>
+        )}
       </Menu>
     </>
   );
@@ -848,7 +864,12 @@ const HomeInner: React.FC = () => {
           >
             {/* Keep the UI mounted; optionally dim while switching */}
             <Box sx={{ opacity: uiReady ? 1 : 0.65, transition: "opacity 180ms ease" }}>
-              <TokenLeaderboard programId={activeMint} activeDaoIdBase58={activeDao} meta={activeUi?.offchain ?? null} />
+              <TokenLeaderboard 
+                programId={activeMint} 
+                activeDaoIdBase58={activeDao} 
+                meta={activeUi?.offchain ?? null}
+                resolvedTheme={resolvedTheme}
+              />
             </Box>
           </Paper>
         </Container>

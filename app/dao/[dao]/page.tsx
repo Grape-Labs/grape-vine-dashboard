@@ -1,34 +1,44 @@
+// app/dao/[dao]/page.tsx
 import DaoApp from "../../components/DaoApp";
 import type { Metadata } from "next";
 
-export async function generateMetadata({ params, searchParams }: any): Promise<Metadata> {
+export async function generateMetadata({ params }: any): Promise<Metadata> {
   const dao = params.dao as string;
-  const endpoint = (searchParams?.endpoint as string) || "https://api.devnet.solana.com";
 
   const title = "Vine Reputation DAO";
   const description = "Vine Reputation dashboard";
 
-  const ogImage = `/dao/${dao}/opengraph-image?endpoint=${encodeURIComponent(endpoint)}`;
+  // IMPORTANT: absolute URLs for crawlers like Discord
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL
+      ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
+      : undefined;
+
+  const ogImagePath = `/dao/${dao}/opengraph-image`; // <- remove endpoint query
+
+  const ogImageUrl = base ? new URL(ogImagePath, base).toString() : ogImagePath;
+  const pageUrl = base ? new URL(`/dao/${dao}`, base).toString() : `/dao/${dao}`;
 
   return {
     title,
     description,
+    alternates: { canonical: pageUrl },
     openGraph: {
       title,
       description,
-      images: [{ url: ogImage, width: 1200, height: 630 }],
+      url: pageUrl,
+      type: "website",
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [ogImage],
+      images: [ogImageUrl],
     },
   };
 }
 
 export default function Page() {
-  // server-rendered shell
-  //console.log("SERVER: /dao/[dao] rendered");
   return <DaoApp />;
 }

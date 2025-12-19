@@ -3,6 +3,8 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { fetchProjectMetadata } from "@grapenpm/vine-reputation-client";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic"; // important for always-generating
+export const revalidate = 0;
 export const contentType = "image/png";
 export const size = { width: 1200, height: 630 };
 

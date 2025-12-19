@@ -11,7 +11,11 @@ import html2canvas from "html2canvas";
 import * as confetti from "canvas-confetti";
 //import confetti from "canvas-confetti";
 
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+
 import {
+  FormControlLabel, 
+  Switch,
   Avatar,
   Paper,
   Grid,
@@ -204,6 +208,23 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
   const [timestamp, setTimestamp] = useState<string>(""); // last draw timestamp (string)
   const [winners, setWinners] = useState<WinnerEntry[]>([]);
   const currentWinner = winners[winners.length - 1] ?? null;
+
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const isLegacy = searchParams.get("legacy") === "1";
+
+  const toggleLegacy = (checked: boolean) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (checked) params.set("legacy", "1");
+    else params.delete("legacy");
+
+    // keep everything else the same (dao, season, etc.)
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  };
 
 
   // Build CSV string for reputation import
@@ -1622,7 +1643,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
           gap: 1,
         }}
       >
-        <Typography variant="h5">Leaderboard</Typography>
+        <Typography variant="h5">Token Leaderboard</Typography>
 
         <Box
           sx={{
@@ -1672,6 +1693,31 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
 
           {(holders && holders.length > 0) && (
             <>
+
+              <Box
+                sx={{
+                  ml: 0.75,
+                  px: 1,
+                  py: 0.35,
+                  borderRadius: "12px",
+                  border: "1px solid rgba(148,163,184,0.5)",
+                  background: "rgba(15,23,42,0.9)",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <FormControlLabel
+                  sx={{ m: 0 }}
+                  label={<span style={{ fontSize: 12, opacity: 0.85 }}>{isLegacy ? "Legacy" : "New"}</span>}
+                  control={
+                    <Switch
+                      size="small"
+                      checked={isLegacy}
+                      onChange={(e) => toggleLegacy(e.target.checked)}
+                    />
+                  }
+                />
+              </Box>
 
               {/* CSV export actions */}
               <Tooltip title="Copy holders as CSV" arrow>

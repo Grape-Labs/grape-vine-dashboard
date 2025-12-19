@@ -327,7 +327,7 @@ function recommendNewDaoId(): string {
               px: 2.2,
               background: "rgba(255,255,255,0.14)",
               border: "1px solid rgba(255,255,255,0.22)",
-              color: "rgba(248,250,252,0.95)",
+              color: "#ffffff",
               "&:hover": { background: "rgba(255,255,255,0.20)" },
             }}
           >

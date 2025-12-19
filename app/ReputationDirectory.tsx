@@ -530,7 +530,7 @@ export default function ReputationDirectory() {
                                 }}
                               >
                                 {sym ? (
-                                  <>
+                                  <>&nbsp;
                                     <Box
                                       component="span"
                                       sx={{
@@ -543,12 +543,12 @@ export default function ReputationDirectory() {
                                       }}
                                     />
                                     <Box component="span" sx={{ fontFamily: "monospace", opacity: 0.9 }}>
-                                      {sym}
+                                      &nbsp;{sym}
                                     </Box>
                                   </>
                                 ) : (
                                   <Box component="span" sx={{ opacity: 0.75 }}>
-                                    {shorten(dao, 6, 6)}
+                                    &nbsp;{shorten(dao, 6, 6)}
                                   </Box>
                                 )}
                               </Typography>
@@ -557,7 +557,6 @@ export default function ReputationDirectory() {
                             <ArrowForwardIosIcon sx={{ opacity: 0.55, fontSize: 16, color: "#ffffff" }} />
                           </Box>
 
-                      
                           <Typography
                             variant="body2"
                             sx={{

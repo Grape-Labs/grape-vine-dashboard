@@ -1,8 +1,7 @@
-// app/page.tsx
+// app/dao/page.tsx
 import { redirect } from "next/navigation";
 
-export default function Home() {
-  // Optional: set NEXT_PUBLIC_DEFAULT_DAO in .env
+export default function DaoIndexPage() {
   const dao = process.env.NEXT_PUBLIC_DEFAULT_DAO;
-  redirect(dao ? `/dao/${dao}` : "/dao");
+  redirect(dao ? `/dao/${dao}` : "/");
 }

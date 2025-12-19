@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import VineReputationShareCard from "./ui";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { fetchProjectMetadata } from "@grapenpm/vine-reputation-client";
-import grapeTheme from "@/app/utils/config/theme";
+//import grapeTheme from "@/app/utils/config/theme";
 
 type VineTheme = {
   primary?: string;
@@ -138,7 +138,7 @@ export default async function Page({ params, searchParams }: any) {
 
       const t: VineTheme = offchain?.vine?.theme ?? {};
       resolvedTheme = {
-        primary: t.primary ?? grapeTheme.palette.primary.main,
+        primary: (t.primary ? { primary: t.primary } : {}),
         background: {
           image: t.background_image ?? null,
           opacity: typeof t.background_opacity === "number" ? t.background_opacity : 0.55,

@@ -1,56 +1,96 @@
 // app/dao/[dao]/page.tsx
 import { redirect } from "next/navigation";
-import DaoApp from "../../components/DaoApp";
 import type { Metadata } from "next";
 import { PublicKey } from "@solana/web3.js";
+import DaoApp from "../../components/DaoApp";
 
 function isValidPk(s: string) {
-  try { new PublicKey(s); return true; } catch { return false; }
+  try {
+    new PublicKey(s);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getSiteUrl() {
+  // Must be absolute for OG crawlers (Discord/iMessage/etc)
+  const raw =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.SITE_URL || // optional fallback if you use Vercel's SITE_URL
+    "https://vine.governance.so";
+
+  // normalize (avoid trailing slash issues)
+  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
 }
 
 export async function generateMetadata({ params }: any): Promise<Metadata> {
-  const dao = params.dao as string;
+  const dao = String(params.dao || "");
 
   if (!isValidPk(dao)) {
-    return { title: "Invalid DAO", description: "Invalid DAO address" };
+    const site = getSiteUrl();
+    return {
+      metadataBase: new URL(site),
+      title: "Invalid DAO",
+      description: "Invalid DAO address",
+      robots: { index: false, follow: false },
+    };
   }
 
-  const title = "Vine Reputation DAO";
-  const description = "Vine Reputation dashboard";
+  const site = getSiteUrl();
+  const metadataBase = new URL(site);
 
-  // IMPORTANT: absolute URLs for crawlers like Discord
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL
-      ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
-      : undefined;
+  // Make the title useful in iMessage compact previews
+  const shortDao = `${dao.slice(0, 6)}…${dao.slice(-6)}`;
+  const title = `Vine Reputation · ${shortDao}`;
+  const description = "On-chain, season-based reputation dashboard for this DAO.";
 
-  const ogImagePath = `/dao/${dao}/opengraph-image`; // <- remove endpoint query
-
-  const ogImageUrl = base ? new URL(ogImagePath, base).toString() : ogImagePath;
-  const pageUrl = base ? new URL(`/dao/${dao}`, base).toString() : `/dao/${dao}`;
+  // IMPORTANT: Open Graph image must be absolute
+  // Next will serve this automatically if you have:
+  // app/dao/[dao]/opengraph-image.tsx  (or .tsx route handler)
+  const ogImageUrl = new URL(`/dao/${dao}/opengraph-image`, metadataBase).toString();
+  const pageUrl = new URL(`/dao/${dao}`, metadataBase).toString();
 
   return {
+    metadataBase,
     title,
     description,
     alternates: { canonical: pageUrl },
+
     openGraph: {
+      type: "website",
+      url: pageUrl,
       title,
       description,
-      url: pageUrl,
-      type: "website",
-      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      siteName: "Vine Reputation",
+      locale: "en_US",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+        },
+      ],
     },
+
     twitter: {
       card: "summary_large_image",
       title,
       description,
       images: [ogImageUrl],
     },
+
+    // This can help iMessage show a better icon in compact mode
+    // (make sure these files exist in /public)
+    icons: {
+      icon: "/favicon-32x32.png",
+      apple: "/apple-touch-icon.png",
+    },
   };
 }
 
 export default function Page({ params }: any) {
-  const dao = params.dao as string;
+  const dao = String(params.dao || "");
   if (!isValidPk(dao)) redirect("/?notfound=1");
   return <DaoApp />;
 }

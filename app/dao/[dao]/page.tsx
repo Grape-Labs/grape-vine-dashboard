@@ -33,6 +33,7 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
       metadataBase: new URL(site),
       title: "Invalid DAO",
       description: "Invalid DAO address",
+      manifest: `/dao/${dao}/manifest.webmanifest`,
       robots: { index: false, follow: false },
     };
   }

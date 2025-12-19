@@ -8,7 +8,8 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
-import TokenLeaderboard from "../TokenLeaderboard";
+import { InstallAppButton } from "@/app/components/InstallApp";
+import LeaderboardSwitch from "./LeaderboardSwitch";
 import { VINE_LOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "../constants";
 
 import {
@@ -702,6 +703,8 @@ const HomeInner: React.FC = () => {
               </Button>
             )}
 
+            <InstallAppButton />
+
             {/* Space selector menu (this must exist + be wired to spaceAnchor) */}
             <Menu
               anchorEl={spaceAnchor}
@@ -828,7 +831,7 @@ const HomeInner: React.FC = () => {
                 })
               )}
             </Menu>
-
+            
             <HeaderActions
               onCreateSpace={() => setCreateOpen(true)}
               onManageSpace={() => setManageOpen(true)}
@@ -875,12 +878,15 @@ const HomeInner: React.FC = () => {
           >
             {/* Keep the UI mounted; optionally dim while switching */}
             <Box sx={{ opacity: uiReady ? 1 : 0.65, transition: "opacity 180ms ease" }}>
-              <TokenLeaderboard 
-                programId={activeMint} 
-                activeDaoIdBase58={activeDao} 
-                meta={activeUi?.offchain ?? null}
-                resolvedTheme={resolvedTheme}
-              />
+              
+                <LeaderboardSwitch
+                    programId={activeMint}
+                    activeDaoIdBase58={activeDao}
+                    //activeSeason={season}
+                    endpoint={"https://api.devnet.solana.com"}
+                    meta={activeUi?.offchain ?? null}
+                    resolvedTheme={resolvedTheme}
+                    />
             </Box>
           </Paper>
         </Container>

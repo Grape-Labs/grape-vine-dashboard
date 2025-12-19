@@ -336,16 +336,6 @@ export default function VineReputationShareCard(props: {
   const daoShort = shortenPk(daoBase58, 6, 6);
   const walletShort = shortenPk(walletBase58, 6, 6);
 
-  const badge = useMemo(() => {
-    const n = bigintToSafeNumber(totalDecayed) ?? 0;
-    if (n >= 200) return { label: "Vine OG", tone: "rgba(250,204,21,0.22)" };
-    if (n >= 100) return { label: "Core Member", tone: "rgba(56,189,248,0.18)" };
-    if (n >= 25) return { label: "Regular", tone: "rgba(167,139,250,0.18)" };
-    if (n >= 10) return { label: "Listener", tone: "rgba(34,197,94,0.16)" };
-    if (n >= 1) return { label: "Checked In", tone: "rgba(148,163,184,0.14)" };
-    return { label: "Newcomer", tone: "rgba(148,163,184,0.10)" };
-  }, [totalDecayed]);
-
   const handleCopy = async (text: string, okMsg: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -526,18 +516,8 @@ export default function VineReputationShareCard(props: {
               </Box>
 
               {/* Badges */}
+              {/*
               <Box sx={{ mt: 1.25, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                <Chip
-                  size="small"
-                  label={badge.label}
-                  sx={{
-                    borderRadius: "999px",
-                    border: "1px solid rgba(148,163,184,0.22)",
-                    background: badge.tone,
-                    color: "rgba(248,250,252,0.92)",
-                    fontWeight: 700,
-                  }}
-                />
                 {decayBps != null && (
                   <Chip
                     size="small"
@@ -551,11 +531,12 @@ export default function VineReputationShareCard(props: {
                   />
                 )}
               </Box>
+              */}
 
               {/* Big number */}
-              <Typography variant="h5" sx={{ mt: 1.15, fontWeight: 900, lineHeight: 1.08 }}>
+              <Typography variant="h5" sx={{ mt: 1.15, fontWeight: 1000, lineHeight: 1.08 }}>
                 {formatBigInt(totalDecayed)}{" "}
-                <Box component="span" sx={{ opacity: 0.85, fontWeight: 800 }}>
+                <Box component="span" sx={{ opacity: 0.85, fontWeight: 900 }}>
                   effective points
                 </Box>
               </Typography>

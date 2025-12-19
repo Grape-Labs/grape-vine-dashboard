@@ -37,6 +37,7 @@ import {
   Drawer,
   Divider,
   Stack,
+  Collapse,
 } from "@mui/material";
 
 import DownloadIcon from "@mui/icons-material/Download";
@@ -171,6 +172,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
   const [open, setOpen] = useState(false);
   const [markdownCopied, setMarkdownCopied] = useState(false);
   const [streamMode, setStreamMode] = useState(false);
+  const [showRandomizer, setShowRandomizer] = useState(false);
   const [csvCopied, setCsvCopied] = useState(false);
 
   const [highlightedAddress, setHighlightedAddress] = useState<string | null>(
@@ -1189,422 +1191,424 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
       )}
 
       {/* RAFFLE / RANDOMIZER CARD */}
-      {!loading && (
-        <Box
-          ref={componentRef}
-          sx={{
-            m: 2,
-            p: 2.5,
-            borderRadius: "20px",
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            backdropFilter: "blur(12px)",
-            boxShadow: loadingSpin
-              ? "0 0 18px rgba(0,200,255,0.25)"
-              : "0 0 8px rgba(0,0,0,0.4)",
-            transition: "0.3s ease",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {/* Animated top shimmer while spinning */}
-          {loadingSpin && (
-            <Box
-              sx={{
-                position: "absolute",
-                top: 0,
-                left: "-120%",
-                height: "4px",
-                width: "60%",
-                background:
-                  "linear-gradient(90deg, rgba(255,255,255,0), rgba(0,200,255,0.8), rgba(255,255,255,0))",
-                animation: "shimmerBar 1.4s infinite ease",
-              }}
-            />
-          )}
-
-          {/* Header / status row */}
+      {!loading && showRandomizer && (
+        <Collapse in={showRandomizer} timeout={220} unmountOnExit>
           <Box
+            ref={componentRef}
             sx={{
-              display: "flex",
-              alignItems: "baseline",
-              justifyContent: "space-between",
-              mb: 1.5,
-              gap: 1,
+              m: 2,
+              p: 2.5,
+              borderRadius: "20px",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              backdropFilter: "blur(12px)",
+              boxShadow: loadingSpin
+                ? "0 0 18px rgba(0,200,255,0.25)"
+                : "0 0 8px rgba(0,0,0,0.4)",
+              transition: "0.3s ease",
+              position: "relative",
+              overflow: "hidden",
             }}
           >
-            <Typography
-              variant="subtitle2"
-              sx={{ letterSpacing: 0.5, opacity: 0.9 }}
-            >
-              <Tooltip
-                  title="Chance to be drawn is proportional to token balance. P(win) = walletBalance / totalEligibleBalance"
-                  arrow
-                >
-                  <Typography variant="subtitle2" sx={{ opacity: 0.8 }}>
-                    Randomizer
-                  </Typography>
-                </Tooltip>
-            </Typography>
+            {/* Animated top shimmer while spinning */}
+            {loadingSpin && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: "-120%",
+                  height: "4px",
+                  width: "60%",
+                  background:
+                    "linear-gradient(90deg, rgba(255,255,255,0), rgba(0,200,255,0.8), rgba(255,255,255,0))",
+                  animation: "shimmerBar 1.4s infinite ease",
+                }}
+              />
+            )}
 
+            {/* Header / status row */}
             <Box
               sx={{
                 display: "flex",
-                alignItems: "center",
-                gap: 0.75,
-                opacity: 0.85,
-                fontSize: "0.75rem",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                mb: 1.5,
+                gap: 1,
               }}
             >
+              <Typography
+                variant="subtitle2"
+                sx={{ letterSpacing: 0.5, opacity: 0.9 }}
+              >
+                <Tooltip
+                    title="Chance to be drawn is proportional to token balance. P(win) = walletBalance / totalEligibleBalance"
+                    arrow
+                  >
+                    <Typography variant="subtitle2" sx={{ opacity: 0.8 }}>
+                      Randomizer
+                    </Typography>
+                  </Tooltip>
+              </Typography>
+
               <Box
                 sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  bgcolor: loadingSpin ? "#22c55e" : "#9ca3af",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.75,
+                  opacity: 0.85,
+                  fontSize: "0.75rem",
                 }}
-              />
-              <Typography variant="caption" sx={{ mr: 1 }}>
-                {loadingSpin ? "Drawing…" : "Ready"}
-              </Typography>
-
-              <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                {winners.length}/{MAX_WINNERS} drawn
-              </Typography>
-            </Box>
-            
-              <Tooltip title="Open stream mode for Discord / screen share" arrow>
-                <IconButton
-                  size="small"
-                  sx={{
-                    ml: 0.5,
-                    color: "rgba(248,250,252,0.85)",
-                    "&:hover": { color: "white" },
-                  }}
-                  onClick={() => setStreamMode(true)}
-                >
-                  <LiveTvIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            </Box>    
-
-          {/* Content row: winner + actions */}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              alignItems: { xs: "flex-start", md: "center" },
-              justifyContent: "space-between",
-              gap: 2,
-            }}
-          >
-            {/* Winner section */}
-            <Box sx={{ textAlign: "left", flex: 1 }}>
-              {/* Roulette pill + glow (uses spinning winner while loadingSpin) */}
-              {pillHasWinner && pillAddress && (
-                <Fade in timeout={450}>
-                  <Box sx={{ textAlign: "center", mb: 2 }}>
-                    <Box
-                      key={
-                        (loadingSpin ? "spin-" : "final-") +
-                        (pillAddress || "")
-                      }
-                      sx={{
-                        position: "relative",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        px: 2,
-                        py: 1,
-                        borderRadius: "14px",
-                        background: "rgba(15,23,42,0.9)",
-                        border: "1px solid rgba(148,163,184,0.7)",
-                        backdropFilter: "blur(8px)",
-                        animation: "winnerGlow 1.6s ease-out",
-                        "&::before": {
-                          content: '""',
-                          position: "absolute",
-                          inset: -6,
-                          borderRadius: "999px",
-                          border: "1px solid rgba(56,189,248,0.65)",
-                          boxShadow: "0 0 22px rgba(56,189,248,0.55)",
-                          opacity: 0,
-                          animation: "pulseRing 1.3s ease-out",
-                        },
-                      }}
-                    >
-                      <CopyToClipboard
-                        text={pillAddress}
-                        onCopy={handleCopy}
-                      >
-                        <Button
-                          variant="text"
-                          color="inherit"
-                          sx={{
-                            textTransform: "none",
-                            fontWeight: 500,
-                            fontSize: "0.9rem",
-                            letterSpacing: 0.4,
-                            color: "white",
-                            minWidth: 0,
-                            "&:hover": {
-                              background: "rgba(255,255,255,0.05)",
-                            },
-                          }}
-                          startIcon={<FileCopyIcon fontSize="small" />}
-                        >
-                          {isMobile
-                            ? shortenString(pillAddress, 8, 8)
-                            : pillAddress}
-                        </Button>
-                      </CopyToClipboard>
-                    </Box>
-
-                    {!loadingSpin && pillTimestamp && (
-                      <Fade in timeout={500}>
-                        <Box
-                          sx={{
-                            mt: 1.2,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 1,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <Tooltip title="Save winners snapshot (image)">
-                            <IconButton
-                              sx={{ color: "white", mr: 0.2 }}
-                              onClick={handleCapture}
-                            >
-                              <ScreenshotMonitorIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-
-                          <Tooltip title="Copy winners as Markdown (for Discord/notes)">
-                            <IconButton
-                              sx={{ color: "white", mr: 0.2 }}
-                              onClick={handleCopyWinnersMarkdown}
-                            >
-                              <DescriptionIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-
-                          <Typography
-                            variant="caption"
-                            sx={{ opacity: 0.8, whiteSpace: "nowrap" }}
-                          >
-                            {moment(currentWinner.ts).format("LLLL")}
-                          </Typography>
-                        </Box>
-                      </Fade>
-                    )}
-                  </Box>
-                </Fade>
-              )}
-
-              {/* WINNERS SNAPSHOT AREA (screenshot target) */}
-              {winners.length > 0 && (
+              >
                 <Box
-                  ref={winnersRef}
                   sx={{
-                    mt: 2.5,
-                    p: 2,
-                    borderRadius: "16px",
-                    background: "rgba(15,23,42,0.96)",
-                    border: "1px solid rgba(148,163,184,0.6)",
-                    backdropFilter: "blur(10px)",
-                    maxWidth: 520,
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    bgcolor: loadingSpin ? "#22c55e" : "#9ca3af",
                   }}
-                >
-                  {/* Header with date */}
-                  <Box
+                />
+                <Typography variant="caption" sx={{ mr: 1 }}>
+                  {loadingSpin ? "Drawing…" : "Ready"}
+                </Typography>
+
+                <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                  {winners.length}/{MAX_WINNERS} drawn
+                </Typography>
+              </Box>
+              
+                <Tooltip title="Open stream mode for Discord / screen share" arrow>
+                  <IconButton
+                    size="small"
                     sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "baseline",
-                      mb: 1.5,
+                      ml: 0.5,
+                      color: "rgba(248,250,252,0.85)",
+                      "&:hover": { color: "white" },
                     }}
+                    onClick={() => setStreamMode(true)}
                   >
-                    <Typography
-                      variant="subtitle2"
-                      sx={{
-                        letterSpacing: 0.6,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      The Vine List
-                    </Typography>
+                    <LiveTvIcon fontSize="inherit" />
+                  </IconButton>
+                </Tooltip>
+              </Box>    
 
-                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                      {moment(winners[0].ts).format("LL")}
-                    </Typography>
-                  </Box>
-
-                  {/* Winners list */}
-                  <Box sx={{ mt: 0.5 }}>
-                    {winners.map((w, idx) => (
+            {/* Content row: winner + actions */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                alignItems: { xs: "flex-start", md: "center" },
+                justifyContent: "space-between",
+                gap: 2,
+              }}
+            >
+              {/* Winner section */}
+              <Box sx={{ textAlign: "left", flex: 1 }}>
+                {/* Roulette pill + glow (uses spinning winner while loadingSpin) */}
+                {pillHasWinner && pillAddress && (
+                  <Fade in timeout={450}>
+                    <Box sx={{ textAlign: "center", mb: 2 }}>
                       <Box
-                        key={w.ts}
+                        key={
+                          (loadingSpin ? "spin-" : "final-") +
+                          (pillAddress || "")
+                        }
                         sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
+                          position: "relative",
+                          display: "inline-flex",
                           alignItems: "center",
-                          py: 0.5,
-                          borderBottom:
-                            idx === winners.length - 1
-                              ? "none"
-                              : "1px dashed rgba(75,85,99,0.6)",
+                          px: 2,
+                          py: 1,
+                          borderRadius: "14px",
+                          background: "rgba(15,23,42,0.9)",
+                          border: "1px solid rgba(148,163,184,0.7)",
+                          backdropFilter: "blur(8px)",
+                          animation: "winnerGlow 1.6s ease-out",
+                          "&::before": {
+                            content: '""',
+                            position: "absolute",
+                            inset: -6,
+                            borderRadius: "999px",
+                            border: "1px solid rgba(56,189,248,0.65)",
+                            boxShadow: "0 0 22px rgba(56,189,248,0.55)",
+                            opacity: 0,
+                            animation: "pulseRing 1.3s ease-out",
+                          },
                         }}
                       >
-                        {/* Left side: rank + address + copy button */}
+                        <CopyToClipboard
+                          text={pillAddress}
+                          onCopy={handleCopy}
+                        >
+                          <Button
+                            variant="text"
+                            color="inherit"
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: 500,
+                              fontSize: "0.9rem",
+                              letterSpacing: 0.4,
+                              color: "white",
+                              minWidth: 0,
+                              "&:hover": {
+                                background: "rgba(255,255,255,0.05)",
+                              },
+                            }}
+                            startIcon={<FileCopyIcon fontSize="small" />}
+                          >
+                            {isMobile
+                              ? shortenString(pillAddress, 8, 8)
+                              : pillAddress}
+                          </Button>
+                        </CopyToClipboard>
+                      </Box>
+
+                      {!loadingSpin && pillTimestamp && (
+                        <Fade in timeout={500}>
+                          <Box
+                            sx={{
+                              mt: 1.2,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 1,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <Tooltip title="Save winners snapshot (image)">
+                              <IconButton
+                                sx={{ color: "white", mr: 0.2 }}
+                                onClick={handleCapture}
+                              >
+                                <ScreenshotMonitorIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+
+                            <Tooltip title="Copy winners as Markdown (for Discord/notes)">
+                              <IconButton
+                                sx={{ color: "white", mr: 0.2 }}
+                                onClick={handleCopyWinnersMarkdown}
+                              >
+                                <DescriptionIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+
+                            <Typography
+                              variant="caption"
+                              sx={{ opacity: 0.8, whiteSpace: "nowrap" }}
+                            >
+                              {moment(currentWinner.ts).format("LLLL")}
+                            </Typography>
+                          </Box>
+                        </Fade>
+                      )}
+                    </Box>
+                  </Fade>
+                )}
+
+                {/* WINNERS SNAPSHOT AREA (screenshot target) */}
+                {winners.length > 0 && (
+                  <Box
+                    ref={winnersRef}
+                    sx={{
+                      mt: 2.5,
+                      p: 2,
+                      borderRadius: "16px",
+                      background: "rgba(15,23,42,0.96)",
+                      border: "1px solid rgba(148,163,184,0.6)",
+                      backdropFilter: "blur(10px)",
+                      maxWidth: 520,
+                    }}
+                  >
+                    {/* Header with date */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline",
+                        mb: 1.5,
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          letterSpacing: 0.6,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        The Vine List
+                      </Typography>
+
+                      <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                        {moment(winners[0].ts).format("LL")}
+                      </Typography>
+                    </Box>
+
+                    {/* Winners list */}
+                    <Box sx={{ mt: 0.5 }}>
+                      {winners.map((w, idx) => (
                         <Box
+                          key={w.ts}
                           sx={{
                             display: "flex",
+                            justifyContent: "space-between",
                             alignItems: "center",
-                            gap: 1,
-                            minWidth: 0,
+                            py: 0.5,
+                            borderBottom:
+                              idx === winners.length - 1
+                                ? "none"
+                                : "1px dashed rgba(75,85,99,0.6)",
                           }}
                         >
-                          <Typography
-                            variant="body2"
+                          {/* Left side: rank + address + copy button */}
+                          <Box
                             sx={{
                               display: "flex",
                               alignItems: "center",
                               gap: 1,
-                              lineHeight: 2,
-                              fontFamily:
-                                '"Roboto Mono","SFMono-Regular",ui-monospace,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace',
-                              letterSpacing: 0,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              pr: 1.5,
+                              minWidth: 0,
                             }}
                           >
-                            <span style={{ opacity: 0.8, minWidth: 18 }}>{idx + 1}.</span>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                lineHeight: 2,
+                                fontFamily:
+                                  '"Roboto Mono","SFMono-Regular",ui-monospace,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace',
+                                letterSpacing: 0,
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                pr: 1.5,
+                              }}
+                            >
+                              <span style={{ opacity: 0.8, minWidth: 18 }}>{idx + 1}.</span>
 
-                            <span>
-                              {isMobile ? shortenString(w.address, 6, 6) : w.address}
-                            </span>
+                              <span>
+                                {isMobile ? shortenString(w.address, 6, 6) : w.address}
+                              </span>
+
+                              <CopyToClipboard text={w.address} onCopy={handleCopy}>
+                                <IconButton
+                                  size="small"
+                                  sx={{
+                                    color: "rgba(248,250,252,0.85)",
+                                    p: 0.3,
+                                    "&:hover": {
+                                      backgroundColor: "rgba(148,163,184,0.25)",
+                                    },
+                                  }}
+                                >
+                                  <FileCopyIcon sx={{ fontSize: 14 }} />
+                                </IconButton>
+                              </CopyToClipboard>
+                            </Typography>
 
                             <CopyToClipboard text={w.address} onCopy={handleCopy}>
                               <IconButton
                                 size="small"
                                 sx={{
-                                  color: "rgba(248,250,252,0.85)",
-                                  p: 0.3,
+                                  ml: 0.25,
+                                  p: 0.4,
+                                  borderRadius: "999px",
+                                  backgroundColor: "rgba(15,23,42,0.9)",
                                   "&:hover": {
-                                    backgroundColor: "rgba(148,163,184,0.25)",
+                                    backgroundColor: "rgba(148,163,184,0.35)",
                                   },
                                 }}
                               >
                                 <FileCopyIcon sx={{ fontSize: 14 }} />
                               </IconButton>
                             </CopyToClipboard>
+                          </Box>
+
+                          {/* Right side: time */}
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              opacity: 0.8,
+                              fontFeatureSettings: '"tnum" 1',
+                              ml: 1,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {moment(w.ts).format("HH:mm:ss")}
                           </Typography>
-
-                          <CopyToClipboard text={w.address} onCopy={handleCopy}>
-                            <IconButton
-                              size="small"
-                              sx={{
-                                ml: 0.25,
-                                p: 0.4,
-                                borderRadius: "999px",
-                                backgroundColor: "rgba(15,23,42,0.9)",
-                                "&:hover": {
-                                  backgroundColor: "rgba(148,163,184,0.35)",
-                                },
-                              }}
-                            >
-                              <FileCopyIcon sx={{ fontSize: 14 }} />
-                            </IconButton>
-                          </CopyToClipboard>
                         </Box>
+                      ))}
+                    </Box>
 
-                        {/* Right side: time */}
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            opacity: 0.8,
-                            fontFeatureSettings: '"tnum" 1',
-                            ml: 1,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {moment(w.ts).format("HH:mm:ss")}
-                        </Typography>
-                      </Box>
-                    ))}
+
                   </Box>
+                )}
+              </Box>
 
-
-                </Box>
-              )}
-            </Box>
-
-            {/* Actions: draw + reset (simple) */}
-            <Box
-              sx={{
-                textAlign: { xs: "left", md: "right" },
-                mt: { xs: 2, md: 0 },
-              }}
-            >
-              <Button
-                onClick={spinRoulette}
-                disabled={loadingSpin || winners.length >= MAX_WINNERS}
+              {/* Actions: draw + reset (simple) */}
+              <Box
                 sx={{
-                  textTransform: "none",
-                  borderRadius: "18px",
-                  px: 2.6,
-                  py: 1,
-                  background:
-                    loadingSpin || winners.length >= MAX_WINNERS
-                      ? "rgba(0,200,255,0.3)"
-                      : "rgba(255,255,255,0.12)",
-                  "&:hover": {
-                    background:
-                      loadingSpin || winners.length >= MAX_WINNERS
-                        ? "rgba(0,200,255,0.35)"
-                        : "rgba(255,255,255,0.22)",
-                  },
-                  transition: "0.2s",
+                  textAlign: { xs: "left", md: "right" },
+                  mt: { xs: 2, md: 0 },
                 }}
               >
-                {loadingSpin ? (
-                  <HourglassBottomIcon sx={{ mr: 1 }} fontSize="small" />
-                ) : (
-                  <LoopIcon sx={{ mr: 1 }} fontSize="small" />
-                )}
-                <Typography component="span" sx={{ fontSize: "0.9rem" }}>
-                  {winners.length >= MAX_WINNERS
-                    ? "All winners drawn"
-                    : "Draw"}
-                </Typography>
-              </Button>
-
-              {winners.length > 0 && (
                 <Button
-                  onClick={handleResetRaffle}
-                  size="small"
-                  variant="text"
+                  onClick={spinRoulette}
+                  disabled={loadingSpin || winners.length >= MAX_WINNERS}
                   sx={{
-                    mt: 0.75,
-                    ml: 0.5,
                     textTransform: "none",
-                    opacity: 0.7,
+                    borderRadius: "18px",
+                    px: 2.6,
+                    py: 1,
+                    background:
+                      loadingSpin || winners.length >= MAX_WINNERS
+                        ? "rgba(0,200,255,0.3)"
+                        : "rgba(255,255,255,0.12)",
                     "&:hover": {
-                      opacity: 1,
-                      background: "transparent",
-                      textDecoration: "underline",
+                      background:
+                        loadingSpin || winners.length >= MAX_WINNERS
+                          ? "rgba(0,200,255,0.35)"
+                          : "rgba(255,255,255,0.22)",
                     },
+                    transition: "0.2s",
                   }}
                 >
-                  Reset
+                  {loadingSpin ? (
+                    <HourglassBottomIcon sx={{ mr: 1 }} fontSize="small" />
+                  ) : (
+                    <LoopIcon sx={{ mr: 1 }} fontSize="small" />
+                  )}
+                  <Typography component="span" sx={{ fontSize: "0.9rem" }}>
+                    {winners.length >= MAX_WINNERS
+                      ? "All winners drawn"
+                      : "Draw"}
+                  </Typography>
                 </Button>
-              )}
+
+                {winners.length > 0 && (
+                  <Button
+                    onClick={handleResetRaffle}
+                    size="small"
+                    variant="text"
+                    sx={{
+                      mt: 0.75,
+                      ml: 0.5,
+                      textTransform: "none",
+                      opacity: 0.7,
+                      "&:hover": {
+                        opacity: 1,
+                        background: "transparent",
+                        textDecoration: "underline",
+                      },
+                    }}
+                  >
+                    Reset
+                  </Button>
+                )}
+              </Box>
             </Box>
           </Box>
-        </Box>
+        </Collapse>
       )}
 
       {/* LEADERBOARD HEADER */}
@@ -1706,6 +1710,25 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                   <DownloadIcon sx={{ fontSize: 16 }} />
                 </IconButton>
               </Tooltip>
+
+              <Tooltip title="Show/Hide Randomizer" arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => setShowRandomizer((v) => !v)}
+                  sx={{
+                    borderRadius: "10px",
+                    border: "1px solid rgba(148,163,184,0.5)",
+                    background: "rgba(15,23,42,0.9)",
+                    "&:hover": {
+                      background: "rgba(30,64,175,0.9)",
+                      borderColor: "rgba(191,219,254,0.9)",
+                    },
+                  }}
+                >
+                  <LoopIcon sx={{ fontSize: 16 }} />
+                </IconButton>   
+              </Tooltip> 
+
               </>
           )}
         </Box>

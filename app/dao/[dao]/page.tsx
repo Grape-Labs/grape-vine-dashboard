@@ -1,9 +1,19 @@
 // app/dao/[dao]/page.tsx
+import { redirect } from "next/navigation";
 import DaoApp from "../../components/DaoApp";
 import type { Metadata } from "next";
+import { PublicKey } from "@solana/web3.js";
+
+function isValidPk(s: string) {
+  try { new PublicKey(s); return true; } catch { return false; }
+}
 
 export async function generateMetadata({ params }: any): Promise<Metadata> {
   const dao = params.dao as string;
+
+  if (!isValidPk(dao)) {
+    return { title: "Invalid DAO", description: "Invalid DAO address" };
+  }
 
   const title = "Vine Reputation DAO";
   const description = "Vine Reputation dashboard";
@@ -39,6 +49,8 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
   };
 }
 
-export default function Page() {
+export default function Page({ params }: any) {
+  const dao = params.dao as string;
+  if (!isValidPk(dao)) redirect("/?notfound=1");
   return <DaoApp />;
 }

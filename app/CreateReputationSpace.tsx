@@ -28,9 +28,33 @@ import {
   buildUpsertProjectMetadataIx,
 } from "@grapenpm/vine-reputation-client";
 
+const darkFieldSx = {
+  "& .MuiInputLabel-root": { color: "rgba(248,250,252,0.78)" },
+  "& .MuiInputLabel-root.Mui-focused": { color: "rgba(248,250,252,0.90)" },
+
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "16px",
+    background: "rgba(255,255,255,0.06)",
+    color: "rgba(248,250,252,0.95)",
+  },
+
+  "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.16)" },
+  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+    borderColor: "rgba(255,255,255,0.26)",
+  },
+  "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: "rgba(255,255,255,0.30)",
+  },
+
+  "& input::placeholder": { color: "rgba(248,250,252,0.45)", opacity: 1 },
+
+  "& .MuiFormHelperText-root": { color: "rgba(248,250,252,0.60)" },
+};
+
 type CreateReputationSpaceProps = {
   open: boolean;
   onClose: () => void;
+  onCreated?: (daoIdBase58: string) => void; // ✅ add this
   defaultDaoIdBase58?: string;
   defaultRepMintBase58?: string;
   defaultInitialSeason?: number;
@@ -40,6 +64,7 @@ type CreateReputationSpaceProps = {
 const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
   open,
   onClose,
+  onCreated,
   defaultDaoIdBase58 = "",
   defaultRepMintBase58 = "",
   defaultInitialSeason = 1,
@@ -151,7 +176,9 @@ const handleSubmit = async () => {
     }
 
     await connection.confirmTransaction({ signature: sig, ...latest }, "confirmed");
+
     setSnackMsg(`✅ Created reputation space. Tx: ${sig}`);
+    onCreated?.(daoPubkey.toBase58());   // ✅ tell parent
     onClose();
   } catch (e: any) {
     console.error("CREATE SPACE ERROR", e);
@@ -206,8 +233,8 @@ function recommendNewDaoId(): string {
                 disabled={submitting}
                 helperText="We recommend a fresh DAO ID by default. You can paste an existing Multi-Sig Governance pk if you have one."
                 FormHelperTextProps={{ sx: { opacity: 0.7 } }}
+                sx={darkFieldSx}
                 InputProps={{
-                  sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" },
                   endAdornment: (
                     <InputAdornment position="end">
                       <Tooltip title="Recommend a new DAO ID">
@@ -244,6 +271,7 @@ function recommendNewDaoId(): string {
               onChange={(e) => setRepMint(e.target.value)}
               disabled={submitting}
               InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
+              sx={darkFieldSx}
             />
 
             <TextField
@@ -256,6 +284,7 @@ function recommendNewDaoId(): string {
               InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
               helperText="1–65535"
               FormHelperTextProps={{ sx: { opacity: 0.7 } }}
+              sx={darkFieldSx}
             />
 
             <TextField
@@ -267,6 +296,7 @@ function recommendNewDaoId(): string {
               placeholder="https://.../metadata.json"
               InputProps={{ sx: { borderRadius: "16px", background: "rgba(255,255,255,0.06)" } }}
               helperText="If provided, we will upsert project metadata after creating the config."
+              sx={darkFieldSx}
               FormHelperTextProps={{ sx: { opacity: 0.7 } }}
             />
           </Box>

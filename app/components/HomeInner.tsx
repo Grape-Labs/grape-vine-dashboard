@@ -6,6 +6,7 @@ import { PublicKey } from "@solana/web3.js";
 
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
 import TokenLeaderboard from "../TokenLeaderboard";
 import { VINE_LOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "../constants";
@@ -38,6 +39,7 @@ import { keyframes } from "@mui/system";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import grapeTheme from "../utils/config/theme";
 
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import AddIcon from "@mui/icons-material/Add";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -179,17 +181,26 @@ function HeaderActions(props: {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { connected, disconnect } = useWallet();
+  const { setVisible } = useWalletModal();
 
   if (!connected) {
     return (
-      <WalletMultiButton
-        style={{
-          borderRadius: 999,
-          background: "rgba(15,23,42,0.9)",
-          border: "1px solid rgba(248,250,252,0.4)",
-          fontSize: "0.8rem",
-        }}
-      />
+      <Tooltip title="Connect wallet">
+        <IconButton
+          onClick={() => setVisible(true)}
+          sx={{
+            ...glassPillSx,
+            borderRadius: "50%",
+            width: 40,
+            height: 40,
+            p: 0,
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <AccountBalanceWalletIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
     );
   }
 

@@ -39,32 +39,59 @@ async function fetchOffchainJson(uri: string) {
 }
 
 // ✅ IMPORTANT: set this to your deployed origin
-function absUrl(path: string) {
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://vine.governance.so";
-  return new URL(path, base).toString();
-}
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://vine.governance.so";
 
 export async function generateMetadata(
-  { params }: { params: { dao: string; wallet: string } }
+  { params, searchParams }: any
 ): Promise<Metadata> {
-  const { dao, wallet } = params;
+  const dao = params.dao as string;
+  const wallet = params.wallet as string;
 
-  // ✅ cache-buster so Discord/iMessage refresh when you deploy changes
-  const v = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || Date.now().toString();
+  const endpoint =
+    (searchParams?.endpoint as string) || "https://api.devnet.solana.com";
 
-  const ogImage = absUrl(`/card/${dao}/${wallet}/opengraph-image?v=${v}`);
+  let title = "Reputation Card";
+  let description = "Proof of participation • DAO reputation score";
+  let logo: string | null = null;
+
+  try {
+    const conn = new Connection(endpoint, "confirmed");
+    const daoPk = new PublicKey(dao);
+    const pm = await fetchProjectMetadata(conn, daoPk);
+    const uri = extractMetadataUri(pm);
+
+    if (uri) {
+      const offchain = await fetchOffchainJson(uri);
+      if (offchain?.name) title = offchain.name;
+      if (offchain?.description) description = offchain.description;
+      if (offchain?.image) logo = offchain.image;
+    }
+  } catch {
+    // ignore
+  }
+
+  // ✅ This is the key: give Discord an OG image URL that your server generates.
+  const ogImage = new URL(`/api/og/card`, SITE_URL);
+  ogImage.searchParams.set("dao", dao);
+  ogImage.searchParams.set("wallet", wallet);
+  ogImage.searchParams.set("endpoint", endpoint);
+
+  const pageUrl = new URL(`/card/${dao}/${wallet}`, SITE_URL);
+  if (searchParams?.endpoint) pageUrl.searchParams.set("endpoint", String(searchParams.endpoint));
+  if (searchParams?.d) pageUrl.searchParams.set("d", String(searchParams.d));
 
   return {
-    title: "Vine Reputation Card",
-    description: "Proof of participation • DAO reputation score",
+    metadataBase: new URL(SITE_URL),
+    title,
+    description,
     openGraph: {
-      title: "Vine Reputation Card",
-      description: "Proof of participation • DAO reputation score",
       type: "website",
+      url: pageUrl.toString(),
+      title,
+      description,
       images: [
         {
-          url: ogImage,
+          url: ogImage.toString(),
           width: 1200,
           height: 630,
         },
@@ -72,10 +99,12 @@ export async function generateMetadata(
     },
     twitter: {
       card: "summary_large_image",
-      title: "Vine Reputation Card",
-      description: "Proof of participation • DAO reputation score",
-      images: [ogImage],
+      title,
+      description,
+      images: [ogImage.toString()],
     },
+    // optional: also provide a fallback icon
+    icons: logo ? [{ url: logo }] : undefined,
   };
 }
 

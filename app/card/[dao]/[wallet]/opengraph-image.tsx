@@ -5,8 +5,6 @@ import { fetchProjectMetadata } from "@grapenpm/vine-reputation-client";
 export const runtime = "nodejs";
 export const contentType = "image/png";
 export const size = { width: 1200, height: 630 };
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 type VineTheme = {
   primary?: string;
@@ -251,11 +249,6 @@ export default async function OpenGraphImage({
         </div>
       </div>
     ),
-    {
-      ...size,
-      headers: {
-        "Cache-Control": "no-store, max-age=0",
-      },
-    }
+    size
   );
 }

@@ -1708,7 +1708,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
               >
                 <FormControlLabel
                   sx={{ m: 0 }}
-                  label={<span style={{ fontSize: 12, opacity: 0.85 }}>{isLegacy ? "Legacy" : "New"}</span>}
+                  label={<span style={{ fontSize: 12, opacity: 0.85 }}>{isLegacy ? "Token" : "Reputation"}</span>}
                   control={
                     <Switch
                       size="small"

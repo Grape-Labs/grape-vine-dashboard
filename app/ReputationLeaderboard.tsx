@@ -1190,78 +1190,86 @@ const handleGetRaffleSelection = () => {
         </CopyToClipboard>
 
         
-<Box
-  sx={{
-    p: 1.1,
-    borderRadius: "14px",
-    background: "rgba(15,23,42,0.35)",
-    border: "1px solid rgba(148,163,184,0.18)",
-    backdropFilter: "blur(10px)",
-    maxWidth: 640,
-    ml: "auto",
-  }}
->
-  <Box
-    sx={{
-      display: "grid",
-      gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-      columnGap: 1.6,
-      rowGap: 0.6,
-    }}
-  >
-    {[
-      { label: "Season", value: repSeason ?? "—" },
-      { label: "Eligible", value: repStats.eligibleCount.toLocaleString() },
-      {
-        label: "Active",
-        value: `${repStats.activeCount.toLocaleString()} (${repStats.participationRate.toFixed(0)}%)`,
-      },
-      { label: "Total pool", value: formatBigInt(repStats.totalPool) },
-      { label: "Median (active)", value: formatBigInt(repStats.medianActive) },
-      { label: "Top 10% ≥", value: formatBigInt(repStats.top10Threshold) },
-      ...(decayBps != null
-        ? [{ label: "Decay", value: `${(decayBps / 100).toFixed(2)}%` }]
-        : []),
-    ].map(({ label, value }, i) => (
-      <Box
-        key={i}
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "baseline",
-          minWidth: 0,
-        }}
-      >
-        <Typography
-          variant="caption"
+        <Box
           sx={{
-            opacity: 0.6,
-            fontSize: "10px",
-            letterSpacing: 0.6,
-            textTransform: "uppercase",
-            whiteSpace: "nowrap",
+            px: 1,
+            py: 0.6,
+            borderRadius: "12px",
+            background: "rgba(15,23,42,0.28)",
+            border: "1px solid rgba(148,163,184,0.14)",
+            backdropFilter: "blur(8px)",
+            ml: "auto",
           }}
         >
-          {label}
-        </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            {[
+              { label: "Season", value: repSeason ?? "—" },
+              { label: "Eligible", value: repStats.eligibleCount.toLocaleString() },
+              {
+                label: "Active",
+                value: `${repStats.activeCount.toLocaleString()} (${repStats.participationRate.toFixed(0)}%)`,
+                primary: true,
+              },
+              { label: "Pool", value: formatBigInt(repStats.totalPool) },
+              { label: "Median", value: formatBigInt(repStats.medianActive) },
+              { label: "Top 10%", value: `≥ ${formatBigInt(repStats.top10Threshold)}` },
+              ...(decayBps != null
+                ? [{ label: "Decay", value: `${(decayBps / 100).toFixed(2)}%` }]
+                : []),
+            ].map(({ label, value, primary }, i) => (
+              <Box
+                key={i}
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "baseline",
+                  gap: 0.35,
+                  whiteSpace: "nowrap",
+                  opacity: primary ? 1 : 0.85,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: "9.5px",
+                    letterSpacing: 0.7,
+                    textTransform: "uppercase",
+                    opacity: primary ? 0.7 : 0.5,
+                  }}
+                >
+                  {label}
+                </Typography>
 
-        <Typography
-          sx={{
-            fontSize: "0.85rem",
-            fontWeight: 700,
-            fontFeatureSettings: '"tnum" 1',
-            opacity: 0.9,
-            ml: 1,
-            textAlign: "right",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {String(value)}
-        </Typography>
-      </Box>
-    ))}
-  </Box>
-</Box>
+                <Typography
+                  sx={{
+                    fontSize: primary ? "0.82rem" : "0.78rem",
+                    fontWeight: primary ? 800 : 600,
+                    fontFeatureSettings: '"tnum" 1',
+                    opacity: 0.95,
+                  }}
+                >
+                  {String(value)}
+                </Typography>
+
+                {/* soft separator */}
+                <Box
+                  sx={{
+                    width: 1,
+                    height: 12,
+                    bgcolor: "rgba(148,163,184,0.18)",
+                    mx: 0.6,
+                    display: i === 6 ? "none" : "block",
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
+        </Box>
 
       </Box>
 
@@ -1282,7 +1290,7 @@ const handleGetRaffleSelection = () => {
             Season: {repSeason ?? "—"} {repLoading ? "• loading…" : ""}
           </Typography>
 
-          {repStats.eligibleCount > 0 && (
+          {/*repStats.eligibleCount > 0 && (
             <Typography variant="caption" sx={{ opacity: 0.65, display: "block", mt: 0.25 }}>
               {repStats.eligibleCount.toLocaleString()} eligible
               {excludedCount > 0 ? ` • ${excludedCount} excluded` : ""}
@@ -1290,7 +1298,7 @@ const handleGetRaffleSelection = () => {
               {` • Median(active): ${formatBigInt(repStats.medianActive)}`}
               {` • Top 10% ≥ ${formatBigInt(repStats.top10Threshold)}`}
             </Typography>
-          )}
+          )*/}
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -1309,7 +1317,7 @@ const handleGetRaffleSelection = () => {
           >
             <FormControlLabel
               sx={{ m: 0 }}
-              label={<span style={{ fontSize: 12, opacity: 0.85 }}>{isLegacy ? "Legacy" : "New"}</span>}
+              label={<span style={{ fontSize: 12, opacity: 0.85 }}>{isLegacy ? "Token" : "Reputation"}</span>}
               control={
                 <Switch
                   size="small"

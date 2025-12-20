@@ -40,6 +40,7 @@ import {
   buildAdminCloseAnyIx,
   buildAddReputationIx,
   buildResetReputationIx,
+  buildCloseReputationIx,
   type ReputationConfigAccount,
 } from "@grapenpm/vine-reputation-client";
 const ADMIN = new PublicKey("GScbAQoP73BsUZDXSpe8yLCteUx7MJn1qzWATZapTbWt");
@@ -835,35 +836,6 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
     });
   }
 
-  // close_reputation(config, authority, user, reputation, recipient, system_program?)
-  async function ixCloseReputation(args: {
-    daoId: PublicKey;
-    authority: PublicKey;
-    user: PublicKey;
-    season: number;
-    recipient: PublicKey;
-  }) {
-    const disc = await anchorIxDisc("close_reputation");
-    const data = new Uint8Array(8);
-    data.set(disc, 0);
-
-    const [configPda] = getConfigPda(args.daoId);
-    const [repPda] = getReputationPda(configPda, args.user, args.season);
-
-    return new TransactionInstruction({
-      programId: VINE_REP_PROGRAM_ID,
-      keys: [
-        { pubkey: configPda, isSigner: false, isWritable: false },
-        { pubkey: args.authority, isSigner: true, isWritable: false },
-        { pubkey: args.user, isSigner: false, isWritable: false },
-        { pubkey: repPda, isSigner: false, isWritable: true },
-        { pubkey: args.recipient, isSigner: false, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // remove if not in Rust ctx
-      ],
-      data: Buffer.from(data),
-    });
-  }
-
   // close_project_metadata(config, authority, metadata, recipient, system_program?)
   async function ixCloseProjectMetadata(args: {
     daoId: PublicKey;
@@ -1274,6 +1246,9 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
     });
   };
 
+
+
+  
   const handleResetRep = async () => {
     await runTx("Reset reputation", async () => {
       if (!publicKey || !daoPk) throw new Error("Missing wallet/DAO");
@@ -1379,15 +1354,15 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
 
       const recipientPk = new PublicKey(closeRecipient.trim() || publicKey.toBase58());
 
-      return [
-        await ixCloseReputation({
-          daoId: daoPk,
-          authority: publicKey,
-          user: userPk,
-          season,
-          recipient: recipientPk,
-        }),
-      ];
+      const { ix } = await buildCloseReputationIx({
+        daoId: daoPk,
+        user: userPk,
+        season,
+        authority: publicKey,
+        recipient: recipientPk,
+      });
+
+      return [ix];
     });
   };
 

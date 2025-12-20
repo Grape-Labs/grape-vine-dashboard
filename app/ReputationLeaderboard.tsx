@@ -9,6 +9,7 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import html2canvas from "html2canvas";
 // @ts-ignore
 import * as confetti from "canvas-confetti";
+import bs58 from "bs58";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
@@ -58,7 +59,7 @@ import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
 
 import { GRAPE_RPC_ENDPOINT, REACT_APP_RPC_DEVNET_ENDPOINT } from "./constants";
-import { getConfigPda, getReputationPda } from "@grapenpm/vine-reputation-client";
+import { VINE_REP_PROGRAM_ID, getConfigPda, fetchReputationsForDaoSeason } from "@grapenpm/vine-reputation-client";
 
 import VineReputation from "./VineReputation";
 
@@ -186,10 +187,15 @@ async function decodeConfigStrict(data: Uint8Array) {
 
 async function decodeReputationStrict(data: Uint8Array) {
   const disc = await anchorAccountDiscriminator("Reputation");
-  if (data.length < 64 || !u8eq(data.subarray(0, 8), disc)) return null;
+  // needs ~92 bytes with dao included
+  if (data.length < 92 || !u8eq(data.subarray(0, 8), disc)) return null;
 
   let o = 8;
   const version = data[o]; o += 1;
+
+  // dao pubkey (NEW)
+  const daoBytes = data.subarray(o, o + 32); o += 32;
+  const dao = new PublicKey(daoBytes);
 
   // user pubkey
   const userBytes = data.subarray(o, o + 32); o += 32;
@@ -200,7 +206,7 @@ async function decodeReputationStrict(data: Uint8Array) {
   const lastUpdateSlot = readU64LE(data, o); o += 8;
   const bump = data[o];
 
-  return { version, user, season, points, lastUpdateSlot, bump };
+  return { version, dao, user, season, points, lastUpdateSlot, bump };
 }
 
 const ReputationLeaderboard: FC<ReputationLeaderboardProps> = (props) => {
@@ -323,93 +329,106 @@ const ReputationLeaderboard: FC<ReputationLeaderboardProps> = (props) => {
   }
 
   // --- Fetch current-season reputation for all holders (devnet) ---
-  useEffect(() => {
-    if (!props.activeDaoIdBase58) return;
-    if (!holders || holders.length === 0) return;
+  type HolderRow = { address: string; balance: string }; // keep shape if you don’t want to refactor UI
 
-    let cancelled = false;
+  function u16ToLeBytes(n: number) {
+    return new Uint8Array([n & 0xff, (n >> 8) & 0xff]);
+  }
 
-    (async () => {
-      try {
-        setRepLoading(true);
-        setRepByWallet({});
-        setRepSeason(null);
+  const MAX_REP_ACCOUNTS = 10000; // cap like you did
 
-        const daoPk = new PublicKey(props.activeDaoIdBase58);
-        const [configPda] = getConfigPda(daoPk);
+useEffect(() => {
+  if (!props.activeDaoIdBase58) return;
 
-        const cfgAi = await repConn.getAccountInfo(configPda, "confirmed");
-        if (!cfgAi?.data) {
-          console.warn("[ReputationLeaderboard] No config found for DAO");
-          return;
-        }
+  let cancelled = false;
 
-        const cfg = await decodeConfigStrict(new Uint8Array(cfgAi.data));
-        if (!cfg) {
-          console.warn("[ReputationLeaderboard] Config decode failed");
-          return;
-        }
+  (async () => {
+    try {
+      setLoading(true);
+      setRepLoading(true);
+      setHolders([]);
+      setRepByWallet({});
+      setRepSeason(null);
 
-        setDecayBps(cfg.decayBps ?? null);
+      const daoPk = new PublicKey(props.activeDaoIdBase58);
 
-        const season =
-          props.activeSeason && props.activeSeason > 0 ? props.activeSeason : cfg.currentSeason;
+      // keep your existing config read (season + decayBps)
+      const [configPda] = getConfigPda(daoPk);
+      const cfgAi = await repConn.getAccountInfo(configPda, "confirmed");
+      if (!cfgAi?.data) return;
 
-        setRepSeason(season);
+      const cfg = await decodeConfigStrict(new Uint8Array(cfgAi.data));
+      if (!cfg) return;
 
-        // Build PDAs for all eligible holders (exclude system wallets)
-        const eligible = holders.filter((h) => h?.address && !excludeArr.includes(h.address));
-        const pdas: PublicKey[] = [];
-        const addrs: string[] = [];
+      setDecayBps(cfg.decayBps ?? null);
 
-        for (const h of eligible) {
-          try {
-            const userPk = new PublicKey(h.address);
-            const [repPda] = getReputationPda(configPda, userPk, season);
-            pdas.push(repPda);
-            addrs.push(h.address);
-          } catch {
-            // ignore invalid
-          }
-        }
+      const season =
+        props.activeSeason && props.activeSeason > 0
+          ? props.activeSeason
+          : cfg.currentSeason;
 
-        const out: Record<string, bigint> = {};
-        const chunkSize = 100;
+      setRepSeason(season);
 
-        for (let i = 0; i < pdas.length; i += chunkSize) {
-          if (cancelled) return;
+      // ✅ ONE call: package does filters + decode for you
+      const repRows = await fetchReputationsForDaoSeason({
+        conn: repConn,
+        daoId: daoPk,
+        season,
+        programId: new PublicKey(VINE_REP_PROGRAM_ID), // or omit if helper default is fine
+        commitment: "confirmed",
+        limit: MAX_REP_ACCOUNTS,
+      });
 
-          const pdaChunk = pdas.slice(i, i + chunkSize);
-          const addrChunk = addrs.slice(i, i + chunkSize);
+      if (cancelled) return;
 
-          const infos = await repConn.getMultipleAccountsInfo(pdaChunk, "confirmed");
+      const out: Record<string, bigint> = {};
+      const rows: HolderRow[] = [];
 
-          for (let j = 0; j < infos.length; j++) {
-            const addr = addrChunk[j];
-            const ai = infos[j];
+      for (const r of repRows as any[]) {
+        const addr: string =
+          typeof r.address === "string"
+            ? r.address
+            : r.user?.toBase58
+            ? r.user.toBase58()
+            : String(r.user); // last-resort
 
-            if (!ai?.data) {
-              out[addr] = BI_ZERO;
-              continue;
-            }
+        if (!addr) continue;
+        if (excludeArr.includes(addr)) continue;
 
-            const rep = await decodeReputationStrict(new Uint8Array(ai.data));
-            out[addr] = rep?.points ?? BI_ZERO;
-          }
-        }
+        const points: bigint = (r.points ?? BI_ZERO) as bigint;
 
-        if (!cancelled) setRepByWallet(out);
-      } catch (e) {
-        console.error("[ReputationLeaderboard] rep load error", e);
-      } finally {
-        if (!cancelled) setRepLoading(false);
+        out[addr] = points;
+        rows.push({ address: addr, balance: "0" });
       }
-    })();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [repConn, props.activeDaoIdBase58, props.activeSeason, holders]);
+      // de-dupe just in case
+      const seen = new Set<string>();
+      const uniqueRows = rows.filter((x) =>
+        seen.has(x.address) ? false : (seen.add(x.address), true)
+      );
+
+      if (!cancelled) {
+        setRepByWallet(out);
+        setHolders(uniqueRows);
+      }
+    } catch (e) {
+      console.error("[ReputationLeaderboard] rep-enum error", e);
+      if (!cancelled) {
+        setHolders([]);
+        setRepByWallet({});
+      }
+    } finally {
+      if (!cancelled) {
+        setRepLoading(false);
+        setLoading(false);
+      }
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+  };
+}, [repConn, props.activeDaoIdBase58, props.activeSeason]);
 
   // --- “reputation-first” sorted list ---
   const sortedRows = useMemo(() => {
@@ -420,7 +439,7 @@ const ReputationLeaderboard: FC<ReputationLeaderboardProps> = (props) => {
       const ra = repByWallet[a.address] ?? BI_ZERO;
       const rb = repByWallet[b.address] ?? BI_ZERO;
       if (ra !== rb) return ra > rb ? -1 : 1;
-      return Number(b.balance) - Number(a.balance);
+      return 0;
     });
   }, [holders, repByWallet, excludeArr]);
 
@@ -586,71 +605,6 @@ const handleDownloadCsv = () => {
     console.error("Failed to download CSV:", e);
   }
 };
-
-const HOLDER_CAP = 10000;
-
-useEffect(() => {
-  let cancelled = false;
-
-  (async () => {
-    try {
-      setLoading(true);
-
-      const tokenAccounts = await connection.getProgramAccounts(TOKEN_PROGRAM_ID, {
-        filters: [
-          { dataSize: 165 },
-          { memcmp: { offset: 0, bytes: token.toBase58() } },
-        ],
-      });
-
-      if (cancelled) return;
-
-      // cap early (before getMultipleParsedAccounts)
-      const capped = tokenAccounts.slice(0, HOLDER_CAP);
-      const atas = capped.map(({ pubkey }) => pubkey);
-
-      const chunkSize = 100;
-      const rows: HolderRow[] = [];
-
-      for (let i = 0; i < atas.length; i += chunkSize) {
-        if (cancelled) return;
-
-        const chunk = atas.slice(i, i + chunkSize);
-        const infos = await connection.getMultipleParsedAccounts(chunk);
-
-        const chunkRows: HolderRow[] = JSON.parse(JSON.stringify(infos)).value
-          .filter((x: any) => x?.data?.parsed?.info?.owner)
-          .map((x: any) => ({
-            address: x.data.parsed.info.owner,
-            balance: x.data.parsed.info.tokenAmount.amount, // raw string
-          }));
-
-        rows.push(...chunkRows);
-      }
-
-      const sorted = rows
-        .filter((h) => h?.address)
-        .sort((a, b) => Number(b.balance) - Number(a.balance));
-
-      if (!cancelled) {
-        setHolders(sorted);
-
-        // OPTIONAL: expose this for UI messaging ("showing top 1000 only")
-        // setHoldersTruncated(tokenAccounts.length > HOLDER_CAP);
-        // setTotalHolderCount(tokenAccounts.length);
-      }
-    } catch (e) {
-      console.error("[ReputationLeaderboard] holder load error", e);
-      if (!cancelled) setHolders([]);
-    } finally {
-      if (!cancelled) setLoading(false);
-    }
-  })();
-
-  return () => {
-    cancelled = true;
-  };
-}, [connection, token]);
 
 const handleGetRaffleSelection = () => {
   const exclude = new Set<string>([...excludeArr, ...winners.map((w) => w.address)]);

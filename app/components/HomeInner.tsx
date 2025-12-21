@@ -438,7 +438,19 @@ const HomeInner: React.FC = () => {
     }
   }, [activeDao, activeSpace, activeUi]);
 
-  const uiReady = !!activeDao && !!activeSpace && !!activeUi?.offchain;
+  // ✅ App can render with just on-chain space + activeDao
+    const uiReady = !!activeDao && !!activeSpace;
+
+    // ✅ Metadata is optional
+    const metaReady = !!activeUi?.offchain;
+
+    // First-boot should only care that we can render the app (not metadata)
+    useEffect(() => {
+    if (!hasBootedRef.current && uiReady) {
+        hasBootedRef.current = true;
+    }
+    }, [uiReady]);
+
   const showFullLoader = !hasBootedRef.current && (spacesLoading || !uiReady);
 
   const resolvedTheme = useMemo(() => {

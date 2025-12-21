@@ -818,6 +818,17 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
     ? currentWinner?.ts || timestamp
     : null;
 
+  const visibleHolders = React.useMemo(() => {
+    return (holders || []).filter(
+      (h) => h?.address && !excludeArr.includes(h.address)
+    );
+  }, [holders, excludeArr]);
+
+  const pagedHolders =
+    rowsPerPage > 0
+      ? visibleHolders.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+      : visibleHolders;
+
   // Render the component
   return (
     <Box sx={{ flexGrow: 1, border: "none" }}>
@@ -1827,19 +1838,9 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                   </TableHead>
 
                   <TableBody>
-                    {holders && (
+                    {pagedHolders && (
                       <>
-                        {(rowsPerPage > 0
-                          ? holders.slice(
-                              page * rowsPerPage,
-                              page * rowsPerPage + rowsPerPage
-                            )
-                          : holders
-                        )
-                          .filter(
-                            (item) => !excludeArr.includes(item.address)
-                          )
-                          .map((item: any, index: number) => {
+                        {pagedHolders.map((item: any, index: number) => {
                             if (!item?.address) return null;
 
                             const rank = page * rowsPerPage + index + 1;
@@ -2012,7 +2013,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                       <TablePagination
                         rowsPerPageOptions={[20]}
                         colSpan={4}
-                        count={holders ? holders.length : 0}
+                        count={visibleHolders ? visibleHolders.length : 0}
                         rowsPerPage={rowsPerPage}
                         page={page}
                         SelectProps={{

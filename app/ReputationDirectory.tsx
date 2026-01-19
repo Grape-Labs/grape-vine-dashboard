@@ -486,7 +486,7 @@ background:
                     const name = off?.name ?? `Space ${shorten(dao, 6, 6)}`;
                     const sym = off?.symbol ?? "";
                     const desc =
-                      off?.description ?? `DAO ${shorten(dao, 6, 6)} • Season ${s.currentSeason}`;
+                      off?.description ?? `SPACE ${shorten(dao, 6, 6)} • Season ${s.currentSeason}`;
                     const img = off?.image ?? VINE_LOGO;
 
                     return (

@@ -84,8 +84,8 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
     // This can help iMessage show a better icon in compact mode
     // (make sure these files exist in /public)
     icons: {
-      icon: "/favicon-32x32.png",
-      apple: "/apple-touch-icon.png",
+      icon: "/public/images/favicon-32x32.png",
+      apple: "/public/images/apple-touch-icon.png",
     },
   };
 }

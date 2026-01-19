@@ -629,7 +629,7 @@ background:
 
                           <Box sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}>
                             <Chip
-                              label={`DAO ${shorten(dao, 5, 5)}`}
+                              label={`Space ${shorten(dao, 5, 5)}`}
                               size="small"
                               sx={{
                                 borderRadius: "999px",

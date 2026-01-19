@@ -26,6 +26,8 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import Chip from "@mui/material/Chip";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 
 import { OG_LOGO, VINE_LOGO, VINE_REP_PROGRAM_ID } from "./constants";
 import CreateReputationSpace from "./CreateReputationSpace";
@@ -329,33 +331,81 @@ background:
   </Box>
 </Box>
 
-              <Button
-                onClick={() => {
-                  if (!connected) {
-                    setVisible(true);
-                    return;
-                  }
-                  setCreateOpen(true);
-                }}
-                variant="contained"
-                startIcon={<AddIcon />}
-                sx={{
-                  borderRadius: "999px",
-                  textTransform: "none",
-                  px: 2.1,
-                  py: 1.05,
-                  background: "rgba(255,255,255,0.12)",
-                  border: "1px solid rgba(255,255,255,0.22)",
-                  backdropFilter: "blur(10px)",
-                  boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-                  "&:hover": {
-                    background: "rgba(255,255,255,0.18)",
-                    boxShadow: "0 14px 40px rgba(0,0,0,0.30)",
-                  },
-                }}
-              >
-                {connected ? "Create space" : "Connect to create"}
-              </Button>
+<Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+  {/* Docs */}
+  <Button
+    component="a"
+    href="https://grape-governance.gitbook.io/gspl/vine"
+    target="_blank"
+    rel="noopener noreferrer"
+    startIcon={<DescriptionOutlinedIcon />}
+    sx={{
+      textTransform: "none",
+      color: "rgba(248,250,252,0.75)",
+      fontWeight: 600,
+      px: 1.5,
+      borderRadius: "999px",
+      "&:hover": {
+        color: "rgba(248,250,252,0.95)",
+        background: "rgba(255,255,255,0.06)",
+      },
+    }}
+  >
+    Docs
+  </Button>
+
+  {/* Discord */}
+  <Button
+    component="a"
+    href="https://discord.gg/grapedao"
+    target="_blank"
+    rel="noopener noreferrer"
+    startIcon={<ForumOutlinedIcon />}
+    sx={{
+      textTransform: "none",
+      color: "rgba(248,250,252,0.75)",
+      fontWeight: 600,
+      px: 1.5,
+      borderRadius: "999px",
+      "&:hover": {
+        color: "rgba(248,250,252,0.95)",
+        background: "rgba(255,255,255,0.06)",
+      },
+    }}
+  >
+    Discord
+  </Button>
+
+  {/* Primary CTA */}
+  <Button
+    onClick={() => {
+      if (!connected) {
+        setVisible(true);
+        return;
+      }
+      setCreateOpen(true);
+    }}
+    variant="contained"
+    startIcon={<AddIcon />}
+    sx={{
+      ml: 0.5,
+      borderRadius: "999px",
+      textTransform: "none",
+      px: 2.2,
+      py: 1.05,
+      background: "rgba(255,255,255,0.14)",
+      border: "1px solid rgba(255,255,255,0.24)",
+      backdropFilter: "blur(10px)",
+      boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+      "&:hover": {
+        background: "rgba(255,255,255,0.20)",
+        boxShadow: "0 14px 40px rgba(0,0,0,0.30)",
+      },
+    }}
+  >
+    {connected ? "Create space" : "Connect"}
+  </Button>
+</Box>
             </Box>
 
             <Paper

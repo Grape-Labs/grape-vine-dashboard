@@ -207,6 +207,7 @@ export default function ReputationDirectory() {
   }, [refreshSpaces]);
 
   return (
+
     <Box
   sx={{
     minHeight: "100vh",
@@ -215,13 +216,75 @@ export default function ReputationDirectory() {
     overflow: "hidden",
 
     // richer base background
-background:
-  "radial-gradient(1200px 700px at 12% 12%, rgba(56,189,248,0.16), transparent 62%)," +
-  "radial-gradient(900px 600px at 88% 18%, rgba(34,211,238,0.10), transparent 60%)," +
-  "radial-gradient(900px 650px at 50% 95%, rgba(250,204,21,0.05), transparent 60%)," +
-  "linear-gradient(180deg, rgba(2,6,23,1), rgba(2,6,23,0.94))",
+background: `
+  radial-gradient(900px 600px at 18% 22%, rgba(250,204,21,0.14), transparent 62%),
+  radial-gradient(700px 500px at 72% 28%, rgba(56,189,248,0.22), transparent 60%),
+  radial-gradient(600px 700px at 48% 78%, rgba(34,211,238,0.14), transparent 65%),
+  conic-gradient(
+    from 180deg at 50% 50%,
+    rgba(56,189,248,0.08),
+    rgba(250,204,21,0.06),
+    rgba(99,102,241,0.08),
+    rgba(56,189,248,0.08)
+  ),
+  linear-gradient(180deg, rgba(2,6,23,1), rgba(2,6,23,0.94))
+`,
   }}
 >
+  <Box
+  sx={{
+    position: "absolute",
+    inset: 0,
+    zIndex: 0,
+    pointerEvents: "none",
+
+    background: `
+      conic-gradient(
+        from 210deg at 40% 20%,
+        rgba(250,204,21,0.18),
+        rgba(56,189,248,0.22),
+        rgba(99,102,241,0.18),
+        rgba(34,211,238,0.20),
+        rgba(250,204,21,0.18)
+      )
+    `,
+    filter: "blur(40px)",
+    opacity: 0.75,
+  }}
+/>
+<Box
+  sx={{
+    position: "absolute",
+    width: 900,
+    height: 700,
+    left: "-200px",
+    top: "-120px",
+    borderRadius: "45% 55% 60% 40%",
+    background: `
+      radial-gradient(circle at 30% 30%, rgba(56,189,248,0.35), transparent 60%),
+      radial-gradient(circle at 70% 60%, rgba(250,204,21,0.22), transparent 55%),
+      radial-gradient(circle at 50% 80%, rgba(99,102,241,0.30), transparent 65%)
+    `,
+    filter: "blur(60px)",
+    transform: "rotate(-12deg)",
+    opacity: 0.8,
+    pointerEvents: "none",
+    zIndex: 0,
+  }}
+/>
+<Box
+  sx={{
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)",
+    backgroundSize: "14px 14px",
+    opacity: 0.12,
+    mixBlendMode: "overlay",
+    pointerEvents: "none",
+    zIndex: 0,
+  }}
+/>
   {/* soft “aurora” blobs */}
       <Box
         sx={{
@@ -258,21 +321,6 @@ background:
           opacity: 0.85,
           pointerEvents: "none",
           zIndex: 0,
-        }}
-      />
-
-      {/* subtle grain */}
-      <Box
-        sx={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px)",
-          backgroundSize: "18px 18px",
-          opacity: 0.18,
-          pointerEvents: "none",
-          zIndex: 0,
-          mixBlendMode: "overlay",
         }}
       />
 

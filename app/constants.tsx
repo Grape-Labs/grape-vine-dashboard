@@ -28,5 +28,5 @@ export const tokens = [
 ]
 
 // constants.ts
-export const OG_LOGO = "/images/og_logo.png";
+export const OG_LOGO = "/images/og_logo_square.png";
 export const VINE_LOGO = './images/vine.jpg';

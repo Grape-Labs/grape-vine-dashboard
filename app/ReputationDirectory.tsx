@@ -288,35 +288,23 @@ background:
               }}
             >
 <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+<Box
+  sx={{
+  }}
+>
   <Box
+    component="img"
+    src={OG_LOGO}
+    alt="OG"
     sx={{
-      width: 110,
-      height: 74,
-      display: "grid",
-      placeItems: "center",
-      borderRadius: "22px",
-      background:
-        "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04))",
-      border: "1px solid rgba(255,255,255,0.14)",
-      boxShadow:
-        "0 30px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)",
-      backdropFilter: "blur(10px)",
+      width: 132,        // drive size by WIDTH (important)
+      height: "auto",
+      display: "block",
+      filter:
+        "drop-shadow(0 12px 26px rgba(0,0,0,0.55)) drop-shadow(0 0 16px rgba(56,189,248,0.22))",
     }}
-  >
-    <Box
-      component="img"
-      src={OG_LOGO}
-      alt="OG"
-      sx={{
-        width: 96,
-        height: "auto",
-        display: "block",
-        filter:
-          "drop-shadow(0 12px 30px rgba(0,0,0,0.55)) drop-shadow(0 0 18px rgba(56,189,248,0.20))",
-        transform: "translateY(1px)",
-      }}
-    />
-  </Box>
+  />
+</Box>
 
   <Box>
     <Typography

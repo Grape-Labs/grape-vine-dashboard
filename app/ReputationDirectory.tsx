@@ -27,7 +27,7 @@ import AddIcon from "@mui/icons-material/Add";
 import Chip from "@mui/material/Chip";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
-import { VINE_LOGO, VINE_REP_PROGRAM_ID } from "./constants";
+import { OG_LOGO, VINE_LOGO, VINE_REP_PROGRAM_ID } from "./constants";
 import CreateReputationSpace from "./CreateReputationSpace";
 
 import { keyframes } from "@mui/system";
@@ -93,7 +93,7 @@ function PoweredByGrape() {
         }}
       >
         <Avatar
-          src={VINE_LOGO}
+          src={OG_LOGO}
           sx={{
             width: 18,
             height: 18,
@@ -109,7 +109,7 @@ function PoweredByGrape() {
             letterSpacing: 0.2,
           }}
         >
-          Vine Reputation Spaces by{" "}
+          OG Reputation Spaces by{" "}
           <Box component="span" sx={{ fontWeight: 800, color: "rgba(248,250,252,0.92)" }}>
             Grape
           </Box>
@@ -213,11 +213,11 @@ export default function ReputationDirectory() {
     overflow: "hidden",
 
     // richer base background
-    background:
-      "radial-gradient(1200px 700px at 18% 10%, rgba(124,58,237,0.22), transparent 60%)," +
-      "radial-gradient(1000px 650px at 85% 18%, rgba(56,189,248,0.16), transparent 55%)," +
-      "radial-gradient(900px 600px at 50% 92%, rgba(34,211,238,0.10), transparent 55%)," +
-      "linear-gradient(180deg, rgba(2,6,23,1), rgba(2,6,23,0.92))",
+background:
+  "radial-gradient(1200px 700px at 12% 12%, rgba(56,189,248,0.16), transparent 62%)," +
+  "radial-gradient(900px 600px at 88% 18%, rgba(34,211,238,0.10), transparent 60%)," +
+  "radial-gradient(900px 650px at 50% 95%, rgba(250,204,21,0.05), transparent 60%)," +
+  "linear-gradient(180deg, rgba(2,6,23,1), rgba(2,6,23,0.94))",
   }}
 >
   {/* soft “aurora” blobs */}
@@ -287,43 +287,59 @@ export default function ReputationDirectory() {
                 pb: 1.5,
               }}
             >
-              <Box sx={{ maxWidth: 720 }}>
-                <Typography
-                  variant="h4"
-                  sx={{
-                    fontWeight: 950,
-                    lineHeight: 1.05,
-                    letterSpacing: -0.4,
-                    textShadow: "0 10px 30px rgba(0,0,0,0.45)",
-                  }}
-                >
-                  Reputation Directory
-                </Typography>
+<Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+  <Box
+    sx={{
+      width: 110,
+      height: 74,
+      display: "grid",
+      placeItems: "center",
+      borderRadius: "22px",
+      background:
+        "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04))",
+      border: "1px solid rgba(255,255,255,0.14)",
+      boxShadow:
+        "0 30px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)",
+      backdropFilter: "blur(10px)",
+    }}
+  >
+    <Box
+      component="img"
+      src={OG_LOGO}
+      alt="OG"
+      sx={{
+        width: 96,
+        height: "auto",
+        display: "block",
+        filter:
+          "drop-shadow(0 12px 30px rgba(0,0,0,0.55)) drop-shadow(0 0 18px rgba(56,189,248,0.20))",
+        transform: "translateY(1px)",
+      }}
+    />
+  </Box>
 
-                <Typography
-                  variant="body2"
-                  sx={{
-                    opacity: 0.85,
-                    mt: 0.75,
-                    maxWidth: 560,
-                  }}
-                >
-                  Browse existing spaces or create a new one.
-                </Typography>
-
-                {/* tiny accent divider */}
-                <Box
-                  sx={{
-                    mt: 1.4,
-                    height: 2,
-                    width: 180,
-                    borderRadius: 999,
-                    background:
-                      "linear-gradient(90deg, rgba(124,58,237,0.0), rgba(124,58,237,0.75), rgba(56,189,248,0.0))",
-                    opacity: 0.85,
-                  }}
-                />
-              </Box>
+  <Box>
+    <Typography
+      variant="h4"
+      sx={{
+        fontWeight: 950,
+        lineHeight: 1.02,
+        letterSpacing: -0.6,
+        textShadow: "0 10px 30px rgba(0,0,0,0.45)",
+      }}
+    >
+      <Box component="span" sx={{ color: "rgba(248,250,252,0.96)" }}>
+        Reputation
+      </Box>{" "}
+      <Box component="span" sx={{ color: "rgba(56,189,248,0.92)" }}>
+        Spaces
+      </Box>
+    </Typography>
+    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.75, maxWidth: 560 }}>
+      Browse existing spaces or create a new one.
+    </Typography>
+  </Box>
+</Box>
 
               <Button
                 onClick={() => {

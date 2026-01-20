@@ -161,10 +161,10 @@ export async function generateMetadata(
      * is more consistent with static app icons.
      */
     icons: {
-      apple: "/apple-touch-icon.png",
+      apple: "/public/images/apple-touch-icon.png",
       icon: [
-        { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-        { url: "/favicon.ico" },
+        { url: "/public/images/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+        { url: "/public/images/favicon.ico" },
       ],
       // keep this if you still want the per-DAO logo as a hint
       ...(logo ? { other: [{ rel: "image_src", url: logo }] } : {}),

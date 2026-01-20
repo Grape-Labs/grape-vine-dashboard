@@ -26,8 +26,10 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import Chip from "@mui/material/Chip";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 
-import { VINE_LOGO, VINE_REP_PROGRAM_ID } from "./constants";
+import { OG_LOGO, VINE_LOGO, VINE_REP_PROGRAM_ID } from "./constants";
 import CreateReputationSpace from "./CreateReputationSpace";
 
 import { keyframes } from "@mui/system";
@@ -93,7 +95,7 @@ function PoweredByGrape() {
         }}
       >
         <Avatar
-          src={VINE_LOGO}
+          src={OG_LOGO}
           sx={{
             width: 18,
             height: 18,
@@ -109,7 +111,7 @@ function PoweredByGrape() {
             letterSpacing: 0.2,
           }}
         >
-          Vine Reputation Spaces by{" "}
+          OG Reputation Spaces by{" "}
           <Box component="span" sx={{ fontWeight: 800, color: "rgba(248,250,252,0.92)" }}>
             Grape
           </Box>
@@ -205,6 +207,7 @@ export default function ReputationDirectory() {
   }, [refreshSpaces]);
 
   return (
+
     <Box
   sx={{
     minHeight: "100vh",
@@ -213,13 +216,75 @@ export default function ReputationDirectory() {
     overflow: "hidden",
 
     // richer base background
-    background:
-      "radial-gradient(1200px 700px at 18% 10%, rgba(124,58,237,0.22), transparent 60%)," +
-      "radial-gradient(1000px 650px at 85% 18%, rgba(56,189,248,0.16), transparent 55%)," +
-      "radial-gradient(900px 600px at 50% 92%, rgba(34,211,238,0.10), transparent 55%)," +
-      "linear-gradient(180deg, rgba(2,6,23,1), rgba(2,6,23,0.92))",
+background: `
+  radial-gradient(900px 600px at 18% 22%, rgba(250,204,21,0.14), transparent 62%),
+  radial-gradient(700px 500px at 72% 28%, rgba(56,189,248,0.22), transparent 60%),
+  radial-gradient(600px 700px at 48% 78%, rgba(34,211,238,0.14), transparent 65%),
+  conic-gradient(
+    from 180deg at 50% 50%,
+    rgba(56,189,248,0.08),
+    rgba(250,204,21,0.06),
+    rgba(99,102,241,0.08),
+    rgba(56,189,248,0.08)
+  ),
+  linear-gradient(180deg, rgba(2,6,23,1), rgba(2,6,23,0.94))
+`,
   }}
 >
+  <Box
+  sx={{
+    position: "absolute",
+    inset: 0,
+    zIndex: 0,
+    pointerEvents: "none",
+
+    background: `
+      conic-gradient(
+        from 210deg at 40% 20%,
+        rgba(250,204,21,0.18),
+        rgba(56,189,248,0.22),
+        rgba(99,102,241,0.18),
+        rgba(34,211,238,0.20),
+        rgba(250,204,21,0.18)
+      )
+    `,
+    filter: "blur(40px)",
+    opacity: 0.75,
+  }}
+/>
+<Box
+  sx={{
+    position: "absolute",
+    width: 900,
+    height: 700,
+    left: "-200px",
+    top: "-120px",
+    borderRadius: "45% 55% 60% 40%",
+    background: `
+      radial-gradient(circle at 30% 30%, rgba(56,189,248,0.35), transparent 60%),
+      radial-gradient(circle at 70% 60%, rgba(250,204,21,0.22), transparent 55%),
+      radial-gradient(circle at 50% 80%, rgba(99,102,241,0.30), transparent 65%)
+    `,
+    filter: "blur(60px)",
+    transform: "rotate(-12deg)",
+    opacity: 0.8,
+    pointerEvents: "none",
+    zIndex: 0,
+  }}
+/>
+<Box
+  sx={{
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)",
+    backgroundSize: "14px 14px",
+    opacity: 0.12,
+    mixBlendMode: "overlay",
+    pointerEvents: "none",
+    zIndex: 0,
+  }}
+/>
   {/* soft “aurora” blobs */}
       <Box
         sx={{
@@ -259,21 +324,6 @@ export default function ReputationDirectory() {
         }}
       />
 
-      {/* subtle grain */}
-      <Box
-        sx={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px)",
-          backgroundSize: "18px 18px",
-          opacity: 0.18,
-          pointerEvents: "none",
-          zIndex: 0,
-          mixBlendMode: "overlay",
-        }}
-      />
-
       {/* content layer */}
       <Box sx={{ position: "relative", zIndex: 1 }}>
           <Container maxWidth="lg" sx={{ py: 5 }}>
@@ -287,71 +337,123 @@ export default function ReputationDirectory() {
                 pb: 1.5,
               }}
             >
-              <Box sx={{ maxWidth: 720 }}>
-                <Typography
-                  variant="h4"
-                  sx={{
-                    fontWeight: 950,
-                    lineHeight: 1.05,
-                    letterSpacing: -0.4,
-                    textShadow: "0 10px 30px rgba(0,0,0,0.45)",
-                  }}
-                >
-                  Reputation Directory
-                </Typography>
+<Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+<Box
+  sx={{
+  }}
+>
+  <Box
+    component="img"
+    src={OG_LOGO}
+    alt="OG"
+    sx={{
+      width: 132,        // drive size by WIDTH (important)
+      height: "auto",
+      display: "block",
+      filter:
+        "drop-shadow(0 12px 26px rgba(0,0,0,0.55)) drop-shadow(0 0 16px rgba(56,189,248,0.22))",
+    }}
+  />
+</Box>
 
-                <Typography
-                  variant="body2"
-                  sx={{
-                    opacity: 0.85,
-                    mt: 0.75,
-                    maxWidth: 560,
-                  }}
-                >
-                  Browse existing spaces or create a new one.
-                </Typography>
+  <Box>
+    <Typography
+      variant="h4"
+      sx={{
+        fontWeight: 950,
+        lineHeight: 1.02,
+        letterSpacing: -0.6,
+        textShadow: "0 10px 30px rgba(0,0,0,0.45)",
+      }}
+    >
+      <Box component="span" sx={{ color: "rgba(248,250,252,0.96)" }}>
+        Reputation
+      </Box>{" "}
+      <Box component="span" sx={{ color: "rgba(56,189,248,0.92)" }}>
+        Spaces
+      </Box>
+    </Typography>
+    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.75, maxWidth: 560 }}>
+      Browse existing spaces or create a new one.
+    </Typography>
+  </Box>
+</Box>
 
-                {/* tiny accent divider */}
-                <Box
-                  sx={{
-                    mt: 1.4,
-                    height: 2,
-                    width: 180,
-                    borderRadius: 999,
-                    background:
-                      "linear-gradient(90deg, rgba(124,58,237,0.0), rgba(124,58,237,0.75), rgba(56,189,248,0.0))",
-                    opacity: 0.85,
-                  }}
-                />
-              </Box>
+<Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+  {/* Docs */}
+  <Button
+    component="a"
+    href="https://grape-governance.gitbook.io/gspl/vine"
+    target="_blank"
+    rel="noopener noreferrer"
+    startIcon={<DescriptionOutlinedIcon />}
+    sx={{
+      textTransform: "none",
+      color: "rgba(248,250,252,0.75)",
+      fontWeight: 600,
+      px: 1.5,
+      borderRadius: "999px",
+      "&:hover": {
+        color: "rgba(248,250,252,0.95)",
+        background: "rgba(255,255,255,0.06)",
+      },
+    }}
+  >
+    Docs
+  </Button>
 
-              <Button
-                onClick={() => {
-                  if (!connected) {
-                    setVisible(true);
-                    return;
-                  }
-                  setCreateOpen(true);
-                }}
-                variant="contained"
-                startIcon={<AddIcon />}
-                sx={{
-                  borderRadius: "999px",
-                  textTransform: "none",
-                  px: 2.1,
-                  py: 1.05,
-                  background: "rgba(255,255,255,0.12)",
-                  border: "1px solid rgba(255,255,255,0.22)",
-                  backdropFilter: "blur(10px)",
-                  boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-                  "&:hover": {
-                    background: "rgba(255,255,255,0.18)",
-                    boxShadow: "0 14px 40px rgba(0,0,0,0.30)",
-                  },
-                }}
-              >
-                {connected ? "Create space" : "Connect to create"}
-              </Button>
+  {/* Discord */}
+  <Button
+    component="a"
+    href="https://discord.gg/grapedao"
+    target="_blank"
+    rel="noopener noreferrer"
+    startIcon={<ForumOutlinedIcon />}
+    sx={{
+      textTransform: "none",
+      color: "rgba(248,250,252,0.75)",
+      fontWeight: 600,
+      px: 1.5,
+      borderRadius: "999px",
+      "&:hover": {
+        color: "rgba(248,250,252,0.95)",
+        background: "rgba(255,255,255,0.06)",
+      },
+    }}
+  >
+    Discord
+  </Button>
+
+  {/* Primary CTA */}
+  <Button
+    onClick={() => {
+      if (!connected) {
+        setVisible(true);
+        return;
+      }
+      setCreateOpen(true);
+    }}
+    variant="contained"
+    startIcon={<AddIcon />}
+    sx={{
+      ml: 0.5,
+      borderRadius: "999px",
+      textTransform: "none",
+      px: 2.2,
+      py: 1.05,
+      background: "rgba(255,255,255,0.14)",
+      border: "1px solid rgba(255,255,255,0.24)",
+      backdropFilter: "blur(10px)",
+      boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+      "&:hover": {
+        background: "rgba(255,255,255,0.20)",
+        boxShadow: "0 14px 40px rgba(0,0,0,0.30)",
+      },
+    }}
+  >
+    {connected ? "Create space" : "Connect"}
+  </Button>
+</Box>
             </Box>
 
             <Paper
@@ -432,7 +534,7 @@ export default function ReputationDirectory() {
                     const name = off?.name ?? `Space ${shorten(dao, 6, 6)}`;
                     const sym = off?.symbol ?? "";
                     const desc =
-                      off?.description ?? `DAO ${shorten(dao, 6, 6)} • Season ${s.currentSeason}`;
+                      off?.description ?? `SPACE ${shorten(dao, 6, 6)} • Season ${s.currentSeason}`;
                     const img = off?.image ?? VINE_LOGO;
 
                     return (
@@ -575,7 +677,7 @@ export default function ReputationDirectory() {
 
                           <Box sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}>
                             <Chip
-                              label={`DAO ${shorten(dao, 5, 5)}`}
+                              label={`Space ${shorten(dao, 5, 5)}`}
                               size="small"
                               sx={{
                                 borderRadius: "999px",

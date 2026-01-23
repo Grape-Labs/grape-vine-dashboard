@@ -276,13 +276,41 @@ background: `
   sx={{
     position: "absolute",
     inset: 0,
-    backgroundImage:
-      "radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)",
-    backgroundSize: "14px 14px",
-    opacity: 0.12,
-    mixBlendMode: "overlay",
     pointerEvents: "none",
     zIndex: 0,
+
+    // Comic-book halftone: two dot layers (big + small) with offsets
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      inset: 0,
+
+      backgroundImage: `
+        radial-gradient(rgba(255,255,255,0.14) 1.35px, transparent 1.45px),
+        radial-gradient(rgba(255,255,255,0.08) 0.9px, transparent 1px)
+      `,
+      backgroundSize: "16px 16px, 8px 8px",
+      backgroundPosition: "0 0, 3px 2px",
+
+      opacity: 0.22,
+      mixBlendMode: "overlay",
+
+      // "printed" feel
+      filter: "contrast(1.05) saturate(0.9)",
+      transform: "rotate(-1.2deg) scale(1.02)",
+      transformOrigin: "center",
+    },
+
+    // Fade the dots toward the center like a comic vignette / screen tone
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      inset: 0,
+      background:
+        "radial-gradient(900px 520px at 22% 26%, rgba(0,0,0,0.0), rgba(0,0,0,0.55) 70%, rgba(0,0,0,0.75))",
+      opacity: 0.22,
+      mixBlendMode: "multiply",
+    },
   }}
 />
   {/* soft “aurora” blobs */}

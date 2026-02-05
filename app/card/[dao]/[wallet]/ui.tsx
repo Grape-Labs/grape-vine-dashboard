@@ -747,7 +747,7 @@ export default function VineReputationShareCard(props: {
                 </Box>
 
                 <Typography variant="caption" sx={{ mt: 1.4, display: "block", opacity: 0.85 }}>
-                  Powered by on-chain Vine Reputation • Devnet
+                  Powered by OG Reputation Spaces
                 </Typography>
               </>
             )}

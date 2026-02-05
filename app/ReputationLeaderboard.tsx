@@ -58,7 +58,7 @@ import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
 
-import { GRAPE_RPC_ENDPOINT, REACT_APP_RPC_DEVNET_ENDPOINT } from "./constants";
+import { readRpcSettings, resolveRpcEndpoint } from "./utils/rpcSettings"; // adjust path
 import { VINE_REP_PROGRAM_ID, getConfigPda, fetchReputationsForDaoSeason } from "@grapenpm/vine-reputation-client";
 
 import VineReputation from "./VineReputation";
@@ -75,6 +75,27 @@ const StyledTable = styled(Table)(() => ({
     borderBottom: "1px solid rgba(255,255,255,0.05)",
   },
 }));
+
+function useRpcEndpoint() {
+  const [endpoint, setEndpoint] = React.useState<string>(() => resolveRpcEndpoint(readRpcSettings()));
+
+  React.useEffect(() => {
+    const recompute = () => setEndpoint(resolveRpcEndpoint(readRpcSettings()));
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "grape_rpc_settings_v1") recompute();
+    };
+
+    window.addEventListener("grape:rpc-settings", recompute as any);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("grape:rpc-settings", recompute as any);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
+  return endpoint;
+}
 
 function TablePaginationActions(props: any) {
   const theme = useTheme();
@@ -211,14 +232,14 @@ async function decodeReputationStrict(data: Uint8Array) {
 
 const ReputationLeaderboard: FC<ReputationLeaderboardProps> = (props) => {
   const meta = props.meta || null;
-
+  const rpcEndpoint = useRpcEndpoint();
   // mainnet: discover token holders
-  const connection = useMemo(() => new Connection(GRAPE_RPC_ENDPOINT), []);
+  const connection = useMemo(() => new Connection(rpcEndpoint), []);
   const token = useMemo(() => new PublicKey(props.programId), [props.programId]);
 
   // devnet: read reputation
   const repConn = useMemo(() => {
-    const url = props.endpoint || REACT_APP_RPC_DEVNET_ENDPOINT;
+    const url = props.endpoint || rpcEndpoint;
     return new Connection(url, "confirmed");
   }, [props.endpoint]);
 

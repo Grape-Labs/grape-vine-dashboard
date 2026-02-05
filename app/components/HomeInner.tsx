@@ -11,6 +11,10 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { InstallAppButton } from "@/app/components/InstallApp";
 import LeaderboardSwitch from "./LeaderboardSwitch";
 import { VINE_LOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "../constants";
+import RpcSettingsDialog from "../components/RpcSettingsDialog";
+import { readRpcSettings, resolveRpcEndpoint } from "../utils/rpcSettings";
+import TuneIcon from "@mui/icons-material/Tune"; 
+import SettingseIcon from "@mui/icons-material/Settings"; 
 
 import {
   fetchAllSpaces,
@@ -49,11 +53,13 @@ import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 import TollOutlinedIcon from "@mui/icons-material/TollOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
-
+import SettingsIcon from "@mui/icons-material/Settings";
+  
 import CreateReputationSpace from "../CreateReputationSpace";
 import ReputationManager from "../ReputationManager";
 import TokenManager from "../TokenManager";
 import MetadataManager from "../MetadataManager";
+
 
 /* ---------------- animations ---------------- */
 
@@ -175,6 +181,7 @@ function HeaderActions(props: {
   onManageSpace: () => void;
   onOpenTokenManager: () => void;
   onOpenMetadataManager: () => void;
+  onOpenRpcSettings: () => void;
   manageDisabled?: boolean;
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -183,7 +190,7 @@ function HeaderActions(props: {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { connected, disconnect } = useWallet();
   const { setVisible } = useWalletModal();
-
+  
   if (!connected) {
     return (
       <Tooltip title="Connect wallet">
@@ -334,6 +341,16 @@ const HomeInner: React.FC = () => {
   // space selector menu anchor (THIS WAS MISSING)
   const [spaceAnchor, setSpaceAnchor] = useState<null | HTMLElement>(null);
   const spaceMenuOpen = Boolean(spaceAnchor);
+
+
+  const [rpcOpen, setRpcOpen] = useState(false);
+
+  // derive current endpoint from saved settings (reloads after Save anyway)
+  const rpcEndpoint = useMemo(() => {
+    // client component, safe to call
+    const s = readRpcSettings();
+    return resolveRpcEndpoint(s);
+  }, []);
 
   // keep latest activeDao to avoid stale closure
   const activeDaoRef = useRef("");
@@ -844,11 +861,31 @@ const HomeInner: React.FC = () => {
               )}
             </Menu>
             
+            <Tooltip title="RPC settings">
+              <span>
+                <IconButton
+                  onClick={() => setRpcOpen(true)}
+                  sx={{
+                    ...glassPillSx,
+                    borderRadius: "50%",
+                    width: 40,
+                    height: 40,
+                    p: 0,
+                    display: "grid",
+                    placeItems: "center",
+                  }}
+                >
+                  <SettingsIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+
             <HeaderActions
               onCreateSpace={() => setCreateOpen(true)}
               onManageSpace={() => setManageOpen(true)}
               onOpenTokenManager={() => setTokenOpen(true)}
               onOpenMetadataManager={() => setMetadataOpen(true)}
+              onOpenRpcSettings={() => setRpcOpen(true)} 
               manageDisabled={manageDisabled}
             />
           </Toolbar>
@@ -856,6 +893,7 @@ const HomeInner: React.FC = () => {
 
         <TokenManager open={tokenOpen} onClose={() => setTokenOpen(false)} />
         <MetadataManager open={metadataOpen} onClose={() => setMetadataOpen(false)} />
+        <RpcSettingsDialog open={rpcOpen} onClose={() => setRpcOpen(false)} />
 
         <CreateReputationSpace
           open={createOpen}
@@ -895,7 +933,7 @@ const HomeInner: React.FC = () => {
                     programId={activeMint}
                     activeDaoIdBase58={activeDao}
                     //activeSeason={season}
-                    endpoint={"https://api.devnet.solana.com"}
+                    endpoint={rpcEndpoint}
                     meta={activeUi?.offchain ?? null}
                     resolvedTheme={resolvedTheme}
                     />

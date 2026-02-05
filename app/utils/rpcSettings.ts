@@ -59,8 +59,8 @@ export function getRpcPresets(): Record<SolanaNetwork, Record<string, RpcPreset>
   const devnet: Record<string, RpcPreset> = {};
 
   // Defaults from constants.tsx (these are your "fallback / legacy" values)
-addPreset(mainnet, "default", "Default (Mainnet)", GRAPE_RPC_ENDPOINT);
-addPreset(devnet, "default", "Default (Devnet)", REACT_APP_RPC_DEVNET_ENDPOINT);
+addPreset(mainnet, "default", "Default (Mainnet)", RPC_SHYFT_MAINNET || RPC_ALCHEMY_MAINNET || RPC_SOLANA_MAINNET);
+addPreset(devnet, "default", "Default (Devnet)", RPC_SOLANA_DEVNET);
 
 // keep solana too
 addPreset(mainnet, "solana", "Solana Public", RPC_SOLANA_MAINNET);

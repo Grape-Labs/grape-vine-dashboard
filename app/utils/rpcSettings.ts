@@ -1,5 +1,13 @@
 // src/utils/rpcSettings.ts
-import { GRAPE_RPC_ENDPOINT, REACT_APP_RPC_DEVNET_ENDPOINT } from "@/app/constants";
+import {
+  GRAPE_RPC_ENDPOINT,
+  REACT_APP_RPC_DEVNET_ENDPOINT,
+  RPC_SOLANA_MAINNET,
+  RPC_SOLANA_DEVNET,
+  RPC_SHYFT_MAINNET,
+  RPC_SHYFT_DEVNET,
+  RPC_ALCHEMY_MAINNET,
+} from "@/app/constants";
 
 export type SolanaNetwork = "mainnet" | "devnet";
 export type RpcMode = "predefined" | "custom";
@@ -51,18 +59,12 @@ export function getRpcPresets(): Record<SolanaNetwork, Record<string, RpcPreset>
   const devnet: Record<string, RpcPreset> = {};
 
   // Defaults from constants.tsx (these are your "fallback / legacy" values)
-  addPreset(mainnet, "default", "Default (Mainnet)", GRAPE_RPC_ENDPOINT);
-  addPreset(devnet, "default", "Default (Devnet)", REACT_APP_RPC_DEVNET_ENDPOINT);
+addPreset(mainnet, "default", "Default (Mainnet)", GRAPE_RPC_ENDPOINT);
+addPreset(devnet, "default", "Default (Devnet)", REACT_APP_RPC_DEVNET_ENDPOINT);
 
-  // Optional providers (only appear if env exists)
-  addPreset(mainnet, "shyft", "SHYFT", getEnv("NEXT_PUBLIC_RPC_SHYFT_MAINNET"));
-  addPreset(devnet, "shyft", "SHYFT (Devnet)", getEnv("NEXT_PUBLIC_RPC_SHYFT_DEVNET"));
-
-  addPreset(mainnet, "alchemy", "Alchemy", getEnv("NEXT_PUBLIC_RPC_ALCHEMY_MAINNET"));
-
-  // Solana public endpoints
-  addPreset(mainnet, "solana", "Solana Public", getEnv("NEXT_PUBLIC_RPC_SOLANA_MAINNET"));
-  addPreset(devnet, "solana", "Solana Public", getEnv("NEXT_PUBLIC_RPC_SOLANA_DEVNET"));
+// keep solana too
+addPreset(mainnet, "solana", "Solana Public", RPC_SOLANA_MAINNET);
+addPreset(devnet, "solana", "Solana Public", RPC_SOLANA_DEVNET);
 
   return { mainnet, devnet };
 }

@@ -1,30 +1,33 @@
 // app/constants.tsx
-// Safe env access that won't crash in the browser if `process` is not defined.
-function getEnv(key: string): string | undefined {
-  try {
-    // In Next builds, this is usually inlined; but this keeps us safe either way.
-    const p: any = (globalThis as any).process;
-    return p?.env?.[key];
-  } catch {
-    return undefined;
-  }
-}
 
-// Prefer new env names, keep legacy fallbacks
-export const GRAPE_RPC_ENDPOINT =
-  getEnv("NEXT_PUBLIC_RPC_SHYFT_MAINNET") ||
-  getEnv("NEXT_PUBLIC_RPC_ENDPOINT") ||
+// Next will inline NEXT_PUBLIC_* at build time.
+// Guard with typeof process for edge bundler cases.
+// app/constants.tsx
+
+export const RPC_SOLANA_MAINNET =
+  process.env.NEXT_PUBLIC_RPC_SOLANA_MAINNET ??
   "https://api.mainnet-beta.solana.com";
 
-export const GRAPE_RPC_DEVNET_ENDPOINT =
-  getEnv("NEXT_PUBLIC_RPC_SOLANA_DEVNET") ||
-  getEnv("NEXT_PUBLIC_RPC_SHYFT_DEVNET") ||
-  getEnv("NEXT_PUBLIC_RPC_DEVNET_ENDPOINT") ||
+export const RPC_SOLANA_DEVNET =
+  process.env.NEXT_PUBLIC_RPC_SOLANA_DEVNET ??
   "https://api.devnet.solana.com";
 
-export const GRAPE_RPC_ALCHEMY_MAINNET = getEnv("NEXT_PUBLIC_RPC_ALCHEMY_MAINNET") || "";
+export const RPC_SHYFT_MAINNET =
+  process.env.NEXT_PUBLIC_RPC_SHYFT_MAINNET ?? "";
 
-// Back-compat alias (so older imports don't break)
+export const RPC_SHYFT_DEVNET =
+  process.env.NEXT_PUBLIC_RPC_SHYFT_DEVNET ?? "";
+
+export const RPC_ALCHEMY_MAINNET =
+  process.env.NEXT_PUBLIC_RPC_ALCHEMY_MAINNET ?? "";
+
+// Back-compat / defaults
+export const GRAPE_RPC_ENDPOINT =
+  RPC_SHYFT_MAINNET || RPC_SOLANA_MAINNET;
+
+export const GRAPE_RPC_DEVNET_ENDPOINT =
+  RPC_SHYFT_DEVNET || RPC_SOLANA_DEVNET;
+
 export const REACT_APP_RPC_DEVNET_ENDPOINT = GRAPE_RPC_DEVNET_ENDPOINT;
 
 // -----------------------------------------------------------------------------

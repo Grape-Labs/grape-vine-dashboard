@@ -45,11 +45,15 @@ export default function RpcSettingsDialog({ open, onClose }: Props) {
   const presets = React.useMemo(() => getRpcPresets()[settings.network], [settings.network]);
   const effectiveLabel = getRpcLabel(settings);
 
-    function setNetwork(network: SolanaNetwork) {
-    const nextPresets = getRpcPresets()[network];
-    const nextKey = nextPresets?.[settings.predefinedKey] ? settings.predefinedKey : "default";
-    setSettings((p) => ({ ...p, network, predefinedKey: nextKey }));
-    }
+function setNetwork(network: SolanaNetwork) {
+  const nextPresets = getRpcPresets()[network];
+  const firstKey = Object.keys(nextPresets || {})[0] || "solana";
+  const nextKey = nextPresets?.[settings.predefinedKey]
+    ? settings.predefinedKey
+    : (nextPresets?.solana ? "solana" : firstKey);
+
+  setSettings((p) => ({ ...p, network, predefinedKey: nextKey }));
+}
 
   function setMode(mode: RpcMode) {
     setError("");

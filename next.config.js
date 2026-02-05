@@ -1,11 +1,7 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    env: {
-        NEXT_PUBLIC_RPC_ENDPOINT: process.env.REACT_APP_RPC_ENDPOINT,
-    },
-}
+  // no env block needed
+};
 
-const dotenv = require('dotenv');
-dotenv.config();
-
-module.exports = nextConfig
+module.exports = nextConfig;

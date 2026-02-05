@@ -5,7 +5,8 @@ import { Box, Typography, CircularProgress, Divider } from "@mui/material";
 import { Connection, PublicKey } from "@solana/web3.js";
 
 import { getConfigPda, getReputationPda } from "@grapenpm/vine-reputation-client";
-import { REACT_APP_RPC_DEVNET_ENDPOINT, GRAPE_DAO_ID } from "./constants";
+import { GRAPE_DAO_ID } from "./constants";
+import { readRpcSettings, resolveRpcEndpoint } from "./utils/rpcSettings"; // adjust path
 
 type VineReputationProps = {
   walletAddress: string | null;
@@ -38,6 +39,27 @@ type DecodedConfig = {
 const BI_ZERO = BigInt(0);
 const BI_EIGHT = BigInt(8);
 const BI_255 = BigInt(255);
+
+function useRpcEndpoint() {
+  const [endpoint, setEndpoint] = React.useState<string>(() => resolveRpcEndpoint(readRpcSettings()));
+
+  React.useEffect(() => {
+    const recompute = () => setEndpoint(resolveRpcEndpoint(readRpcSettings()));
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "grape_rpc_settings_v1") recompute();
+    };
+
+    window.addEventListener("grape:rpc-settings", recompute as any);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("grape:rpc-settings", recompute as any);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
+  return endpoint;
+}
 
 function shortenPk(base58: string, start = 6, end = 6) {
   if (!base58) return "";
@@ -221,8 +243,10 @@ const VineReputation: React.FC<VineReputationProps> = ({
   const [decayBps, setDecayBps] = useState<number | null>(null);
   const [rows, setRows] = useState<SeasonRow[]>([]);
 
+  const rpcEndpoint = useRpcEndpoint();
+  
   const conn = useMemo(() => {
-    const url = endpoint || REACT_APP_RPC_DEVNET_ENDPOINT;
+    const url = endpoint || rpcEndpoint;
     return new Connection(url, "confirmed");
   }, [endpoint]);
 

@@ -2,7 +2,6 @@
 import React, { FC, useEffect, useState, useRef } from "react";
 import { PublicKey, Connection } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { GRAPE_RPC_ENDPOINT } from "./constants";
 import { styled, useTheme } from "@mui/material/styles";
 import moment from "moment";
 import { CopyToClipboard } from "react-copy-to-clipboard";
@@ -11,6 +10,7 @@ import html2canvas from "html2canvas";
 import * as confetti from "canvas-confetti";
 //import confetti from "canvas-confetti";
 
+import { readRpcSettings, resolveRpcEndpoint } from "./utils/rpcSettings"; // adjust path
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 import {
@@ -71,6 +71,27 @@ const StyledTable = styled(Table)(({ theme }) => ({
     borderBottom: "1px solid rgba(255,255,255,0.05)",
   },
 }));
+
+function useRpcEndpoint() {
+  const [endpoint, setEndpoint] = React.useState<string>(() => resolveRpcEndpoint(readRpcSettings()));
+
+  React.useEffect(() => {
+    const recompute = () => setEndpoint(resolveRpcEndpoint(readRpcSettings()));
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "grape_rpc_settings_v1") recompute();
+    };
+
+    window.addEventListener("grape:rpc-settings", recompute as any);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("grape:rpc-settings", recompute as any);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
+  return endpoint;
+}
 
 function TablePaginationActions(props: any) {
   const theme = useTheme();
@@ -159,7 +180,8 @@ type TokenLeaderboardProps = {
 };
 
 const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
-  const connection = React.useMemo(() => new Connection(GRAPE_RPC_ENDPOINT), []);
+  const rpcEndpoint = useRpcEndpoint();
+  const connection = React.useMemo(() => new Connection(rpcEndpoint), []);
   const token = React.useMemo(() => new PublicKey(props.programId), [props.programId]);
   const meta = props.meta || null;
 

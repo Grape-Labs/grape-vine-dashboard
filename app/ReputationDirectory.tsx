@@ -21,6 +21,8 @@ import {
   Avatar,
   Paper,
   CircularProgress,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
@@ -28,9 +30,12 @@ import Chip from "@mui/material/Chip";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
+import SettingsIcon from "@mui/icons-material/Settings";
 
 import { OG_LOGO, VINE_LOGO, VINE_REP_PROGRAM_ID } from "./constants";
 import CreateReputationSpace from "./CreateReputationSpace";
+import RpcSettingsDialog from "./components/RpcSettingsDialog";
+
 
 import { keyframes } from "@mui/system";
 
@@ -161,6 +166,7 @@ export default function ReputationDirectory() {
   const [spaceUiMeta, setSpaceUiMeta] = useState<Record<string, SpaceUiMeta>>({});
 
   const hydrateAbortRef = useRef<AbortController | null>(null);
+  const [rpcOpen, setRpcOpen] = useState(false);
 
   const { connected } = useWallet();
   const { setVisible } = useWalletModal();
@@ -451,6 +457,25 @@ background: `
   >
     Discord
   </Button>
+
+<Tooltip title="Settings">
+  <IconButton
+    onClick={() => setRpcOpen(true)}
+    size="small"
+    sx={{
+      borderRadius: "999px",
+      color: "rgba(248,250,252,0.75)",
+      border: "1px solid rgba(255,255,255,0.14)",
+      background: "rgba(255,255,255,0.06)",
+      "&:hover": {
+        background: "rgba(255,255,255,0.10)",
+        color: "rgba(248,250,252,0.95)",
+      },
+    }}
+  >
+    <SettingsIcon sx={{ fontSize: 18 }} />
+  </IconButton>
+</Tooltip>
 
   {/* Primary CTA */}
   <Button
@@ -743,6 +768,7 @@ background: `
             }}
             onCreated={(dao) => router.push(`/dao/${dao}`)}   // ✅ needs the small prop change
           />
+          <RpcSettingsDialog open={rpcOpen} onClose={() => setRpcOpen(false)} />
         </Box>
       </Box>
   );

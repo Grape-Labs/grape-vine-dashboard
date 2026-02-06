@@ -932,8 +932,6 @@ const HomeInner: React.FC = () => {
                 <LeaderboardSwitch
                     programId={activeMint}
                     activeDaoIdBase58={activeDao}
-                    //activeSeason={season}
-                    endpoint={rpcEndpoint}
                     meta={activeUi?.offchain ?? null}
                     resolvedTheme={resolvedTheme}
                     />

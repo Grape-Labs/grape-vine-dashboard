@@ -14,8 +14,12 @@ type Props = {
   resolvedTheme?: any;
 };
 
+import { useConnection } from "@solana/wallet-adapter-react";
+// use this connection for all RPC calls
+
 export default function LeaderboardSwitch(props: Props) {
   const sp = useSearchParams();
+  const { connection } = useConnection();
 
   // ✅ default to the NEW reputation leaderboard
   // ✅ allow always-accessible legacy:

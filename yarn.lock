@@ -762,9 +762,9 @@
     bs58 "^5.0.0"
 
 "@grapenpm/vine-reputation-client@^0.1.1":
-  version "0.1.31"
-  resolved "https://registry.yarnpkg.com/@grapenpm/vine-reputation-client/-/vine-reputation-client-0.1.31.tgz#006a18c63810a1818253985f3d3ce6903baba040"
-  integrity sha512-o+keyCXHzTVfvlV55kqRmGzhdpm3hD6blmdomak+/23BlXnr8RP3jezGpG1ETaIyHmVS5qLBHIlhO4it32PLVg==
+  version "0.1.35"
+  resolved "https://registry.yarnpkg.com/@grapenpm/vine-reputation-client/-/vine-reputation-client-0.1.35.tgz#7817d390aa188ac81344653690d968d6d85fb26a"
+  integrity sha512-v9WyEw+LymLHADTAWlJL6TcQyCXof1enPHHG32KqgkMKIyh9YmHj61ERupv44XLGUidzGxmXq9UW1wjHe6x9Jg==
   dependencies:
     bs58 "^6.0.0"
 

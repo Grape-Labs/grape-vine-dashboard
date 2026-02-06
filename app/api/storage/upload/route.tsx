@@ -47,8 +47,8 @@ export async function POST(req: Request) {
     const { Uploader } = require("@irys/upload");
     const { Solana } = require("@irys/upload-solana");
 
-    const network = (process.env.IRYS_NETWORK || "devnet").toLowerCase(); // "devnet" | "mainnet"
-    const rpcUrl = mustEnv("SOLANA_RPC_URL");
+    const network = (process.env.IRYS_NETWORK || "mainnet").toLowerCase(); // "devnet" | "mainnet"
+    const rpcUrl = mustEnv("NEXT_PUBLIC_RPC_SHYFT_MAINNET");
 
     // Your key should be the JSON array from a Solana keypair file
     // Example env value: [12,34, ...]

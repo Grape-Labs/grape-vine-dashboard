@@ -39,6 +39,7 @@ import {
   useMediaQuery,
   IconButton,
   Tooltip,
+  Divider,
 } from "@mui/material";
 import { keyframes } from "@mui/system";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -271,6 +272,8 @@ function HeaderActions(props: {
           </ListItemIcon>
           Manage reputation space
         </MenuItem>
+
+          <Divider />
 
         <MenuItem
           onClick={() => {

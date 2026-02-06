@@ -310,7 +310,7 @@ const CreateReputationSpace: React.FC<CreateReputationSpaceProps> = ({
             Create Reputation Space
           </Typography>
           <Typography variant="caption" sx={{ opacity: 0.75 }}>
-            Devnet • Your connected wallet is authority + payer • Program {VINE_REP_PROGRAM_ID.toBase58()}
+            Your connected wallet is authority + payer • Program {VINE_REP_PROGRAM_ID.toBase58()}
           </Typography>
         </DialogTitle>
 

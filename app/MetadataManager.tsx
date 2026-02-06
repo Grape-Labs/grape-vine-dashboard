@@ -22,6 +22,126 @@ import {
 type Provider = "irys" | "pinata" | "arweave";
 type ThemeMode = "auto" | "dark" | "light";
 
+const BG_TEMPLATES: Array<{
+  id: string;
+  label: string;
+  url: string;
+  // optional per-template defaults (tweak to taste)
+  mode?: ThemeMode;
+  primary?: string;
+  opacity?: number; // 0..1
+  blur?: number; // px
+}> = [
+  {
+    id: "vine-bg",
+    label: "Vine BG",
+    url: "https://gateway.irys.xyz/BQPZ1MGv6Wo2nLKc3r4LyeUW3DdqKjUVHe3eThabXkgG",
+    mode: "dark",
+    primary: "#A78BFA",
+    opacity: 0.48,
+    blur: 14,
+  },
+  {
+    id: "space",
+    label: "Space",
+    url: "https://gateway.irys.xyz/4A2AmTit1ZZ7e4ecJvNgRPoBDe7KVYyR56fkmVNrzqFx",
+    mode: "dark",
+    primary: "#38BDF8",
+    opacity: 0.55,
+    blur: 18,
+  },
+  {
+    id: "void",
+    label: "Void",
+    url: "https://gateway.irys.xyz/GYfQxuQjjdT6XCKkMs8kv7iF5tUhR1QocAE9bUg2ja9S",
+    mode: "dark",
+    primary: "#E5E7EB",
+    opacity: 0.62,
+    blur: 20,
+  },
+  {
+    id: "splatter",
+    label: "Splatter",
+    url: "https://gateway.irys.xyz/Gw59Crs8wpz8pPJzmPTZJoGkkj1cAAqv2e3Gjum5GfZ",
+    mode: "dark",
+    primary: "#F472B6",
+    opacity: 0.45,
+    blur: 12,
+  },
+  {
+    id: "gold",
+    label: "Gold",
+    url: "https://gateway.irys.xyz/CpwWNtBBz1XdJmZ2LjXGTfnw4ARfoN1JsfufCBLhpebq",
+    mode: "dark",
+    primary: "#FBBF24",
+    opacity: 0.50,
+    blur: 14,
+  },
+  {
+    id: "og",
+    label: "OG",
+    url: "https://gateway.irys.xyz/64msLezDRMRcFDpeWTcBsE3aEP7Pfx5e3MLEcZkFoMXz",
+    mode: "dark",
+    primary: "#60A5FA",
+    opacity: 0.42,
+    blur: 10,
+  },
+  {
+    id: "comic",
+    label: "Comic",
+    url: "https://gateway.irys.xyz/2g4r4W7bYJAK6GrKDiatswXRV4L9iUqKGjCnyGrRgDe7",
+    mode: "dark",
+    primary: "#60A5FA",
+    opacity: 0.42,
+    blur: 10,
+  },
+  {
+    id: "vine-pop",
+    label: "Vine Pop",
+    url: "https://gateway.irys.xyz/4N33hRRHbd4B2E9jrXuzFHGqpr2ha92okNn7xrgbXwxE",
+    mode: "dark",
+    primary: "#34D399",
+    opacity: 0.42,
+    blur: 10,
+  },
+  {
+    id: "candy",
+    label: "Candy",
+    url: "https://gateway.irys.xyz/GHSP3Wfr6CTTYWm7GBnEaXH7oN2ecvbcDDgCsrCiWP8K",
+    mode: "dark",
+    primary: "#F472B6",
+    opacity: 0.44,
+    blur: 12,
+  },
+  {
+    id: "universe",
+    label: "Universe",
+    url: "https://gateway.irys.xyz/3iyYFDfJMkAiomwHNdRgzJMKuQM1RXscUc1H6WC7DtFT",
+    mode: "dark",
+    primary: "#A78BFA",
+    opacity: 0.55,
+    blur: 18,
+  },
+  {
+    id: "deep-sea",
+    label: "Deep Sea",
+    url: "https://gateway.irys.xyz/8GzeGjrt12f8q4EkmshzyXJ9dYpZt5uSToFCSBBjVr7y",
+    mode: "dark",
+    primary: "#22D3EE",
+    opacity: 0.55,
+    blur: 16,
+  },
+  {
+    id: "matrix",
+    label: "Matrix",
+    url: "https://gateway.irys.xyz/6Cnuuk2BVG5ZRmB9G7zwctJYacAfyNz7Htu2pL4PcDQa",
+    mode: "dark",
+    primary: "#34D399",
+    opacity: 0.55,
+    blur: 16,
+  },
+];
+
 export type MetadataJson = {
   name?: string;
   symbol?: string;
@@ -150,8 +270,43 @@ const MetadataManager: React.FC<MetadataManagerProps> = ({
   const [logoObjectUrl, setLogoObjectUrl] = useState<string | null>(null);
   const [bgObjectUrl, setBgObjectUrl] = useState<string | null>(null);
 
+    // Theme template selection
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+
+  const applyTemplate = (tplId: string) => {
+    const tpl = BG_TEMPLATES.find((t) => t.id === tplId);
+    if (!tpl) return;
+
+    setEnableVineTheme(true);
+    setSelectedTemplateId(tpl.id);
+
+    // set background to template
+    setThemeBgImage(tpl.url);
+
+    // apply optional defaults
+    if (tpl.mode) setThemeMode(tpl.mode);
+    if (tpl.primary) setThemePrimary(tpl.primary);
+    if (typeof tpl.opacity === "number") setThemeBgOpacity(clamp01(tpl.opacity));
+    if (typeof tpl.blur === "number") setThemeBgBlur(Math.max(0, tpl.blur));
+
+    // stable defaults
+    setThemeBgPosition("center");
+    setThemeBgSize("cover");
+    setThemeBgRepeat("no-repeat");
+
+    setSnack({ msg: `Applied template: ${tpl.label}` });
+  };
+
+  const clearTemplate = () => {
+    setSelectedTemplateId("");
+    setThemeBgImage("");
+    setSnack({ msg: "Template cleared" });
+  };
+
   useEffect(() => {
     if (!open) return;
+
+    setSelectedTemplateId("");
 
     setProvider(defaultProvider);
     setName(defaultName);
@@ -693,8 +848,118 @@ async function loadImageToCanvas(src: string): Promise<HTMLCanvasElement> {
                   </Button>
                 </Box>
 
+                {/* Background Templates */}
+                <Box sx={{ display: "grid", gap: 0.8 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 1,
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ opacity: 0.88 }}>
+                      Background templates
+                    </Typography>
+
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      <Button
+                        size="small"
+                        onClick={handleRecommendPrimary}
+                        disabled={submitting || bgUploading || !themeBgImage}
+                        sx={{ textTransform: "none" }}
+                      >
+                        Auto primary
+                      </Button>
+
+                      <Button
+                        size="small"
+                        onClick={clearTemplate}
+                        disabled={submitting || bgUploading || (!selectedTemplateId && !themeBgImage)}
+                        sx={{ textTransform: "none" }}
+                      >
+                        Clear
+                      </Button>
+                    </Box>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)" },
+                      gap: 1,
+                    }}
+                  >
+                    {BG_TEMPLATES.map((t) => {
+                      const active = selectedTemplateId === t.id || themeBgImage === t.url;
+                      return (
+                        <Box
+                          key={t.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => applyTemplate(t.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") applyTemplate(t.id);
+                          }}
+                          sx={{
+                            cursor: "pointer",
+                            borderRadius: "14px",
+                            overflow: "hidden",
+                            border: active
+                              ? "1px solid rgba(248,250,252,0.55)"
+                              : "1px solid rgba(148,163,184,0.28)",
+                            background: "rgba(2,6,23,0.35)",
+                            boxShadow: active ? "0 0 0 2px rgba(255,255,255,0.18)" : "none",
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              height: 78,
+                              backgroundImage: `url("${t.url}")`,
+                              backgroundSize: "cover",
+                              backgroundPosition: "center",
+                              filter: "saturate(1.05)",
+                            }}
+                          />
+                          <Box
+                            sx={{
+                              px: 1,
+                              py: 0.8,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 1,
+                            }}
+                          >
+                            <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                              {t.label}
+                            </Typography>
+                            {active && (
+                              <Chip
+                                size="small"
+                                label="Active"
+                                sx={{
+                                  height: 20,
+                                  fontSize: 11,
+                                  color: "rgba(248,250,252,0.92)",
+                                  background: "rgba(255,255,255,0.14)",
+                                  border: "1px solid rgba(255,255,255,0.22)",
+                                }}
+                              />
+                            )}
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+
+                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                    Click a template to instantly set the background + defaults. You can still paste a custom URL or upload.
+                  </Typography>
+                </Box>
+
                 <TextField
-                  label="Background image URL (optional)"
+                  label="Background image URL (custom)"
                   value={themeBgImage}
                   onChange={(e) => setThemeBgImage(e.target.value)}
                   placeholder="https://..."

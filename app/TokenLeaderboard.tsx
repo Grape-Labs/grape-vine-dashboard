@@ -7,7 +7,7 @@ import moment from "moment";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import html2canvas from "html2canvas";
 // @ts-ignore
-import * as confetti from "canvas-confetti";
+//import * as confetti from "canvas-confetti";
 //import confetti from "canvas-confetti";
 
 import { readRpcSettings, resolveRpcEndpoint } from "./utils/rpcSettings"; // adjust path
@@ -665,7 +665,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
       }
 
       const particleCount = Math.round(50 * (timeLeft / duration));
-
+      /*
       confetti({
         ...defaults,
         particleCount,
@@ -683,6 +683,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
           y: randomInRange(0.15, 0.35),
         },
       });
+      */
     }, 180);
   };
 
@@ -2260,8 +2261,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                       <VineReputation
                         walletAddress={selectedWallet ?? null}
                         daoIdBase58={props.activeDaoIdBase58}
-                        //season={props.activeSeason}          // optional if you add it
-                        endpoint="https://api.devnet.solana.com" // forces reputation reads to devnet
+                        endpoint={rpcEndpoint}
                       />
                     </Box>
                   </Box>

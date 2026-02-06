@@ -62,6 +62,9 @@ export function getRpcPresets(): Record<SolanaNetwork, Record<string, RpcPreset>
 addPreset(mainnet, "default", "Default (Mainnet)", RPC_SHYFT_MAINNET || RPC_ALCHEMY_MAINNET || RPC_SOLANA_MAINNET);
 addPreset(devnet, "default", "Default (Devnet)", RPC_SOLANA_DEVNET);
 
+  addPreset(mainnet, "shyft", "Shyft", RPC_SHYFT_MAINNET);
+  addPreset(mainnet, "alchemy", "Alchemy", RPC_ALCHEMY_MAINNET);
+
 // keep solana too
 addPreset(mainnet, "solana", "Solana Public", RPC_SOLANA_MAINNET);
 addPreset(devnet, "solana", "Solana Public", RPC_SOLANA_DEVNET);

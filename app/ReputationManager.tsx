@@ -510,6 +510,8 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       try {
         setLoading(true);
 
+        // show rpc endpoint for connection:
+        console.log("Using RPC endpoint:", connection.rpcEndpoint);
         const c = await fetchConfig(connection, daoPk);
         setCfg(c);
 
@@ -1427,7 +1429,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
                 Reputation Manager
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.75 }}>
-                Devnet program • Space config + admin actions
+                Space config + admin actions
               </Typography>
             </Box>
 
@@ -1731,7 +1733,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
                       onChange={(e) => setMetadataUri(e.target.value)}
                       disabled={submitting}
                       InputProps={{ sx: glassFieldSx }}
-                      helperText="Off-chain JSON (name/icon/image/description/website). Stored on devnet."
+                      helperText="Off-chain JSON (name/icon/image/description/website). Stored on mainnet."
                       FormHelperTextProps={{ sx: { opacity: 0.7 } }}
                     />
                     <Button

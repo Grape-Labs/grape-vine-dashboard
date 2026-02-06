@@ -8,7 +8,7 @@ import moment from "moment";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import html2canvas from "html2canvas";
 // @ts-ignore
-import * as confetti from "canvas-confetti";
+//import confetti from "canvas-confetti";
 import bs58 from "bs58";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -234,14 +234,14 @@ const ReputationLeaderboard: FC<ReputationLeaderboardProps> = (props) => {
   const meta = props.meta || null;
   const rpcEndpoint = useRpcEndpoint();
   // mainnet: discover token holders
-  const connection = useMemo(() => new Connection(rpcEndpoint), []);
+  const connection = useMemo(() => new Connection(rpcEndpoint, "confirmed"), [rpcEndpoint]);
   const token = useMemo(() => new PublicKey(props.programId), [props.programId]);
 
   // devnet: read reputation
   const repConn = useMemo(() => {
     const url = props.endpoint || rpcEndpoint;
     return new Connection(url, "confirmed");
-  }, [props.endpoint]);
+  }, [props.endpoint, rpcEndpoint]);
 
   // --- STATE ---
   const [holders, setHolders] = useState<HolderRow[]>([]);
@@ -682,7 +682,7 @@ const handleGetRaffleSelection = () => {
         return;
       }
       const particleCount = Math.round(50 * (timeLeft / duration));
-
+      /*
       confetti({
         ...defaults,
         particleCount,
@@ -693,6 +693,7 @@ const handleGetRaffleSelection = () => {
         particleCount,
         origin: { x: randomInRange(0.65, 0.85), y: randomInRange(0.15, 0.35) },
       });
+      */
     }, 180);
   };
   
@@ -1952,7 +1953,7 @@ const handleGetRaffleSelection = () => {
               <VineReputation
                 walletAddress={selectedWallet ?? null}
                 daoIdBase58={props.activeDaoIdBase58}
-                endpoint={props.endpoint || "https://api.devnet.solana.com"}
+                endpoint={rpcEndpoint}
               />
             </Box>
           </Box>

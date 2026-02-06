@@ -10,7 +10,7 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
 import { InstallAppButton } from "@/app/components/InstallApp";
 import LeaderboardSwitch from "./LeaderboardSwitch";
-import { VINE_LOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "../constants";
+import { OG_GREYLOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "../constants";
 import RpcSettingsDialog from "../components/RpcSettingsDialog";
 import { readRpcSettings, resolveRpcEndpoint } from "../utils/rpcSettings";
 import TuneIcon from "@mui/icons-material/Tune"; 
@@ -514,7 +514,7 @@ const HomeInner: React.FC = () => {
 
   const manageDisabled = !activeDao || !activeSpace;
 
-  const brandLogo = activeUi?.offchain?.image || VINE_LOGO;
+  const brandLogo = activeUi?.offchain?.image || OG_GREYLOGO;
   const brandName = activeUi?.offchain?.name || "Reputation Dashboard";
   const brandSymbol = activeUi?.offchain?.symbol || "";
   const brandDesc = activeUi?.offchain?.description || "";
@@ -598,7 +598,7 @@ const HomeInner: React.FC = () => {
         position: "relative",
         backgroundImage: resolvedTheme.background.image
           ? `url('${resolvedTheme.background.image}')`
-          : `url('/images/background_sample_image.webp')`,
+          : `url('/images/background.jpg')`,
         backgroundSize: resolvedTheme.background.size,
         backgroundPosition: resolvedTheme.background.position,
         backgroundRepeat: resolvedTheme.background.repeat,

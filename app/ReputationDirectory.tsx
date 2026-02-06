@@ -32,7 +32,7 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import SettingsIcon from "@mui/icons-material/Settings";
 
-import { OG_LOGO, VINE_LOGO, VINE_REP_PROGRAM_ID } from "./constants";
+import { OG_LOGO, OG_GREYLOGO, VINE_REP_PROGRAM_ID } from "./constants";
 import CreateReputationSpace from "./CreateReputationSpace";
 import RpcSettingsDialog from "./components/RpcSettingsDialog";
 
@@ -588,7 +588,7 @@ background: `
                     const sym = off?.symbol ?? "";
                     const desc =
                       off?.description ?? `SPACE ${shorten(dao, 6, 6)} • Season ${s.currentSeason}`;
-                    const img = off?.image ?? VINE_LOGO;
+                    const img = off?.image ?? OG_GREYLOGO;
 
                     return (
                       <Box

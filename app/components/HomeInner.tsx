@@ -10,7 +10,7 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
 import { InstallAppButton } from "@/app/components/InstallApp";
 import LeaderboardSwitch from "./LeaderboardSwitch";
-import { VINE_LOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "../constants";
+import { OG_GREYLOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "../constants";
 import RpcSettingsDialog from "../components/RpcSettingsDialog";
 import { readRpcSettings, resolveRpcEndpoint } from "../utils/rpcSettings";
 import TuneIcon from "@mui/icons-material/Tune"; 
@@ -55,7 +55,8 @@ import TollOutlinedIcon from "@mui/icons-material/TollOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SettingsIcon from "@mui/icons-material/Settings";
-  
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+
 import CreateReputationSpace from "../CreateReputationSpace";
 import ReputationManager from "../ReputationManager";
 import TokenManager from "../TokenManager";
@@ -514,7 +515,7 @@ const HomeInner: React.FC = () => {
 
   const manageDisabled = !activeDao || !activeSpace;
 
-  const brandLogo = activeUi?.offchain?.image || VINE_LOGO;
+  const brandLogo = activeUi?.offchain?.image || OG_GREYLOGO;
   const brandName = activeUi?.offchain?.name || "Reputation Dashboard";
   const brandSymbol = activeUi?.offchain?.symbol || "";
   const brandDesc = activeUi?.offchain?.description || "";
@@ -598,7 +599,7 @@ const HomeInner: React.FC = () => {
         position: "relative",
         backgroundImage: resolvedTheme.background.image
           ? `url('${resolvedTheme.background.image}')`
-          : `url('/images/background_sample_image.webp')`,
+          : `url('/images/background.jpg')`,
         backgroundSize: resolvedTheme.background.size,
         backgroundPosition: resolvedTheme.background.position,
         backgroundRepeat: resolvedTheme.background.repeat,
@@ -630,8 +631,20 @@ const HomeInner: React.FC = () => {
           }}
         >
           <Toolbar sx={{ gap: 1 }}>
+
             {/* Brand */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexGrow: 1, minWidth: 0 }}>
+            <Box
+              onClick={() => router.push("/")}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.25,
+                flexGrow: 1,
+                minWidth: 0,
+                cursor: "pointer",
+                "&:hover": { opacity: 0.95 },
+              }}
+            >
               <Avatar
                 src={brandLogo}
                 variant="rounded"
@@ -755,6 +768,21 @@ const HomeInner: React.FC = () => {
                 },
               }}
             >
+              <MenuItem
+                onClick={() => {
+                  setSpaceAnchor(null);
+                  router.push("/"); // home directory
+                }}
+                sx={{ mx: 1, my: 0.6, borderRadius: "14px" }}
+              >
+                <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>
+                  <HomeRoundedIcon fontSize="small" />
+                </ListItemIcon>
+                All spaces
+              </MenuItem>
+
+              <Divider sx={{ my: 0.5, opacity: 0.25 }} />
+
               {spaces.length === 0 ? (
                 <MenuItem disabled>{spacesLoading ? "Loading…" : "No spaces found on-chain"}</MenuItem>
               ) : (

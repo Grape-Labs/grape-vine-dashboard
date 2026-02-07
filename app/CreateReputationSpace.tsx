@@ -171,6 +171,224 @@ const BG_TEMPLATES: Array<{
   },
 ];
 
+function TemplateThumb({
+  url,
+  opacity,
+  blur,
+}: {
+  url: string;
+  opacity?: number;
+  blur?: number;
+}) {
+  return (
+    <Box
+      sx={{
+        width: 44,
+        height: 28,
+        borderRadius: "10px",
+        overflow: "hidden",
+        position: "relative",
+        flex: "0 0 auto",
+        border: "1px solid rgba(148,163,184,0.35)",
+        background: "rgba(15,23,42,0.55)",
+      }}
+    >
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: `url("${url}")`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: `blur(${Math.max(0, blur ?? 0)}px)`,
+          transform: "scale(1.1)", // hide blur edges
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          background: `rgba(0,0,0,${clamp01(opacity ?? 0)})`,
+        }}
+      />
+    </Box>
+  );
+}
+
+function BackgroundTemplatePicker({
+  templates,
+  value,
+  onChange,
+  onApplyDefaults,
+  disabled,
+  title = "Background templates",
+}: {
+  templates: typeof BG_TEMPLATES;
+  value: string;
+  onChange: (id: string) => void;
+  onApplyDefaults: (t: (typeof BG_TEMPLATES)[number]) => void;
+  disabled?: boolean;
+  title?: string;
+}) {
+  return (
+    <Box sx={{ display: "grid", gap: 1 }}>
+      {/* Header row */}
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Typography sx={{ fontSize: 13, opacity: 0.9 }}>{title}</Typography>
+
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            size="small"
+            onClick={() => {
+              const t = templates.find((x) => x.id === value);
+              if (t) onApplyDefaults(t);
+            }}
+            disabled={disabled}
+            sx={{
+              textTransform: "none",
+              color: "rgba(248,250,252,0.72)",
+              borderRadius: "999px",
+              px: 1.25,
+              minHeight: 28,
+              "&:hover": { background: "rgba(255,255,255,0.06)" },
+            }}
+          >
+            Auto primary
+          </Button>
+
+          <Button
+            size="small"
+            onClick={() => {
+              // “Clear” means: go back to first preset (or you can set "" if you prefer none)
+              const first = templates[0];
+              onChange(first.id);
+              onApplyDefaults(first);
+            }}
+            disabled={disabled}
+            sx={{
+              textTransform: "none",
+              color: "rgba(248,250,252,0.72)",
+              borderRadius: "999px",
+              px: 1.25,
+              minHeight: 28,
+              "&:hover": { background: "rgba(255,255,255,0.06)" },
+            }}
+          >
+            Clear
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Grid */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
+          gap: 1.2,
+        }}
+      >
+        {templates.map((t) => {
+          const selected = t.id === value;
+
+          return (
+            <Box
+              key={t.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                if (disabled) return;
+                onChange(t.id);
+                onApplyDefaults(t); // instantly apply defaults like your screenshot note
+              }}
+              onKeyDown={(e) => {
+                if (disabled) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onChange(t.id);
+                  onApplyDefaults(t);
+                }
+              }}
+              sx={{
+                cursor: disabled ? "default" : "pointer",
+                borderRadius: "18px",
+                overflow: "hidden",
+                border: selected
+                  ? "1px solid rgba(255,255,255,0.38)"
+                  : "1px solid rgba(148,163,184,0.22)",
+                background: "rgba(2,6,23,0.35)",
+                boxShadow: selected ? "0 10px 30px rgba(0,0,0,0.45)" : "none",
+                outline: "none",
+                transition: "transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease",
+                "&:hover": disabled
+                  ? {}
+                  : {
+                      transform: "translateY(-1px)",
+                      borderColor: "rgba(255,255,255,0.28)",
+                    },
+              }}
+            >
+              {/* Image */}
+              <Box
+                sx={{
+                  position: "relative",
+                  height: 94,
+                  backgroundImage: `url("${t.url}")`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                }}
+              >
+                {/* Subtle top shading for readability */}
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    background:
+                      "linear-gradient(to bottom, rgba(2,6,23,0.05), rgba(2,6,23,0.35))",
+                  }}
+                />
+
+                {/* Selected ring */}
+                {selected && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.18)",
+                      pointerEvents: "none",
+                    }}
+                  />
+                )}
+              </Box>
+
+              {/* Label */}
+              <Box sx={{ p: 1.2, display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography sx={{ fontSize: 13, opacity: 0.95 }}>{t.label}</Typography>
+                <Box sx={{ flex: 1 }} />
+                {selected && (
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 999,
+                      background: t.primary || "rgba(255,255,255,0.65)",
+                      border: "1px solid rgba(255,255,255,0.35)",
+                    }}
+                  />
+                )}
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+
+      <Typography variant="caption" sx={{ opacity: 0.65 }}>
+        Click a template to instantly set the background + defaults. You can still paste a custom URL or upload.
+      </Typography>
+    </Box>
+  );
+}
+
 const darkFieldSx = {
   "& .MuiInputLabel-root": { color: "rgba(248,250,252,0.78)" },
   "& .MuiInputLabel-root.Mui-focused": { color: "rgba(248,250,252,0.90)" },
@@ -532,6 +750,19 @@ export default function CreateReputationSpace({
   const snackText = snackError || snackMsg;
   const snackSeverity: "success" | "error" = snackError ? "error" : "success";
 
+  const [bgLoaded, setBgLoaded] = useState(false);
+
+  useEffect(() => {
+    setBgLoaded(false);
+    const u = activeTemplate?.url;
+    if (!u) return;
+
+    const img = new Image();
+    img.onload = () => setBgLoaded(true);
+    img.onerror = () => setBgLoaded(true); // fail open
+    img.src = u;
+  }, [activeTemplate?.url]);
+
   return (
     <>
       <Dialog
@@ -720,22 +951,19 @@ export default function CreateReputationSpace({
                   />
                 </Box>
 
-                <TextField
-                  select
-                  label="Background template"
+                <BackgroundTemplatePicker
+                  templates={BG_TEMPLATES}
                   value={templateId}
-                  onChange={(e) => setTemplateId(e.target.value)}
                   disabled={submitting || creatingMint}
-                  sx={darkFieldSx}
-                  helperText="Pick a preset background. Defaults (mode/primary/overlay/blur) are applied automatically."
-                  FormHelperTextProps={{ sx: { opacity: 0.7 } }}
-                >
-                  {BG_TEMPLATES.map((t) => (
-                    <MenuItem key={t.id} value={t.id}>
-                      {t.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  onChange={(id) => setTemplateId(id)}
+                  onApplyDefaults={(t) => {
+                    // this mirrors your existing template-change effect, but makes it instant on click
+                    setThemeMode(t.mode || "dark");
+                    setThemePrimary(t.primary || "#A78BFA");
+                    setThemeBgOpacity(clamp01(safeNum(t.opacity, 0.5)));
+                    setThemeBgBlur(Math.max(0, safeNum(t.blur, 14)));
+                  }}
+                />
 
                 <Box
                   sx={{

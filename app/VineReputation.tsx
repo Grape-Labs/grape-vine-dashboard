@@ -365,7 +365,7 @@ const VineReputation: React.FC<VineReputationProps> = ({
       }}
     >
       <Typography variant="overline" sx={{ letterSpacing: 1, opacity: 0.7 }}>
-        Vine Reputation (devnet)
+        Vine Reputation
       </Typography>
 
       <Typography variant="caption" sx={{ opacity: 0.8, display: "block" }}>

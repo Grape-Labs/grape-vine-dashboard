@@ -349,7 +349,7 @@ const ReputationLeaderboard: FC<ReputationLeaderboardProps> = (props) => {
     return eligible[eligible.length - 1].address;
   }
 
-  // --- Fetch current-season reputation for all holders (devnet) ---
+  // --- Fetch current-season reputation for all holders ---
   type HolderRow = { address: string; balance: string }; // keep shape if you don’t want to refactor UI
 
   function u16ToLeBytes(n: number) {

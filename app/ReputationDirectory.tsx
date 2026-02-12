@@ -492,6 +492,7 @@ background: `
       ml: 0.5,
       borderRadius: "999px",
       textTransform: "none",
+      color: "#ffffff",
       px: 2.2,
       py: 1.05,
       background: "rgba(255,255,255,0.14)",
@@ -501,6 +502,9 @@ background: `
       "&:hover": {
         background: "rgba(255,255,255,0.20)",
         boxShadow: "0 14px 40px rgba(0,0,0,0.30)",
+      },
+      "&.Mui-disabled": {
+        color: "rgba(248,250,252,0.58)",
       },
     }}
   >

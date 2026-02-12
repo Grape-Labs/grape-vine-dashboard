@@ -412,6 +412,31 @@ const darkFieldSx = {
   "& .MuiFormHelperText-root": { color: "rgba(248,250,252,0.60)" },
 };
 
+const whiteButtonTextSx = {
+  textTransform: "none",
+  color: "#ffffff",
+  "&.Mui-disabled": {
+    color: "rgba(248,250,252,0.48)",
+  },
+};
+
+const whitePillButtonSx = {
+  ...whiteButtonTextSx,
+  borderRadius: "999px",
+};
+
+const whiteContainedPillButtonSx = {
+  ...whitePillButtonSx,
+  background: "rgba(255,255,255,0.14)",
+  border: "1px solid rgba(255,255,255,0.22)",
+  "&:hover": { background: "rgba(255,255,255,0.20)" },
+  "&.Mui-disabled": {
+    color: "rgba(248,250,252,0.58)",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.14)",
+  },
+};
+
 type CreateReputationSpaceProps = {
   open: boolean;
   onClose: () => void;

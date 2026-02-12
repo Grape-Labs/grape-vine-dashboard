@@ -245,9 +245,8 @@ function BackgroundTemplatePicker({
             }}
             disabled={disabled}
             sx={{
-              textTransform: "none",
-              color: "rgba(248,250,252,0.72)",
-              borderRadius: "999px",
+              ...whitePillButtonSx,
+              color: "rgba(248,250,252,0.94)",
               px: 1.25,
               minHeight: 28,
               "&:hover": { background: "rgba(255,255,255,0.06)" },
@@ -266,9 +265,8 @@ function BackgroundTemplatePicker({
             }}
             disabled={disabled}
             sx={{
-              textTransform: "none",
-              color: "rgba(248,250,252,0.72)",
-              borderRadius: "999px",
+              ...whitePillButtonSx,
+              color: "rgba(248,250,252,0.94)",
               px: 1.25,
               minHeight: 28,
               "&:hover": { background: "rgba(255,255,255,0.06)" },
@@ -941,10 +939,9 @@ export default function CreateReputationSpace({
                     component="label"
                     disabled={submitting || creatingMint}
                     sx={{
-                      textTransform: "none",
-                      borderRadius: "999px",
+                      ...whitePillButtonSx,
                       border: "1px solid rgba(255,255,255,0.22)",
-                      color: "rgba(248,250,252,0.95)",
+                      "&:hover": { background: "rgba(255,255,255,0.08)" },
                     }}
                   >
                     Choose logo (optional)
@@ -1128,7 +1125,7 @@ export default function CreateReputationSpace({
           <Button
             onClick={handleClose}
             disabled={submitting || creatingMint}
-            sx={{ textTransform: "none", borderRadius: "999px", color: "rgba(248,250,252,0.85)" }}
+            sx={{ ...whitePillButtonSx, color: "rgba(248,250,252,0.92)" }}
           >
             Cancel
           </Button>
@@ -1138,13 +1135,8 @@ export default function CreateReputationSpace({
             disabled={disabled}
             variant="contained"
             sx={{
-              textTransform: "none",
-              borderRadius: "999px",
+              ...whiteContainedPillButtonSx,
               px: 2.2,
-              background: "rgba(255,255,255,0.14)",
-              border: "1px solid rgba(255,255,255,0.22)",
-              color: "#ffffff",
-              "&:hover": { background: "rgba(255,255,255,0.20)" },
             }}
           >
             {submitting ? "Creating…" : creatingMint ? "Creating mint…" : "Create"}

@@ -554,10 +554,30 @@ background: `
               }}
             >
               {spacesLoading ? (
-                <Box sx={{ display: "flex", gap: 1, alignItems: "center", p: 1 }}>
-                  <CircularProgress size={18} />
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                    Loading spaces…
+                <Box
+                  sx={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    gap: 1.2,
+                    px: 1.5,
+                    py: 1.25,
+                    borderRadius: "12px",
+                    background: "rgba(15,23,42,0.55)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                  }}
+                >
+                  <CircularProgress
+                    size={18}
+                    thickness={5}
+                    sx={{ color: "rgba(248,250,252,0.96)" }}
+                  />
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "rgba(248,250,252,0.92)", fontWeight: 600, letterSpacing: 0.2 }}
+                  >
+                    Loading spaces...
                   </Typography>
                 </Box>
               ) : spaces.length === 0 ? (

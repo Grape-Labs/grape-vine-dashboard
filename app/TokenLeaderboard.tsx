@@ -1721,7 +1721,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
               {medianBalance > 0 &&
                 ` • Median balance: ${medianBalance.toLocaleString(undefined, {
                   maximumFractionDigits: 0,
-                })} VINE`}
+                })} Tokens`}
             </Typography>
           )}
 

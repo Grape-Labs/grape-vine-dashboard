@@ -43,6 +43,7 @@ import {
   Collapse,
   Avatar,
   TextField,
+  Portal,
 } from "@mui/material";
 
 import DownloadIcon from "@mui/icons-material/Download";
@@ -917,6 +918,7 @@ const handleGetRaffleSelection = () => {
     <Box sx={{ flexGrow: 1, border: "none" }}>
       {/* STREAM MODE */}
       {streamMode && (
+        <Portal>
         <Box
           sx={{
             position: "fixed",
@@ -958,7 +960,7 @@ const handleGetRaffleSelection = () => {
             </Typography>
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Typography variant="caption" sx={{ opacity: 0.7 }}>
+              <Typography variant="caption" sx={{ opacity: 0.7, display: { xs: "none", sm: "block" } }}>
                 Space / Enter = Draw • R = Reset • Esc = Exit
               </Typography>
               <IconButton
@@ -1181,6 +1183,7 @@ const handleGetRaffleSelection = () => {
             </Box>
           </Box>
         </Box>
+        </Portal>
       )}
 
       {/* REPUTATION SUMMARY */}

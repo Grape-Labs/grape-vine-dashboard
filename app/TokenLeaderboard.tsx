@@ -43,6 +43,7 @@ import {
   Stack,
   Collapse,
   TextField,
+  Portal,
 } from "@mui/material";
 
 import DownloadIcon from "@mui/icons-material/Download";
@@ -878,309 +879,309 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
     <Box sx={{ flexGrow: 1, border: "none" }}>
 
       {streamMode && (
-  <Box
-    sx={{
-      position: "fixed",
-      inset: 0,
-      width: "100vw",
-      height: "100dvh",
-      maxHeight: "100dvh",
-      zIndex: 1400,
-      background:
-        "radial-gradient(circle at top, #020617 0%, #020617 40%, #020617 100%)",
-      color: "#e5e7eb",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "flex-start",
-      p: { xs: 1.5, md: 3 },
-      overflowY: "auto",
-      overflowX: "hidden",
-      gap: 1.25,
-    }}
-  >
-    {/* Top bar: title + exit */}
-    <Box
-      sx={{
-        position: "sticky",
-        top: 0,
-        zIndex: 2,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        width: "min(1100px, 100%)",
-        py: 0.75,
-        px: 1,
-        borderRadius: "12px",
-        background: "rgba(2,6,23,0.68)",
-        backdropFilter: "blur(8px)",
-      }}
-    >
-      <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Live Draw
-        </Typography>
-      </Box>
-
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-        <Typography variant="caption" sx={{ opacity: 0.7 }}>
-          Space / Enter = Draw • R = Reset • Esc = Exit
-        </Typography>
-        <IconButton
-          onClick={() => setStreamMode(false)}
-          sx={{
-            color: "rgba(248,250,252,0.9)",
-            borderRadius: "999px",
-            border: "1px solid rgba(148,163,184,0.6)",
-            p: 0.75,
-          }}
-        >
-          <FullscreenExitIcon fontSize="small" />
-        </IconButton>
-      </Box>
-    </Box>
-
-      <Box
-        sx={{
-          position: "relative",
-          display: "inline-flex",
-          alignItems: "center",
-          px: 3,
-          py: 1.8,
-          borderRadius: "999px",
-          background: "rgba(15,23,42,0.95)",
-          border: "1px solid rgba(148,163,184,0.7)",
-          backdropFilter: "blur(12px)",
-          minWidth: { xs: 0, sm: 360 },
-          width: { xs: "100%", sm: "auto" },
-          maxWidth: "min(100%, 900px)",
-          justifyContent: "center",
-          animation: loadingSpin ? "winnerGlow 1.4s ease-out infinite" : "none",
-          "&::before": loadingSpin
-            ? {
-                content: '""',
-                position: "absolute",
-                inset: -10,
-                borderRadius: "999px",
-                border: "1px solid rgba(56,189,248,0.65)",
-                boxShadow: "0 0 26px rgba(56,189,248,0.55)",
-                opacity: 0.7,
-              }
-            : {},
-        }}
-      >
-    {(() => {
-      // While spinning, show the live roulette address.
-      // After spin, show the locked winner from winners[].
-      const liveDisplayAddress =
-        loadingSpin && winner
-          ? winner
-          : currentWinner
-          ? currentWinner.address
-          : "";
-
-      const text = liveDisplayAddress
-        ? isMobile
-          ? shortenString(liveDisplayAddress, 8, 8)
-          : liveDisplayAddress
-        : loadingSpin
-        ? "Drawing winner…"
-        : "Ready to draw";
-
-      return (
-        <Typography
-          variant="h5"
-          sx={{
-            fontFamily: "monospace",
-            letterSpacing: 1,
-            opacity: liveDisplayAddress ? 0.95 : 0.55,
-          }}
-        >
-          {text}
-        </Typography>
-      );
-    })()}
-  </Box>
-
-    {/* Winners list on the side / bottom */}
-    {winners.length > 0 && (
-      <Box
-        sx={{
-          mt: 1,
-          px: 3,
-          py: 2,
-          borderRadius: "18px",
-          background: "rgba(15,23,42,0.96)",
-          border: "1px solid rgba(148,163,184,0.6)",
-          backdropFilter: "blur(14px)",
-          width: "min(100%, 800px)",
-          maxHeight: { xs: "34dvh", md: "40dvh" },
-          overflowY: "auto",
-          overflowX: "hidden",
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            mb: 1.5,
-          }}
-        >
-          <Typography
-            variant="subtitle1"
-            sx={{ letterSpacing: 1.2, textTransform: "uppercase" }}
-          >
-            The Vine List
-          </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.8 }}>
-            {moment(winners[0].ts).format("LL")}
-          </Typography>
-        </Box>
-
-        {winners.map((w, idx) => (
+        <Portal>
           <Box
-            key={`${w.address}-${w.ts}`}
             sx={{
+              position: "fixed",
+              inset: 0,
+              width: "100vw",
+              height: "100dvh",
+              maxHeight: "100dvh",
+              zIndex: 1400,
+              background:
+                "radial-gradient(circle at top, #020617 0%, #020617 40%, #020617 100%)",
+              color: "#e5e7eb",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
-              justifyContent: "space-between",
-              py: 0.7,
-              borderBottom:
-                idx === winners.length - 1
-                  ? "none"
-                  : "1px dashed rgba(75,85,99,0.7)",
+              justifyContent: "flex-start",
+              p: { xs: 1.5, md: 3 },
+              overflowY: "auto",
+              overflowX: "hidden",
+              gap: 1.25,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Typography
-                variant="body1"
-                sx={{ width: 26, opacity: 0.75, textAlign: "right" }}
-              >
-                {idx + 1}.
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  fontFamily: "monospace",
-                  letterSpacing: 0.4,
-                }}
-              >
-                {isMobile ? shortenString(w.address, 8, 8) : w.address}
-              </Typography>
-            </Box>
-
-            <Typography
-              variant="body2"
+            {/* Top bar: title + exit */}
+            <Box
               sx={{
-                opacity: 0.8,
-                fontFeatureSettings: '"tnum" 1',
-                minWidth: 72,
-                textAlign: "right",
+                position: "sticky",
+                top: 0,
+                zIndex: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "min(1100px, 100%)",
+                py: 0.75,
+                px: 1,
+                borderRadius: "12px",
+                background: "rgba(2,6,23,0.68)",
+                backdropFilter: "blur(8px)",
               }}
             >
-              {moment(w.ts).format("HH:mm:ss")}
-            </Typography>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Live Draw
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Typography variant="caption" sx={{ opacity: 0.7, display: { xs: "none", sm: "block" } }}>
+                  Space / Enter = Draw • R = Reset • Esc = Exit
+                </Typography>
+                <IconButton
+                  onClick={() => setStreamMode(false)}
+                  sx={{
+                    color: "rgba(248,250,252,0.9)",
+                    borderRadius: "999px",
+                    border: "1px solid rgba(148,163,184,0.6)",
+                    p: 0.75,
+                  }}
+                >
+                  <FullscreenExitIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                px: 3,
+                py: 1.8,
+                borderRadius: "999px",
+                background: "rgba(15,23,42,0.95)",
+                border: "1px solid rgba(148,163,184,0.7)",
+                backdropFilter: "blur(12px)",
+                minWidth: { xs: 0, sm: 360 },
+                width: { xs: "100%", sm: "auto" },
+                maxWidth: "min(100%, 900px)",
+                justifyContent: "center",
+                animation: loadingSpin ? "winnerGlow 1.4s ease-out infinite" : "none",
+                "&::before": loadingSpin
+                  ? {
+                      content: '""',
+                      position: "absolute",
+                      inset: -10,
+                      borderRadius: "999px",
+                      border: "1px solid rgba(56,189,248,0.65)",
+                      boxShadow: "0 0 26px rgba(56,189,248,0.55)",
+                      opacity: 0.7,
+                    }
+                  : {},
+              }}
+            >
+              {(() => {
+                const liveDisplayAddress =
+                  loadingSpin && winner
+                    ? winner
+                    : currentWinner
+                    ? currentWinner.address
+                    : "";
+
+                const text = liveDisplayAddress
+                  ? isMobile
+                    ? shortenString(liveDisplayAddress, 8, 8)
+                    : liveDisplayAddress
+                  : loadingSpin
+                  ? "Drawing winner…"
+                  : "Ready to draw";
+
+                return (
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontFamily: "monospace",
+                      letterSpacing: 1,
+                      opacity: liveDisplayAddress ? 0.95 : 0.55,
+                    }}
+                  >
+                    {text}
+                  </Typography>
+                );
+              })()}
+            </Box>
+
+            {/* Winners list on the side / bottom */}
+            {winners.length > 0 && (
+              <Box
+                sx={{
+                  mt: 1,
+                  px: 3,
+                  py: 2,
+                  borderRadius: "18px",
+                  background: "rgba(15,23,42,0.96)",
+                  border: "1px solid rgba(148,163,184,0.6)",
+                  backdropFilter: "blur(14px)",
+                  width: "min(100%, 800px)",
+                  maxHeight: { xs: "34dvh", md: "40dvh" },
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    justifyContent: "space-between",
+                    mb: 1.5,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ letterSpacing: 1.2, textTransform: "uppercase" }}
+                  >
+                    The Vine List
+                  </Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                    {moment(winners[0].ts).format("LL")}
+                  </Typography>
+                </Box>
+
+                {winners.map((w, idx) => (
+                  <Box
+                    key={`${w.address}-${w.ts}`}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      py: 0.7,
+                      borderBottom:
+                        idx === winners.length - 1
+                          ? "none"
+                          : "1px dashed rgba(75,85,99,0.7)",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                      <Typography
+                        variant="body1"
+                        sx={{ width: 26, opacity: 0.75, textAlign: "right" }}
+                      >
+                        {idx + 1}.
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          fontFamily: "monospace",
+                          letterSpacing: 0.4,
+                        }}
+                      >
+                        {isMobile ? shortenString(w.address, 8, 8) : w.address}
+                      </Typography>
+                    </Box>
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        opacity: 0.8,
+                        fontFeatureSettings: '"tnum" 1',
+                        minWidth: 72,
+                        textAlign: "right",
+                      }}
+                    >
+                      {moment(w.ts).format("HH:mm:ss")}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+
+            {/* Controls row at bottom */}
+            <Box
+              sx={{
+                position: "sticky",
+                bottom: 0,
+                zIndex: 2,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: { xs: "stretch", md: "center" },
+                flexDirection: { xs: "column", md: "row" },
+                width: "min(1100px, 100%)",
+                gap: 1,
+                p: 1,
+                borderRadius: "12px",
+                background: "rgba(2,6,23,0.72)",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <Typography variant="caption" sx={{ opacity: 0.65 }}>
+                Draws: {winners.length}/{drawGoal} • Eligible: {raffleEligibleCount}
+                {drawGoalCapped ? " (capped by eligibility)" : ""} • Chance ∝ wallet balance
+              </Typography>
+
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                <TextField
+                  size="small"
+                  type="number"
+                  value={targetDrawCount}
+                  onChange={(e) => handleDrawCountChange(e.target.value)}
+                  inputProps={{ min: MIN_DRAW_COUNT, max: MAX_DRAW_COUNT, step: 1, "aria-label": "target draws" }}
+                  sx={{
+                    width: 92,
+                    "& .MuiOutlinedInput-root": {
+                      height: 36,
+                      color: "rgba(248,250,252,0.95)",
+                      background: "rgba(15,23,42,0.55)",
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(148,163,184,0.8)",
+                    },
+                    "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(191,219,254,0.9)",
+                    },
+                  }}
+                />
+                <Button
+                  onClick={spinRoulette}
+                  disabled={loadingSpin || drawLimitReached || raffleEligibleCount === 0}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: "18px",
+                    px: 3,
+                    py: 1,
+                    background:
+                      loadingSpin || drawLimitReached || raffleEligibleCount === 0
+                        ? "rgba(0,200,255,0.3)"
+                        : "rgba(255,255,255,0.12)",
+                    "&:hover": {
+                      background:
+                        loadingSpin || drawLimitReached || raffleEligibleCount === 0
+                          ? "rgba(0,200,255,0.35)"
+                          : "rgba(255,255,255,0.2)",
+                    },
+                  }}
+                >
+                  {loadingSpin ? (
+                    <HourglassBottomIcon sx={{ mr: 1 }} fontSize="small" />
+                  ) : (
+                    <LoopIcon sx={{ mr: 1 }} fontSize="small" />
+                  )}
+                  {raffleEligibleCount === 0
+                    ? "No eligible wallets"
+                    : drawLimitReached
+                    ? "All winners drawn"
+                    : "Draw next"}
+                </Button>
+
+                {winners.length > 0 && (
+                  <Button
+                    onClick={handleResetRaffle}
+                    variant="outlined"
+                    color="inherit"
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: "18px",
+                      borderColor: "rgba(148,163,184,0.8)",
+                    }}
+                  >
+                    Reset
+                  </Button>
+                )}
+              </Box>
+            </Box>
           </Box>
-        ))}
-      </Box>
-    )}
-
-    {/* Controls row at bottom */}
-    <Box
-      sx={{
-        position: "sticky",
-        bottom: 0,
-        zIndex: 2,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: { xs: "stretch", md: "center" },
-        flexDirection: { xs: "column", md: "row" },
-        width: "min(1100px, 100%)",
-        gap: 1,
-        p: 1,
-        borderRadius: "12px",
-        background: "rgba(2,6,23,0.72)",
-        backdropFilter: "blur(8px)",
-      }}
-    >
-      <Typography variant="caption" sx={{ opacity: 0.65 }}>
-        Draws: {winners.length}/{drawGoal} • Eligible: {raffleEligibleCount}
-        {drawGoalCapped ? " (capped by eligibility)" : ""} • Chance ∝ wallet balance
-      </Typography>
-
-      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-        <TextField
-          size="small"
-          type="number"
-          value={targetDrawCount}
-          onChange={(e) => handleDrawCountChange(e.target.value)}
-          inputProps={{ min: MIN_DRAW_COUNT, max: MAX_DRAW_COUNT, step: 1, "aria-label": "target draws" }}
-          sx={{
-            width: 92,
-            "& .MuiOutlinedInput-root": {
-              height: 36,
-              color: "rgba(248,250,252,0.95)",
-              background: "rgba(15,23,42,0.55)",
-            },
-            "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: "rgba(148,163,184,0.8)",
-            },
-            "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: "rgba(191,219,254,0.9)",
-            },
-          }}
-        />
-        <Button
-          onClick={spinRoulette}
-          disabled={loadingSpin || drawLimitReached || raffleEligibleCount === 0}
-          sx={{
-            textTransform: "none",
-            borderRadius: "18px",
-            px: 3,
-            py: 1,
-            background:
-              loadingSpin || drawLimitReached || raffleEligibleCount === 0
-                ? "rgba(0,200,255,0.3)"
-                : "rgba(255,255,255,0.12)",
-            "&:hover": {
-              background:
-                loadingSpin || drawLimitReached || raffleEligibleCount === 0
-                  ? "rgba(0,200,255,0.35)"
-                  : "rgba(255,255,255,0.2)",
-            },
-          }}
-        >
-          {loadingSpin ? (
-            <HourglassBottomIcon sx={{ mr: 1 }} fontSize="small" />
-          ) : (
-            <LoopIcon sx={{ mr: 1 }} fontSize="small" />
-          )}
-          {raffleEligibleCount === 0
-            ? "No eligible wallets"
-            : drawLimitReached
-            ? "All winners drawn"
-            : "Draw next"}
-        </Button>
-
-        {winners.length > 0 && (
-          <Button
-            onClick={handleResetRaffle}
-            variant="outlined"
-            color="inherit"
-            sx={{
-              textTransform: "none",
-              borderRadius: "18px",
-              borderColor: "rgba(148,163,184,0.8)",
-            }}
-          >
-            Reset
-          </Button>
-        )}
-      </Box>
-    </Box>
-  </Box>
-)}
+        </Portal>
+      )}
       {/* Premium Token Summary */}
       {tokenInfo && (
         <Box

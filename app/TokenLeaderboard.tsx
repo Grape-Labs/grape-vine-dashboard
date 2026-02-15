@@ -892,21 +892,28 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      justifyContent: "center",
-      p: 3,
-      overflow: "hidden",
+      justifyContent: "flex-start",
+      p: { xs: 1.5, md: 3 },
+      overflowY: "auto",
+      overflowX: "hidden",
+      gap: 1.25,
     }}
   >
     {/* Top bar: title + exit */}
     <Box
       sx={{
-        position: "absolute",
-        top: 12,
-        left: 24,
-        right: 24,
+        position: "sticky",
+        top: 0,
+        zIndex: 2,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        width: "min(1100px, 100%)",
+        py: 0.75,
+        px: 1,
+        borderRadius: "12px",
+        background: "rgba(2,6,23,0.68)",
+        backdropFilter: "blur(8px)",
       }}
     >
       <Box>
@@ -944,7 +951,9 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
           background: "rgba(15,23,42,0.95)",
           border: "1px solid rgba(148,163,184,0.7)",
           backdropFilter: "blur(12px)",
-          minWidth: 360,
+          minWidth: { xs: 0, sm: 360 },
+          width: { xs: "100%", sm: "auto" },
+          maxWidth: "min(100%, 900px)",
           justifyContent: "center",
           animation: loadingSpin ? "winnerGlow 1.4s ease-out infinite" : "none",
           "&::before": loadingSpin
@@ -1004,8 +1013,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
           background: "rgba(15,23,42,0.96)",
           border: "1px solid rgba(148,163,184,0.6)",
           backdropFilter: "blur(14px)",
-          width: { xs: "100%", sm: "80%", md: 640 },
-          maxWidth: 800,
+          width: "min(100%, 800px)",
           maxHeight: { xs: "34dvh", md: "40dvh" },
           overflowY: "auto",
           overflowX: "hidden",
@@ -1081,13 +1089,19 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
     {/* Controls row at bottom */}
     <Box
       sx={{
-        position: "absolute",
-        bottom: 18,
-        left: 24,
-        right: 24,
+        position: "sticky",
+        bottom: 0,
+        zIndex: 2,
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "center",
+        alignItems: { xs: "stretch", md: "center" },
+        flexDirection: { xs: "column", md: "row" },
+        width: "min(1100px, 100%)",
+        gap: 1,
+        p: 1,
+        borderRadius: "12px",
+        background: "rgba(2,6,23,0.72)",
+        backdropFilter: "blur(8px)",
       }}
     >
       <Typography variant="caption" sx={{ opacity: 0.65 }}>

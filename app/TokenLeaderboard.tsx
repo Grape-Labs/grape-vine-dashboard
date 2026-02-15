@@ -416,7 +416,8 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
   md += `*${headerDate}*\n\n`;
 
   winners.forEach((w, idx) => {
-    md += `${idx + 1}. \`${w.address}\` — ${moment(w.ts).format("HH:mm:ss")}\n`;
+    const safeTime = moment(w.ts).format("HH:mm:ss");
+    md += `${idx + 1}. \`${w.address}\` — \`${safeTime}\`\n`;
   });
 
   return md;
@@ -551,20 +552,6 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
     }
   };
 
-  // Scroll to the latest "winner" row when winner changes
-  useEffect(() => {
-    if (!winner) return;
-
-    const rowId = `holder-row-${winner}`;
-    const rowEl = document.getElementById(rowId);
-    if (rowEl) {
-      rowEl.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
-  }, [winner]);
-
   // Fetch token info + holders
   useEffect(() => {
     setLoading(true);
@@ -655,57 +642,60 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
   const fireConfetti = () => {
     if (typeof window === "undefined") return;
 
-    const duration = 1400;
-    const animationEnd = Date.now() + duration;
+    void import("canvas-confetti")
+      .then((mod: any) => {
+        const confetti = mod?.default ?? mod;
+        const duration = 1400;
+        const animationEnd = Date.now() + duration;
 
-    const defaults = {
-      startVelocity: 35,
-      spread: 55,
-      ticks: 90,
-      zIndex: 9999,
-      scalar: 0.9,
-      colors: [
-        "#8A2BE2",
-        "#C084FC",
-        "#00FFA3",
-        "#03E1FF",
-        "#FFFFFF",
-      ],
-    };
+        const defaults = {
+          startVelocity: 35,
+          spread: 55,
+          ticks: 90,
+          zIndex: 9999,
+          scalar: 0.9,
+          colors: [
+            "#8A2BE2",
+            "#C084FC",
+            "#00FFA3",
+            "#03E1FF",
+            "#FFFFFF",
+          ],
+        };
 
-    function randomInRange(min: number, max: number) {
-      return Math.random() * (max - min) + min;
-    }
+        function randomInRange(min: number, max: number) {
+          return Math.random() * (max - min) + min;
+        }
 
-    const interval: any = setInterval(() => {
-      const timeLeft = animationEnd - Date.now();
+        const interval = window.setInterval(() => {
+          const timeLeft = animationEnd - Date.now();
 
-      if (timeLeft <= 0) {
-        clearInterval(interval);
-        return;
-      }
+          if (timeLeft <= 0) {
+            clearInterval(interval);
+            return;
+          }
 
-      const particleCount = Math.round(50 * (timeLeft / duration));
-      /*
-      confetti({
-        ...defaults,
-        particleCount,
-        origin: {
-          x: randomInRange(0.15, 0.35),
-          y: randomInRange(0.15, 0.35),
-        },
-      });
+          const particleCount = Math.round(50 * (timeLeft / duration));
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: {
+              x: randomInRange(0.15, 0.35),
+              y: randomInRange(0.15, 0.35),
+            },
+          });
 
-      confetti({
-        ...defaults,
-        particleCount,
-        origin: {
-          x: randomInRange(0.65, 0.85),
-          y: randomInRange(0.15, 0.35),
-        },
-      });
-      */
-    }, 180);
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: {
+              x: randomInRange(0.65, 0.85),
+              y: randomInRange(0.15, 0.35),
+            },
+          });
+        }, 180);
+      })
+      .catch(() => {});
   };
 
   // SPIN LOGIC with roulette effect
@@ -804,6 +794,15 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [streamMode, spinRoulette, handleResetRaffle]);
 
+  useEffect(() => {
+    if (!streamMode) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [streamMode]);
+
   const getHolderTier = (percent: number) => {
     if (percent >= 4) {
       return { label: "Whale", color: "rgba(248,250,252,0.14)" };
@@ -883,6 +882,9 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
     sx={{
       position: "fixed",
       inset: 0,
+      width: "100vw",
+      height: "100dvh",
+      maxHeight: "100dvh",
       zIndex: 1400,
       background:
         "radial-gradient(circle at top, #020617 0%, #020617 40%, #020617 100%)",
@@ -892,6 +894,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
       alignItems: "center",
       justifyContent: "center",
       p: 3,
+      overflow: "hidden",
     }}
   >
     {/* Top bar: title + exit */}
@@ -1003,6 +1006,9 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
           backdropFilter: "blur(14px)",
           width: { xs: "100%", sm: "80%", md: 640 },
           maxWidth: 800,
+          maxHeight: { xs: "34dvh", md: "40dvh" },
+          overflowY: "auto",
+          overflowX: "hidden",
         }}
       >
         <Box

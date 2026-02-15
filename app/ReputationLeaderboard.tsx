@@ -42,6 +42,7 @@ import {
   Stack,
   Collapse,
   Avatar,
+  TextField,
 } from "@mui/material";
 
 import DownloadIcon from "@mui/icons-material/Download";
@@ -145,6 +146,9 @@ type WinnerEntry = { address: string; ts: string };
 
 const BI_ZERO = BigInt(0);
 const BI_EIGHT = BigInt(8);
+const DEFAULT_DRAW_COUNT = 4;
+const MIN_DRAW_COUNT = 1;
+const MAX_DRAW_COUNT = 100;
 
 function shortenString(input: string, startChars = 6, endChars = 6) {
   if (!input) return "";
@@ -279,7 +283,7 @@ const ReputationLeaderboard: FC<ReputationLeaderboardProps> = (props) => {
 
   // raffle
   const winnersRef = useRef<HTMLDivElement | null>(null);
-  const MAX_WINNERS = 4;
+  const [targetDrawCount, setTargetDrawCount] = useState<number>(DEFAULT_DRAW_COUNT);
   const [winner, setWinner] = useState<string>("");
   const [timestamp, setTimestamp] = useState<string>("");
   const [winners, setWinners] = useState<WinnerEntry[]>([]);
@@ -464,6 +468,33 @@ useEffect(() => {
     });
   }, [holders, repByWallet, excludeArr]);
 
+  const repEntries = useMemo(
+    () =>
+      holders
+        .filter((h) => h?.address)
+        .map((h) => ({
+          address: h.address,
+          weight: repByWallet[h.address] ?? BI_ZERO,
+        })),
+    [holders, repByWallet]
+  );
+
+  const raffleEligibleCount = useMemo(
+    () => repEntries.filter((e) => !excludeArr.includes(e.address) && e.weight > BI_ZERO).length,
+    [repEntries, excludeArr]
+  );
+
+  const drawGoal = raffleEligibleCount > 0 ? Math.min(targetDrawCount, raffleEligibleCount) : targetDrawCount;
+  const drawGoalCapped = raffleEligibleCount > 0 && targetDrawCount > raffleEligibleCount;
+  const drawLimitReached = raffleEligibleCount > 0 && winners.length >= drawGoal;
+
+  const handleDrawCountChange = (raw: string) => {
+    const next = Number(raw);
+    if (!Number.isFinite(next)) return;
+    const clamped = Math.max(MIN_DRAW_COUNT, Math.min(MAX_DRAW_COUNT, Math.floor(next)));
+    setTargetDrawCount(clamped);
+  };
+
   const handleOpenWalletDrawer = (address: string, rank: number) => {
     setSelectedWallet(address);
     setSelectedRank(rank);
@@ -630,14 +661,6 @@ const handleDownloadCsv = () => {
 const handleGetRaffleSelection = () => {
   const exclude = new Set<string>([...excludeArr, ...winners.map((w) => w.address)]);
 
-  // Build (address -> repWeight) list from holders, using current-season repByWallet
-  const repEntries = holders
-    .filter((h) => h?.address)
-    .map((h) => ({
-      address: h.address,
-      weight: repByWallet[h.address] ?? BI_ZERO,
-    }));
-
   const picked = weightedPickByBigInt(repEntries, exclude);
 
   if (picked) {
@@ -700,14 +723,18 @@ const handleGetRaffleSelection = () => {
 
   // SPIN LOGIC with roulette effect
   const spinRoulette = () => {
-    if (loadingSpin || winners.length >= MAX_WINNERS) return;
+    if (loadingSpin || drawLimitReached || raffleEligibleCount === 0) return;
 
     const alreadyWon = new Set(winners.map((w) => w.address));
     const remainingEligible = holders.filter(
-      (h) => h?.address && !excludeArr.includes(h.address) && !alreadyWon.has(h.address)
+      (h) =>
+        h?.address &&
+        !excludeArr.includes(h.address) &&
+        !alreadyWon.has(h.address) &&
+        (repByWallet[h.address] ?? BI_ZERO) > BI_ZERO
     );
 
-    if (remainingEligible.length === 0 || winners.length >= MAX_WINNERS) {
+    if (remainingEligible.length === 0 || drawLimitReached) {
       console.warn("No more eligible wallets to draw.");
       return;
     }
@@ -1056,32 +1083,58 @@ const handleGetRaffleSelection = () => {
             }}
           >
             <Typography variant="caption" sx={{ opacity: 0.65 }}>
-              Draws: {winners.length}/{MAX_WINNERS} • Chance ∝ reputation points
+              Draws: {winners.length}/{drawGoal} • Eligible: {raffleEligibleCount}
+              {drawGoalCapped ? " (capped by eligibility)" : ""} • Chance ∝ reputation points
             </Typography>
 
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              <TextField
+                size="small"
+                type="number"
+                value={targetDrawCount}
+                onChange={(e) => handleDrawCountChange(e.target.value)}
+                inputProps={{ min: MIN_DRAW_COUNT, max: MAX_DRAW_COUNT, step: 1, "aria-label": "target draws" }}
+                sx={{
+                  width: 92,
+                  "& .MuiOutlinedInput-root": {
+                    height: 36,
+                    color: "rgba(248,250,252,0.95)",
+                    background: "rgba(15,23,42,0.55)",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(148,163,184,0.8)",
+                  },
+                  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(191,219,254,0.9)",
+                  },
+                }}
+              />
               <Button
                 onClick={spinRoulette}
-                disabled={loadingSpin || winners.length >= MAX_WINNERS || repLoading}
+                disabled={loadingSpin || drawLimitReached || repLoading || raffleEligibleCount === 0}
                 sx={{
                   textTransform: "none",
                   borderRadius: "18px",
                   px: 3,
                   py: 1,
                   background:
-                    loadingSpin || winners.length >= MAX_WINNERS
+                    loadingSpin || drawLimitReached || raffleEligibleCount === 0
                       ? "rgba(0,200,255,0.3)"
                       : "rgba(255,255,255,0.12)",
                   "&:hover": {
                     background:
-                      loadingSpin || winners.length >= MAX_WINNERS
+                      loadingSpin || drawLimitReached || raffleEligibleCount === 0
                         ? "rgba(0,200,255,0.35)"
                         : "rgba(255,255,255,0.2)",
                   },
                 }}
               >
                 {loadingSpin ? <HourglassBottomIcon sx={{ mr: 1 }} fontSize="small" /> : <LoopIcon sx={{ mr: 1 }} fontSize="small" />}
-                {winners.length >= MAX_WINNERS ? "All winners drawn" : "Draw next"}
+                {raffleEligibleCount === 0
+                  ? "No eligible wallets"
+                  : drawLimitReached
+                  ? "All winners drawn"
+                  : "Draw next"}
               </Button>
 
               {winners.length > 0 && (
@@ -1416,7 +1469,7 @@ const handleGetRaffleSelection = () => {
                   {loadingSpin ? "Drawing…" : "Ready"}
                 </Typography>
                 <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  {winners.length}/{MAX_WINNERS} drawn
+                  {winners.length}/{drawGoal} drawn
                 </Typography>
               </Box>
             </Box>
@@ -1586,29 +1639,54 @@ const handleGetRaffleSelection = () => {
             )}
 
             {/* Controls */}
-            <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+            <Box sx={{ display: "flex", gap: 1, mt: 2, alignItems: "center", flexWrap: "wrap" }}>
+              <TextField
+                size="small"
+                type="number"
+                value={targetDrawCount}
+                onChange={(e) => handleDrawCountChange(e.target.value)}
+                inputProps={{ min: MIN_DRAW_COUNT, max: MAX_DRAW_COUNT, step: 1, "aria-label": "target draws" }}
+                sx={{
+                  width: 92,
+                  "& .MuiOutlinedInput-root": {
+                    height: 34,
+                    color: "rgba(248,250,252,0.95)",
+                    background: "rgba(15,23,42,0.55)",
+                  },
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(148,163,184,0.8)",
+                  },
+                  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "rgba(191,219,254,0.9)",
+                  },
+                }}
+              />
               <Button
                 onClick={spinRoulette}
-                disabled={loadingSpin || winners.length >= MAX_WINNERS}
+                disabled={loadingSpin || drawLimitReached || raffleEligibleCount === 0}
                 sx={{
                   textTransform: "none",
                   borderRadius: "18px",
                   px: 2.6,
                   py: 1,
                   background:
-                    loadingSpin || winners.length >= MAX_WINNERS
+                    loadingSpin || drawLimitReached || raffleEligibleCount === 0
                       ? "rgba(0,200,255,0.3)"
                       : "rgba(255,255,255,0.12)",
                   "&:hover": {
                     background:
-                      loadingSpin || winners.length >= MAX_WINNERS
+                      loadingSpin || drawLimitReached || raffleEligibleCount === 0
                         ? "rgba(0,200,255,0.35)"
                         : "rgba(255,255,255,0.22)",
                   },
                 }}
               >
                 {loadingSpin ? <HourglassBottomIcon sx={{ mr: 1 }} fontSize="small" /> : <LoopIcon sx={{ mr: 1 }} fontSize="small" />}
-                {winners.length >= MAX_WINNERS ? "All winners drawn" : "Draw"}
+                {raffleEligibleCount === 0
+                  ? "No eligible wallets"
+                  : drawLimitReached
+                  ? "All winners drawn"
+                  : "Draw"}
               </Button>
 
               {winners.length > 0 && (

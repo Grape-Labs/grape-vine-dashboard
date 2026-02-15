@@ -42,6 +42,7 @@ import {
   Divider,
   Stack,
   Collapse,
+  TextField,
 } from "@mui/material";
 
 import DownloadIcon from "@mui/icons-material/Download";
@@ -71,6 +72,10 @@ const StyledTable = styled(Table)(({ theme }) => ({
     borderBottom: "1px solid rgba(255,255,255,0.05)",
   },
 }));
+
+const DEFAULT_DRAW_COUNT = 4;
+const MIN_DRAW_COUNT = 1;
+const MAX_DRAW_COUNT = 100;
 
 function useRpcEndpoint() {
   const [endpoint, setEndpoint] = React.useState<string>(() => resolveRpcEndpoint(readRpcSettings()));
@@ -224,7 +229,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
   };
 
   const winnersRef = useRef<HTMLDivElement | null>(null);
-  const MAX_WINNERS = 4;
+  const [targetDrawCount, setTargetDrawCount] = useState<number>(DEFAULT_DRAW_COUNT);
 
   const [winner, setWinner] = useState<string>(""); // spinning / current wallet text
   const [timestamp, setTimestamp] = useState<string>(""); // last draw timestamp (string)
@@ -350,6 +355,22 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
     },
   ];
   const excludeArr = excludedWallets.map((w) => w.address);
+
+  const raffleEligibleCount = holders.filter((h) => {
+    if (!h?.address || excludeArr.includes(h.address)) return false;
+    const weight = Number(h.balance);
+    return Number.isFinite(weight) && weight > 0;
+  }).length;
+  const drawGoal = raffleEligibleCount > 0 ? Math.min(targetDrawCount, raffleEligibleCount) : targetDrawCount;
+  const drawGoalCapped = raffleEligibleCount > 0 && targetDrawCount > raffleEligibleCount;
+  const drawLimitReached = raffleEligibleCount > 0 && winners.length >= drawGoal;
+
+  const handleDrawCountChange = (raw: string) => {
+    const next = Number(raw);
+    if (!Number.isFinite(next)) return;
+    const clamped = Math.max(MIN_DRAW_COUNT, Math.min(MAX_DRAW_COUNT, Math.floor(next)));
+    setTargetDrawCount(clamped);
+  };
 
   // --- LEADERBOARD STATS ---
   const effectiveHolders = holders.filter(
@@ -689,7 +710,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
 
   // SPIN LOGIC with roulette effect
   const spinRoulette = () => {
-    if (loadingSpin || winners.length >= MAX_WINNERS) return;
+    if (loadingSpin || drawLimitReached || raffleEligibleCount === 0) return;
 
     // compute how many wallets are still eligible
     const alreadyWon = new Set(winners.map((w) => w.address));
@@ -697,11 +718,12 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
       (h) =>
         h?.address &&
         !excludeArr.includes(h.address) &&
-        !alreadyWon.has(h.address)
+        !alreadyWon.has(h.address) &&
+        Number(h.balance) > 0
     );
 
     // if none left or we've already reached the max winners, bail
-    if (remainingEligible.length === 0 || winners.length >= MAX_WINNERS) {
+    if (remainingEligible.length === 0 || drawLimitReached) {
       console.warn("No more eligible wallets to draw.");
       return;
     }
@@ -1063,25 +1085,47 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
       }}
     >
       <Typography variant="caption" sx={{ opacity: 0.65 }}>
-        Draws: {winners.length}/{MAX_WINNERS} • Chance ∝ wallet balance
+        Draws: {winners.length}/{drawGoal} • Eligible: {raffleEligibleCount}
+        {drawGoalCapped ? " (capped by eligibility)" : ""} • Chance ∝ wallet balance
       </Typography>
 
-      <Box sx={{ display: "flex", gap: 1 }}>
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+        <TextField
+          size="small"
+          type="number"
+          value={targetDrawCount}
+          onChange={(e) => handleDrawCountChange(e.target.value)}
+          inputProps={{ min: MIN_DRAW_COUNT, max: MAX_DRAW_COUNT, step: 1, "aria-label": "target draws" }}
+          sx={{
+            width: 92,
+            "& .MuiOutlinedInput-root": {
+              height: 36,
+              color: "rgba(248,250,252,0.95)",
+              background: "rgba(15,23,42,0.55)",
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "rgba(148,163,184,0.8)",
+            },
+            "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "rgba(191,219,254,0.9)",
+            },
+          }}
+        />
         <Button
           onClick={spinRoulette}
-          disabled={loadingSpin || winners.length >= MAX_WINNERS}
+          disabled={loadingSpin || drawLimitReached || raffleEligibleCount === 0}
           sx={{
             textTransform: "none",
             borderRadius: "18px",
             px: 3,
             py: 1,
             background:
-              loadingSpin || winners.length >= MAX_WINNERS
+              loadingSpin || drawLimitReached || raffleEligibleCount === 0
                 ? "rgba(0,200,255,0.3)"
                 : "rgba(255,255,255,0.12)",
             "&:hover": {
               background:
-                loadingSpin || winners.length >= MAX_WINNERS
+                loadingSpin || drawLimitReached || raffleEligibleCount === 0
                   ? "rgba(0,200,255,0.35)"
                   : "rgba(255,255,255,0.2)",
             },
@@ -1092,7 +1136,11 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
           ) : (
             <LoopIcon sx={{ mr: 1 }} fontSize="small" />
           )}
-          {winners.length >= MAX_WINNERS ? "All winners drawn" : "Draw next"}
+          {raffleEligibleCount === 0
+            ? "No eligible wallets"
+            : drawLimitReached
+            ? "All winners drawn"
+            : "Draw next"}
         </Button>
 
         {winners.length > 0 && (
@@ -1327,7 +1375,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                 </Typography>
 
                 <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  {winners.length}/{MAX_WINNERS} drawn
+                  {winners.length}/{drawGoal} drawn
                 </Typography>
               </Box>
               
@@ -1607,21 +1655,43 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                   mt: { xs: 2, md: 0 },
                 }}
               >
+                <TextField
+                  size="small"
+                  type="number"
+                  value={targetDrawCount}
+                  onChange={(e) => handleDrawCountChange(e.target.value)}
+                  inputProps={{ min: MIN_DRAW_COUNT, max: MAX_DRAW_COUNT, step: 1, "aria-label": "target draws" }}
+                  sx={{
+                    width: 92,
+                    mb: 0.75,
+                    "& .MuiOutlinedInput-root": {
+                      height: 34,
+                      color: "rgba(248,250,252,0.95)",
+                      background: "rgba(15,23,42,0.55)",
+                    },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(148,163,184,0.8)",
+                    },
+                    "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(191,219,254,0.9)",
+                    },
+                  }}
+                />
                 <Button
                   onClick={spinRoulette}
-                  disabled={loadingSpin || winners.length >= MAX_WINNERS}
+                  disabled={loadingSpin || drawLimitReached || raffleEligibleCount === 0}
                   sx={{
                     textTransform: "none",
                     borderRadius: "18px",
                     px: 2.6,
                     py: 1,
                     background:
-                      loadingSpin || winners.length >= MAX_WINNERS
+                      loadingSpin || drawLimitReached || raffleEligibleCount === 0
                         ? "rgba(0,200,255,0.3)"
                         : "rgba(255,255,255,0.12)",
                     "&:hover": {
                       background:
-                        loadingSpin || winners.length >= MAX_WINNERS
+                        loadingSpin || drawLimitReached || raffleEligibleCount === 0
                           ? "rgba(0,200,255,0.35)"
                           : "rgba(255,255,255,0.22)",
                     },
@@ -1634,7 +1704,9 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                     <LoopIcon sx={{ mr: 1 }} fontSize="small" />
                   )}
                   <Typography component="span" sx={{ fontSize: "0.9rem" }}>
-                    {winners.length >= MAX_WINNERS
+                    {raffleEligibleCount === 0
+                      ? "No eligible wallets"
+                      : drawLimitReached
                       ? "All winners drawn"
                       : "Draw"}
                   </Typography>

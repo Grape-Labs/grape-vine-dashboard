@@ -517,7 +517,8 @@ useEffect(() => {
     md += `*${headerDate}*\n\n`;
 
     winners.forEach((w, idx) => {
-      md += `${idx + 1}. \`${w.address}\` — ${moment(w.ts).format("HH:mm:ss")}\n`;
+      const safeTime = moment(w.ts).format("HH:mm:ss");
+      md += `${idx + 1}. \`${w.address}\` — \`${safeTime}\`\n`;
     });
 
     return md;

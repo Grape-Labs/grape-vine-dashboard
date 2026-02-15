@@ -672,52 +672,48 @@ const handleGetRaffleSelection = () => {
   }
 };
 
-  // scroll to winner row
-  useEffect(() => {
-    if (!winner) return;
-    const rowEl = document.getElementById(`holder-row-${winner}`);
-    rowEl?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [winner]);
-
   const fireConfetti = () => {
     if (typeof window === "undefined") return;
 
-    const duration = 1400;
-    const animationEnd = Date.now() + duration;
+    void import("canvas-confetti")
+      .then((mod: any) => {
+        const confetti = mod?.default ?? mod;
+        const duration = 1400;
+        const animationEnd = Date.now() + duration;
 
-    const defaults = {
-      startVelocity: 35,
-      spread: 55,
-      ticks: 90,
-      zIndex: 9999,
-      scalar: 0.9,
-      colors: ["#8A2BE2", "#C084FC", "#00FFA3", "#03E1FF", "#FFFFFF"],
-    };
+        const defaults = {
+          startVelocity: 35,
+          spread: 55,
+          ticks: 90,
+          zIndex: 9999,
+          scalar: 0.9,
+          colors: ["#8A2BE2", "#C084FC", "#00FFA3", "#03E1FF", "#FFFFFF"],
+        };
 
-    function randomInRange(min: number, max: number) {
-      return Math.random() * (max - min) + min;
-    }
+        function randomInRange(min: number, max: number) {
+          return Math.random() * (max - min) + min;
+        }
 
-    const interval: any = setInterval(() => {
-      const timeLeft = animationEnd - Date.now();
-      if (timeLeft <= 0) {
-        clearInterval(interval);
-        return;
-      }
-      const particleCount = Math.round(50 * (timeLeft / duration));
-      /*
-      confetti({
-        ...defaults,
-        particleCount,
-        origin: { x: randomInRange(0.15, 0.35), y: randomInRange(0.15, 0.35) },
-      });
-      confetti({
-        ...defaults,
-        particleCount,
-        origin: { x: randomInRange(0.65, 0.85), y: randomInRange(0.15, 0.35) },
-      });
-      */
-    }, 180);
+        const interval = window.setInterval(() => {
+          const timeLeft = animationEnd - Date.now();
+          if (timeLeft <= 0) {
+            clearInterval(interval);
+            return;
+          }
+          const particleCount = Math.round(50 * (timeLeft / duration));
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: { x: randomInRange(0.15, 0.35), y: randomInRange(0.15, 0.35) },
+          });
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: { x: randomInRange(0.65, 0.85), y: randomInRange(0.15, 0.35) },
+          });
+        }, 180);
+      })
+      .catch(() => {});
   };
   
 
@@ -802,6 +798,15 @@ const handleGetRaffleSelection = () => {
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamMode, winners.length, loadingSpin]);
+
+  useEffect(() => {
+    if (!streamMode) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [streamMode]);
 
   // --- Selected wallet derived info ---
   const selectedRep = selectedWallet ? (repByWallet[selectedWallet] ?? BI_ZERO) : BI_ZERO;
@@ -915,6 +920,9 @@ const handleGetRaffleSelection = () => {
           sx={{
             position: "fixed",
             inset: 0,
+            width: "100vw",
+            height: "100dvh",
+            maxHeight: "100dvh",
             zIndex: 1400,
             background: "radial-gradient(circle at top, #020617 0%, #020617 40%, #020617 100%)",
             color: "#e5e7eb",
@@ -923,6 +931,7 @@ const handleGetRaffleSelection = () => {
             alignItems: "center",
             justifyContent: "center",
             p: 3,
+            overflow: "hidden",
           }}
         >
           <Box
@@ -1016,6 +1025,9 @@ const handleGetRaffleSelection = () => {
                 backdropFilter: "blur(14px)",
                 width: { xs: "100%", sm: "80%", md: 640 },
                 maxWidth: 800,
+                maxHeight: { xs: "34dvh", md: "40dvh" },
+                overflowY: "auto",
+                overflowX: "hidden",
               }}
             >
               <Box

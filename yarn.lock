@@ -761,10 +761,10 @@
     "@solana/wallet-adapter-base" "^0.9.17"
     bs58 "^5.0.0"
 
-"@grapenpm/vine-reputation-client@^0.1.1":
-  version "0.1.35"
-  resolved "https://registry.yarnpkg.com/@grapenpm/vine-reputation-client/-/vine-reputation-client-0.1.35.tgz#7817d390aa188ac81344653690d968d6d85fb26a"
-  integrity sha512-v9WyEw+LymLHADTAWlJL6TcQyCXof1enPHHG32KqgkMKIyh9YmHj61ERupv44XLGUidzGxmXq9UW1wjHe6x9Jg==
+"@grapenpm/vine-reputation-client@^0.1.36":
+  version "0.1.36"
+  resolved "https://registry.yarnpkg.com/@grapenpm/vine-reputation-client/-/vine-reputation-client-0.1.36.tgz#ac00848a8d0954eb1cae34ae3349f464452aefa7"
+  integrity sha512-HIQfsO9lvjSNPqScQ2JskixMHaf16/yzcfCvl7/dvABQZkc4nUmLYSRRweY3zG0WRxJYXpvsj/yWydSt49swoQ==
   dependencies:
     bs58 "^6.0.0"
 

@@ -40,9 +40,7 @@ import {
   buildSetDecayBpsIx,
   buildAdminCloseAnyIx,
   buildAddReputationIx,
-  buildResetReputationIx,
   buildCloseReputationIx,
-  buildTransferReputationIx,
   type ReputationConfigAccount,
 } from "@grapenpm/vine-reputation-client";
 const ADMIN = new PublicKey("GScbAQoP73BsUZDXSpe8yLCteUx7MJn1qzWATZapTbWt");
@@ -107,6 +105,31 @@ function shorten(pk: string, a = 6, b = 6) {
   if (!pk) return "";
   if (pk.length <= a + b) return pk;
   return `${pk.slice(0, a)}…${pk.slice(-b)}`;
+}
+
+function extractTxErrorMessage(e: any) {
+  const parts: string[] = [];
+  const seen = new Set<string>();
+  const push = (v: any) => {
+    const s = typeof v === "string" ? v.trim() : "";
+    if (!s || seen.has(s)) return;
+    seen.add(s);
+    parts.push(s);
+  };
+
+  push(e?.message);
+  push(e?.cause?.message);
+  push(e?.error?.message);
+  push(e?.name);
+
+  if (Array.isArray(e?.logs) && e.logs.length) {
+    push(`Logs: ${e.logs.join(" | ")}`);
+  }
+  if (Array.isArray(e?.transactionLogs) && e.transactionLogs.length) {
+    push(`Transaction logs: ${e.transactionLogs.join(" | ")}`);
+  }
+
+  return parts.join(" :: ") || "Transaction failed";
 }
 
 type BulkRow = { wallet: string; amount: number };
@@ -870,7 +893,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       onChanged?.();
     } catch (e: any) {
       console.error(e);
-      setSnackError(e?.message ?? "Transaction failed");
+      setSnackError(extractTxErrorMessage(e));
     } finally {
       setSubmitting(false);
     }
@@ -1014,14 +1037,13 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
 
         // If mode is resetAdd, only include reset if we DID NOT close (reset needs account to exist)
         if (bulkMode === "resetAdd" && !didAdminClose) {
-          const builtReset = await buildResetReputationIx({
-            conn: connection,
+          const resetIx = await ixResetReputation({
             daoId: daoPk,
             authority: publicKey,
             user,
-            season,
+            currentSeason: season,
           });
-          ixs.push(builtReset.ix);
+          ixs.push(resetIx);
         }
 
         // Finally add reputation
@@ -1057,7 +1079,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
     onChanged?.();
   } catch (e: any) {
     console.error(e);
-    setSnackError(e?.message ?? "Bulk import failed");
+    setSnackError(extractTxErrorMessage(e));
   } finally {
     setSubmitting(false);
   }
@@ -1222,25 +1244,26 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       const user = new PublicKey(repUser.trim());
       const season = toU16(cfg.currentSeason);
 
-      const built = await buildResetReputationIx({
-        conn: connection,
+      const resetIx = await ixResetReputation({
         daoId: daoPk,
         authority: publicKey,
         user,
-        season,
+        currentSeason: season,
       });
+      const [configPda] = getConfigPda(daoPk);
+      const [repPda] = getReputationPda(configPda, user, season);
 
       const ixs: TransactionInstruction[] = [];
 
       // Same repair option (ADMIN only)
-      const repInfo = await connection.getAccountInfo(built.repPda, "confirmed");
+      const repInfo = await connection.getAccountInfo(repPda, "confirmed");
       const repLooksProgramOwned = !!repInfo && repInfo.owner.equals(VINE_REP_PROGRAM_ID);
 
       if (repLooksProgramOwned && publicKey.equals(ADMIN)) {
         ixs.push(
           await buildAdminCloseAnyIx({
             authority: publicKey,
-            target: built.repPda,
+            target: repPda,
             recipient: publicKey,
           })
         );
@@ -1251,7 +1274,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
         // So for reset flow, only push resetIx (no close) unless you're sure.
       }
 
-      ixs.push(built.ix);
+      ixs.push(resetIx);
       return ixs;
     });
   };
@@ -1281,7 +1304,32 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
         );
       }
 
-      return [
+      const amount =
+        typeof sourceRep.points === "bigint"
+          ? sourceRep.points
+          : BigInt(sourceRep.points as any);
+
+      const addToNew = await buildAddReputationIx({
+        conn: connection,
+        daoId: daoPk,
+        authority: publicKey,
+        payer: publicKey,
+        user: newW,
+        amount,
+        season,
+      });
+
+      const resetOld = await ixResetReputation({
+        daoId: daoPk,
+        authority: publicKey,
+        user: oldW,
+        currentSeason: season,
+      });
+
+      return [addToNew.ix, resetOld];
+      /*return [
+        // Native transfer ix currently fails on some deployed program versions.
+        // Keep this commented for reference while using add+reset fallback.
         await buildTransferReputationIx({
           daoId: daoPk,
           authority: publicKey,
@@ -1290,7 +1338,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
           newWallet: newW,
           season,
         }),
-      ];
+      ];*/
     });
   };
 

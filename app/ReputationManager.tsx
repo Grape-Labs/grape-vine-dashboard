@@ -35,12 +35,14 @@ import {
   getConfigPda,
   getReputationPda,
   fetchConfig,
+  fetchReputation,
   //fetchProjectMetadata
   buildSetDecayBpsIx,
   buildAdminCloseAnyIx,
   buildAddReputationIx,
   buildResetReputationIx,
   buildCloseReputationIx,
+  buildTransferReputationIx,
   type ReputationConfigAccount,
 } from "@grapenpm/vine-reputation-client";
 const ADMIN = new PublicKey("GScbAQoP73BsUZDXSpe8yLCteUx7MJn1qzWATZapTbWt");
@@ -770,46 +772,6 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
     });
   }
 
-  async function ixTransferReputation(args: {
-    daoId: PublicKey;
-    authority: PublicKey;
-    payer: PublicKey;
-    oldWallet: PublicKey;
-    newWallet: PublicKey;
-    currentSeason: number;
-  }) {
-    const disc = await anchorIxDisc("transfer_reputation");
-    const data = new Uint8Array(8);
-    data.set(disc, 0);
-
-    const [configPda] = getConfigPda(args.daoId);
-    const [repFrom] = getReputationPda(
-      configPda,
-      args.oldWallet,
-      args.currentSeason
-    );
-    const [repTo] = getReputationPda(
-      configPda,
-      args.newWallet,
-      args.currentSeason
-    );
-
-    return new TransactionInstruction({
-      programId: VINE_REP_PROGRAM_ID,
-      keys: [
-        { pubkey: configPda, isSigner: false, isWritable: false },
-        { pubkey: args.authority, isSigner: true, isWritable: false },
-        { pubkey: args.oldWallet, isSigner: false, isWritable: false },
-        { pubkey: args.newWallet, isSigner: false, isWritable: false },
-        { pubkey: repFrom, isSigner: false, isWritable: true },
-        { pubkey: repTo, isSigner: false, isWritable: true },
-        { pubkey: args.payer, isSigner: true, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      data: Buffer.from(data),
-    });
-  }
-
   /** ------------------------------
    *  NEW: Close instructions
    *  ------------------------------ */
@@ -1302,15 +1264,31 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
 
       const oldW = new PublicKey(repOldWallet.trim());
       const newW = new PublicKey(repNewWallet.trim());
+      if (oldW.equals(newW)) {
+        throw new Error("Old wallet and new wallet must be different");
+      }
+
+      const season = toU16(cfg.currentSeason);
+      const sourceRep = await fetchReputation(connection, daoPk, oldW, season);
+      if (!sourceRep) {
+        throw new Error(
+          `No source reputation found for wallet ${shorten(oldW.toBase58())} in season ${season}`
+        );
+      }
+      if (Number(sourceRep.points ?? 0) <= 0) {
+        throw new Error(
+          `Source wallet has 0 points in season ${season}; nothing to transfer`
+        );
+      }
 
       return [
-        await ixTransferReputation({
+        await buildTransferReputationIx({
           daoId: daoPk,
           authority: publicKey,
           payer: publicKey,
           oldWallet: oldW,
           newWallet: newW,
-          currentSeason: cfg.currentSeason,
+          season,
         }),
       ];
     });

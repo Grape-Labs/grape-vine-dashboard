@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'OG Reputation Space',
-  description: 'On chain reputation spaces for web3, recognize, award & compose with other primites powered by Grape',
+  description: 'On chain reputation spaces for web3, recognize, award & compose with other primites powered by Grape on Solana',
 }
 
 export default function RootLayout({

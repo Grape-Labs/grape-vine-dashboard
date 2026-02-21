@@ -32,7 +32,7 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import SettingsIcon from "@mui/icons-material/Settings";
 
-import { OG_LOGO, OG_GREYLOGO, VINE_REP_PROGRAM_ID } from "./constants";
+import { OG_HERO, OG_LOGO, OG_GREYLOGO, VINE_REP_PROGRAM_ID } from "./constants";
 import CreateReputationSpace from "./CreateReputationSpace";
 import RpcSettingsDialog from "./components/RpcSettingsDialog";
 
@@ -378,7 +378,7 @@ background: `
 >
   <Box
     component="img"
-    src={OG_LOGO}
+    src={OG_HERO}
     alt="OG"
     sx={{
       width: 132,        // drive size by WIDTH (important)

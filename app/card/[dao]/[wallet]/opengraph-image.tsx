@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { fetchProjectMetadata } from "@grapenpm/vine-reputation-client";
+import { GRAPE_RPC_ENDPOINT } from "@/app/constants";
 
 export const runtime = "nodejs";
 export const contentType = "image/png";
@@ -68,7 +69,7 @@ export default async function OpenGraphImage({
   const dao = params.dao;
   const wallet = params.wallet;
 
-  const endpoint = searchParams?.endpoint || "https://api.devnet.solana.com";
+  const endpoint = searchParams?.endpoint?.trim() || GRAPE_RPC_ENDPOINT;
   const conn = new Connection(endpoint, "confirmed");
 
   let meta: any = null;

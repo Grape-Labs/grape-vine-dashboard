@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { fetchProjectMetadata } from "@grapenpm/vine-reputation-client";
+import { GRAPE_RPC_ENDPOINT } from "@/app/constants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // important for always-generating
@@ -31,9 +32,18 @@ function extractMetadataUri(projectMeta: any): string | null {
   );
 }
 
+function normalizeUrl(u?: string | null): string | null {
+  if (!u) return null;
+  if (u.startsWith("ipfs://")) return `https://ipfs.io/ipfs/${u.slice("ipfs://".length)}`;
+  if (u.startsWith("ar://")) return `https://arweave.net/${u.slice("ar://".length)}`;
+  return u;
+}
+
 async function fetchOffchainJson(uri: string) {
   try {
-    const r = await fetch(uri, { cache: "no-store" });
+    const normalized = normalizeUrl(uri);
+    if (!normalized) return null;
+    const r = await fetch(normalized, { cache: "no-store" });
     if (!r.ok) return null;
     return (await r.json()) as any;
   } catch {
@@ -51,7 +61,9 @@ function shortenPk(base58: string, start = 6, end = 6) {
 async function fetchAsDataUrl(url?: string | null) {
   if (!url) return null;
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const normalized = normalizeUrl(url);
+    if (!normalized) return null;
+    const res = await fetch(normalized, { cache: "no-store" });
     if (!res.ok) return null;
     const ct = res.headers.get("content-type") || "image/png";
     const buf = Buffer.from(await res.arrayBuffer());
@@ -69,7 +81,7 @@ export default async function OpenGraphImage({
   searchParams?: { endpoint?: string };
 }) {
   const dao = params.dao;
-  const endpoint = searchParams?.endpoint || "https://api.devnet.solana.com";
+  const endpoint = searchParams?.endpoint?.trim() || GRAPE_RPC_ENDPOINT;
   const conn = new Connection(endpoint, "confirmed");
 
   let offchain: any = null;

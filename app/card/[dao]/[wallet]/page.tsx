@@ -2,7 +2,8 @@
 import type { Metadata } from "next";
 import VineReputationShareCard from "./ui";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { fetchProjectMetadata } from "@grapenpm/vine-reputation-client";
+import { fetchConfig, fetchProjectMetadata, fetchReputation } from "@grapenpm/vine-reputation-client";
+import { GRAPE_RPC_ENDPOINT } from "@/app/constants";
 
 type VineTheme = {
   primary?: string;
@@ -27,6 +28,13 @@ function extractMetadataUri(projectMeta: any): string | null {
   );
 }
 
+function normalizeUrl(u?: string | null): string | null {
+  if (!u) return null;
+  if (u.startsWith("ipfs://")) return `https://ipfs.io/ipfs/${u.slice("ipfs://".length)}`;
+  if (u.startsWith("ar://")) return `https://arweave.net/${u.slice("ar://".length)}`;
+  return u;
+}
+
 function shortenPk(base58: string, start = 6, end = 6) {
   if (!base58) return "";
   if (base58.length <= start + end) return base58;
@@ -35,12 +43,105 @@ function shortenPk(base58: string, start = 6, end = 6) {
 
 async function fetchOffchainJson(uri: string) {
   try {
-    const r = await fetch(uri, { cache: "no-store" });
+    const url = normalizeUrl(uri);
+    if (!url) return null;
+    const r = await fetch(url, { cache: "no-store" });
     if (!r.ok) return null;
     return (await r.json()) as any;
   } catch {
     return null;
   }
+}
+
+function resolveEndpoint(raw?: string) {
+  return (raw || "").trim() || GRAPE_RPC_ENDPOINT;
+}
+
+function bigintToSafeNumber(bi: bigint): number | null {
+  const max = BigInt(Number.MAX_SAFE_INTEGER);
+  if (bi < BigInt(0) || bi > max) return null;
+  return Number(bi);
+}
+
+type InitialSeasonRowWire = {
+  season: number;
+  found: boolean;
+  points: string;
+  lastUpdateSlot: string;
+  weight: number;
+  effectivePoints: string;
+};
+
+type InitialCardStateWire = {
+  currentSeason: number | null;
+  decayBps: number | null;
+  rows: InitialSeasonRowWire[];
+  error: string | null;
+};
+
+async function buildInitialCardState(args: {
+  conn: Connection;
+  daoPk: PublicKey;
+  userPk: PublicKey;
+  historyDepth: number;
+}): Promise<InitialCardStateWire> {
+  const { conn, daoPk, userPk, historyDepth } = args;
+
+  const cfg = await fetchConfig(conn, daoPk);
+  if (!cfg) {
+    return {
+      currentSeason: null,
+      decayBps: null,
+      rows: [],
+      error: "No config found for this DAO.",
+    };
+  }
+
+  if (!Number.isFinite(cfg.currentSeason) || cfg.currentSeason <= 0) {
+    return {
+      currentSeason: null,
+      decayBps: null,
+      rows: [],
+      error: `Config currentSeason is invalid: ${cfg.currentSeason}`,
+    };
+  }
+
+  const currentSeason = Number(cfg.currentSeason);
+  const onchainDecay = Number.isFinite(cfg.decayBps) ? Number(cfg.decayBps) : 7000;
+  const decayFactor = Math.max(0, Math.min(1, onchainDecay / 10000));
+  const depth = Math.max(1, Math.floor(historyDepth));
+  const startSeason = Math.max(1, currentSeason - depth + 1);
+
+  const rows: InitialSeasonRowWire[] = [];
+
+  for (let s = startSeason; s <= currentSeason; s++) {
+    const rep = await fetchReputation(conn, daoPk, userPk, s);
+    const points = rep?.points ?? BigInt(0);
+    const lastUpdateSlot = rep?.lastUpdateSlot ?? BigInt(0);
+    const diff = currentSeason - s;
+    const weight = diff < 0 ? 0 : Math.pow(decayFactor, diff);
+
+    let effectivePoints = BigInt(0);
+    const ptsNum = bigintToSafeNumber(points);
+    if (ptsNum != null) effectivePoints = BigInt(Math.round(ptsNum * weight));
+    else effectivePoints = points;
+
+    rows.push({
+      season: s,
+      found: !!rep,
+      points: points.toString(),
+      lastUpdateSlot: lastUpdateSlot.toString(),
+      weight,
+      effectivePoints: effectivePoints.toString(),
+    });
+  }
+
+  return {
+    currentSeason,
+    decayBps: onchainDecay,
+    rows,
+    error: null,
+  };
 }
 
 /**
@@ -64,8 +165,7 @@ export async function generateMetadata(
   const dao = params.dao as string;
   const wallet = params.wallet as string;
 
-  const endpoint =
-    (searchParams?.endpoint as string) || "https://api.devnet.solana.com";
+  const endpoint = resolveEndpoint(searchParams?.endpoint as string | undefined);
 
   // Defaults
   let daoName = "Vine Reputation";
@@ -88,7 +188,7 @@ export async function generateMetadata(
       if (offchain?.name) daoName = offchain.name;
       if (offchain?.symbol) daoSymbol = offchain.symbol;
       if (offchain?.description) description = offchain.description;
-      if (offchain?.image) logo = offchain.image;
+      if (offchain?.image) logo = normalizeUrl(offchain.image);
     }
 
     // Try to fetch points (safe if it fails)
@@ -176,16 +276,26 @@ export default async function Page({ params, searchParams }: any) {
   const dao = params.dao as string;
   const wallet = params.wallet as string;
 
-  const endpoint =
-    (searchParams?.endpoint as string) || "https://api.devnet.solana.com";
+  const endpoint = resolveEndpoint(searchParams?.endpoint as string | undefined);
+  const historyDepth = Math.max(1, Math.floor(Number(searchParams?.d ?? 4)));
 
   const conn = new Connection(endpoint, "confirmed");
 
   let meta: any = null;
   let resolvedTheme: any = null;
+  let initialState: InitialCardStateWire | null = null;
 
   try {
     const daoPk = new PublicKey(dao);
+    const userPk = new PublicKey(wallet);
+
+    initialState = await buildInitialCardState({
+      conn,
+      daoPk,
+      userPk,
+      historyDepth,
+    });
+
     const pm = await fetchProjectMetadata(conn, daoPk);
     const uri = extractMetadataUri(pm);
 
@@ -196,15 +306,15 @@ export default async function Page({ params, searchParams }: any) {
             name: offchain.name,
             symbol: offchain.symbol,
             description: offchain.description,
-            image: offchain.image,
+            image: normalizeUrl(offchain.image),
           }
         : null;
 
       const t: VineTheme = offchain?.vine?.theme ?? {};
       resolvedTheme = {
-        primary: (t.primary ? { primary: t.primary } : {}),
+        primary: t.primary ?? "#7c3aed",
         background: {
-          image: t.background_image ?? null,
+          image: normalizeUrl(t.background_image) ?? null,
           opacity: typeof t.background_opacity === "number" ? t.background_opacity : 0.55,
           blur: typeof t.background_blur === "number" ? t.background_blur : 12,
           position: t.background_position ?? "center",
@@ -223,9 +333,10 @@ export default async function Page({ params, searchParams }: any) {
         daoBase58={dao}
         walletBase58={wallet}
         endpoint={endpoint}
-        historyDepth={Number(searchParams?.d ?? 4)}
+        historyDepth={historyDepth}
         meta={meta}
         resolvedTheme={resolvedTheme}
+        initialState={initialState ?? undefined}
       />
     </div>
   );

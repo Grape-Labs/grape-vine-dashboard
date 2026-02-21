@@ -8,10 +8,54 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 import HomeInner from "./HomeInner";
 import { resolveRpcEndpoint } from "../utils/rpcSettings";
 
-export default function DaoApp() {
+type VineTheme = {
+  mode?: "auto" | "light" | "dark";
+  primary?: string;
+  background_image?: string | null;
+  background_opacity?: number;
+  background_blur?: number;
+  background_position?: string;
+  background_size?: string;
+  background_repeat?: string;
+};
+
+type OffchainTokenMeta = {
+  name?: string;
+  symbol?: string;
+  description?: string;
+  image?: string;
+  vine?: { theme?: VineTheme };
+};
+
+type SpaceUiMetaWire = {
+  dao: string;
+  uri?: string | null;
+  offchain?: OffchainTokenMeta | null;
+};
+
+type VineSpaceWire = {
+  version: number;
+  daoId: string;
+  authority: string;
+  repMint: string;
+  currentSeason: number;
+  decayBps: number;
+  configPda: string;
+};
+
+type DaoInitialState = {
+  activeDao: string;
+  spaces: VineSpaceWire[];
+  spaceUiMeta: Record<string, SpaceUiMetaWire>;
+} | null;
+
+export default function DaoApp(props: { initialEndpoint?: string; initialState?: DaoInitialState }) {
+  const { initialEndpoint, initialState } = props;
   const wallets = React.useMemo(() => [new PhantomWalletAdapter()], []);
 
   const computeEndpoint = () => {
+    if (initialEndpoint?.trim()) return initialEndpoint.trim();
+
     const resolved = resolveRpcEndpoint();
     if (resolved?.trim()) return resolved.trim();
 
@@ -43,7 +87,7 @@ export default function DaoApp() {
     <ConnectionProvider endpoint={endpoint} key={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
-          <HomeInner />
+          <HomeInner initialState={initialState ?? undefined} />
         </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

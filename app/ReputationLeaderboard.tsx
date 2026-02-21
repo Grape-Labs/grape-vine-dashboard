@@ -2074,7 +2074,9 @@ const handleGetRaffleSelection = () => {
                 variant="outlined"
                 color="inherit"
                 size="small"
-                href={`/card/${props.activeDaoIdBase58}/${selectedWallet}`}
+                href={`/card/${props.activeDaoIdBase58}/${selectedWallet}?endpoint=${encodeURIComponent(
+                  rpcEndpoint
+                )}`}
                 target="_blank"
                 rel="noreferrer"
                 sx={{ borderRadius: "12px", justifyContent: "space-between", textTransform: "none" }}

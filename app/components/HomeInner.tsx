@@ -12,7 +12,6 @@ import { InstallAppButton } from "@/app/components/InstallApp";
 import LeaderboardSwitch from "./LeaderboardSwitch";
 import { OG_GREYLOGO, FALLBACK_VINE_MINT, VINE_REP_PROGRAM_ID } from "../constants";
 import RpcSettingsDialog from "../components/RpcSettingsDialog";
-import { readRpcSettings, resolveRpcEndpoint } from "../utils/rpcSettings";
 import TuneIcon from "@mui/icons-material/Tune"; 
 import SettingseIcon from "@mui/icons-material/Settings"; 
 
@@ -104,6 +103,28 @@ type SpaceUiMeta = {
   offchain?: OffchainTokenMeta | null;
 };
 
+type VineSpaceWire = {
+  version: number;
+  daoId: string;
+  authority: string;
+  repMint: string;
+  currentSeason: number;
+  decayBps: number;
+  configPda: string;
+};
+
+type SpaceUiMetaWire = {
+  dao: string;
+  uri?: string | null;
+  offchain?: OffchainTokenMeta | null;
+};
+
+export type HomeInnerInitialState = {
+  activeDao: string;
+  spaces: VineSpaceWire[];
+  spaceUiMeta: Record<string, SpaceUiMetaWire>;
+} | null;
+
 /* ---------------- helpers ---------------- */
 
 function extractMetadataUri(projectMeta: any): string | null {
@@ -119,14 +140,42 @@ function extractMetadataUri(projectMeta: any): string | null {
   );
 }
 
+function normalizeUrl(u?: string | null): string | null {
+  if (!u) return null;
+  if (u.startsWith("ipfs://")) return `https://ipfs.io/ipfs/${u.slice("ipfs://".length)}`;
+  if (u.startsWith("ar://")) return `https://arweave.net/${u.slice("ar://".length)}`;
+  return u;
+}
+
+function normalizeOffchainMeta(meta?: OffchainTokenMeta | null): OffchainTokenMeta | null {
+  if (!meta) return null;
+  const theme = meta.vine?.theme;
+  return {
+    ...meta,
+    image: normalizeUrl(meta.image) ?? meta.image,
+    vine: theme
+      ? {
+          ...meta.vine,
+          theme: {
+            ...theme,
+            background_image: normalizeUrl(theme.background_image) ?? null,
+          },
+        }
+      : meta.vine,
+  };
+}
+
 async function fetchOffchainJson(
   uri: string,
   signal?: AbortSignal
 ): Promise<OffchainTokenMeta | null> {
   try {
-    const r = await fetch(uri, { cache: "no-store", signal });
+    const normalized = normalizeUrl(uri);
+    if (!normalized) return null;
+    const r = await fetch(normalized, { cache: "no-store", signal });
     if (!r.ok) return null;
-    return (await r.json()) as OffchainTokenMeta;
+    const json = (await r.json()) as OffchainTokenMeta;
+    return normalizeOffchainMeta(json);
   } catch {
     return null;
   }
@@ -145,6 +194,45 @@ function shorten(s: string, a = 6, b = 6) {
   if (!s) return "";
   if (s.length <= a + b) return s;
   return `${s.slice(0, a)}…${s.slice(-b)}`;
+}
+
+function fromWireSpace(s: VineSpaceWire): VineSpace | null {
+  try {
+    return {
+      version: Number(s.version),
+      daoId: new PublicKey(s.daoId),
+      authority: new PublicKey(s.authority),
+      repMint: new PublicKey(s.repMint),
+      currentSeason: Number(s.currentSeason),
+      decayBps: Number(s.decayBps),
+      configPda: new PublicKey(s.configPda),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function hydrateInitialSpaces(initial?: HomeInnerInitialState): VineSpace[] {
+  if (!initial?.spaces?.length) return [];
+  const out: VineSpace[] = [];
+  for (const s of initial.spaces) {
+    const parsed = fromWireSpace(s);
+    if (parsed) out.push(parsed);
+  }
+  return out;
+}
+
+function hydrateInitialMeta(initial?: HomeInnerInitialState): Record<string, SpaceUiMeta> {
+  if (!initial?.spaceUiMeta) return {};
+  const out: Record<string, SpaceUiMeta> = {};
+  for (const [dao, v] of Object.entries(initial.spaceUiMeta)) {
+    out[dao] = {
+      dao: v.dao,
+      uri: normalizeUrl(v.uri) ?? v.uri ?? null,
+      offchain: normalizeOffchainMeta(v.offchain ?? null),
+    };
+  }
+  return out;
 }
 
 function Copyright() {
@@ -321,7 +409,7 @@ function HeaderActions(props: {
 
 /* ---------------- component ---------------- */
 
-const HomeInner: React.FC = () => {
+const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initialState }) => {
   const router = useRouter();
   const { connection } = useConnection();
   const muiTheme = useTheme();
@@ -336,11 +424,15 @@ const HomeInner: React.FC = () => {
   const [tokenOpen, setTokenOpen] = useState(false);
   const [metadataOpen, setMetadataOpen] = useState(false);
 
-  const [spaces, setSpaces] = useState<VineSpace[]>([]);
-  const [spacesLoading, setSpacesLoading] = useState(false);
-  const [activeDao, setActiveDao] = useState<string>("");
+  const initialSpaces = useMemo(() => hydrateInitialSpaces(initialState), [initialState]);
+  const initialSpaceUiMeta = useMemo(() => hydrateInitialMeta(initialState), [initialState]);
+  const initialActiveDao = initialState?.activeDao || "";
 
-  const [spaceUiMeta, setSpaceUiMeta] = useState<Record<string, SpaceUiMeta>>({});
+  const [spaces, setSpaces] = useState<VineSpace[]>(initialSpaces);
+  const [spacesLoading, setSpacesLoading] = useState(false);
+  const [activeDao, setActiveDao] = useState<string>(initialActiveDao);
+
+  const [spaceUiMeta, setSpaceUiMeta] = useState<Record<string, SpaceUiMeta>>(initialSpaceUiMeta);
 
   // space selector menu anchor (THIS WAS MISSING)
   const [spaceAnchor, setSpaceAnchor] = useState<null | HTMLElement>(null);
@@ -348,13 +440,6 @@ const HomeInner: React.FC = () => {
 
 
   const [rpcOpen, setRpcOpen] = useState(false);
-
-  // derive current endpoint from saved settings (reloads after Save anyway)
-  const rpcEndpoint = useMemo(() => {
-    // client component, safe to call
-    const s = readRpcSettings();
-    return resolveRpcEndpoint(s);
-  }, []);
 
   // keep latest activeDao to avoid stale closure
   const activeDaoRef = useRef("");
@@ -452,7 +537,11 @@ const HomeInner: React.FC = () => {
   const activeUi = useMemo(() => (activeDao ? spaceUiMeta[activeDao] ?? null : null), [activeDao, spaceUiMeta]);
 
   // "first boot" loader only (prevents most blinking on later changes)
-  const hasBootedRef = useRef(false);
+  const hasBootedRef = useRef(
+    !!initialActiveDao &&
+      initialSpaces.length > 0 &&
+      initialSpaces.some((s) => s.daoId.toBase58() === initialActiveDao)
+  );
   useEffect(() => {
     if (!hasBootedRef.current && activeDao && activeSpace && activeUi?.offchain) {
       hasBootedRef.current = true;

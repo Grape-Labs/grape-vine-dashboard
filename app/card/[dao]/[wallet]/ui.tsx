@@ -21,7 +21,7 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { Connection, PublicKey } from "@solana/web3.js";
 
 import { getConfigPda, getReputationPda } from "@grapenpm/vine-reputation-client";
-import { REACT_APP_RPC_DEVNET_ENDPOINT } from "@/app/constants";
+import { GRAPE_RPC_ENDPOINT } from "@/app/constants";
 
 /** ---------- Types ---------- */
 
@@ -33,6 +33,22 @@ type SeasonRow = {
   weight: number;
   effectivePoints: bigint;
 };
+
+type SeasonRowWire = {
+  season: number;
+  found: boolean;
+  points: string;
+  lastUpdateSlot: string;
+  weight: number;
+  effectivePoints: string;
+};
+
+type InitialCardState = {
+  currentSeason: number | null;
+  decayBps: number | null;
+  rows: SeasonRowWire[];
+  error: string | null;
+} | null;
 
 type DecodedConfig = {
   version: number;
@@ -53,6 +69,28 @@ function shortenPk(base58: string, start = 6, end = 6) {
   if (!base58) return "";
   if (base58.length <= start + end) return base58;
   return `${base58.slice(0, start)}…${base58.slice(-end)}`;
+}
+
+function normalizeUrl(u?: string | null): string | null {
+  if (!u) return null;
+  if (u.startsWith("ipfs://")) return `https://ipfs.io/ipfs/${u.slice("ipfs://".length)}`;
+  if (u.startsWith("ar://")) return `https://arweave.net/${u.slice("ar://".length)}`;
+  return u;
+}
+
+function detectExplorerCluster(endpoint?: string): "devnet" | "testnet" | "mainnet-beta" | null {
+  const s = (endpoint || "").toLowerCase();
+  if (!s) return null;
+  if (s.includes("devnet")) return "devnet";
+  if (s.includes("testnet")) return "testnet";
+  if (s.includes("mainnet")) return "mainnet-beta";
+  return null;
+}
+
+function explorerAddressUrl(address: string, endpoint?: string) {
+  const base = `https://explorer.solana.com/address/${address}`;
+  const cluster = detectExplorerCluster(endpoint);
+  return cluster ? `${base}?cluster=${cluster}` : base;
 }
 
 function readU16LE(u8: Uint8Array, off: number) {
@@ -88,6 +126,18 @@ function bigintToSafeNumber(bi: bigint): number | null {
   const max = BigInt(Number.MAX_SAFE_INTEGER);
   if (bi < BI_ZERO || bi > max) return null;
   return Number(bi);
+}
+
+function wireRowsToRows(rows?: SeasonRowWire[] | null): SeasonRow[] {
+  if (!rows?.length) return [];
+  return rows.map((r) => ({
+    season: Number(r.season),
+    found: !!r.found,
+    points: BigInt(r.points || "0"),
+    lastUpdateSlot: BigInt(r.lastUpdateSlot || "0"),
+    weight: Number(r.weight || 0),
+    effectivePoints: BigInt(r.effectivePoints || "0"),
+  }));
 }
 
 /** ---------- Anchor discriminators ---------- */
@@ -215,6 +265,7 @@ export default function VineReputationShareCard(props: {
   subtitle?: string; // fallback subtitle
   meta?: CardMeta; // <-- you pass this from page.tsx
   resolvedTheme?: ResolvedTheme;
+  initialState?: InitialCardState;
 }) {
   const {
     daoBase58,
@@ -225,16 +276,21 @@ export default function VineReputationShareCard(props: {
     title = "Vine Reputation",
     subtitle = "Proof of participation • DAO reputation score",
     meta,
+    initialState,
   } = props;
 
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const initialRows = useMemo(() => wireRowsToRows(initialState?.rows), [initialState?.rows]);
 
-  const [currentSeason, setCurrentSeason] = useState<number | null>(null);
-  const [decayBps, setDecayBps] = useState<number | null>(null);
-  const [rows, setRows] = useState<SeasonRow[]>([]);
+  const [loading, setLoading] = useState(initialRows.length === 0 && !initialState?.error);
+  const [error, setError] = useState<string | null>(initialState?.error ?? null);
+
+  const [currentSeason, setCurrentSeason] = useState<number | null>(
+    initialState?.currentSeason ?? null
+  );
+  const [decayBps, setDecayBps] = useState<number | null>(initialState?.decayBps ?? null);
+  const [rows, setRows] = useState<SeasonRow[]>(initialRows);
 
   const [snack, setSnack] = useState<{
     open: boolean;
@@ -242,24 +298,27 @@ export default function VineReputationShareCard(props: {
     sev: "success" | "error";
   }>({ open: false, msg: "", sev: "success" });
 
-  const conn = useMemo(() => {
-    const url = endpoint || REACT_APP_RPC_DEVNET_ENDPOINT;
-    return new Connection(url, "confirmed");
-  }, [endpoint]);
+  const rpcEndpoint = useMemo(() => endpoint?.trim() || GRAPE_RPC_ENDPOINT, [endpoint]);
+  const conn = useMemo(() => new Connection(rpcEndpoint, "confirmed"), [rpcEndpoint]);
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       try {
-        setError(null);
-        setRows([]);
-        setCurrentSeason(null);
-        setDecayBps(null);
+        const hasSeedData = initialRows.length > 0 || !!initialState?.error;
+        if (!hasSeedData) {
+          setError(null);
+          setRows([]);
+          setCurrentSeason(null);
+          setDecayBps(null);
+          setLoading(true);
+        } else {
+          // Keep SSR content visible; refresh in background.
+          setLoading(false);
+        }
 
         if (!daoBase58?.trim() || !walletBase58?.trim()) return;
-
-        setLoading(true);
 
         const daoPk = new PublicKey(daoBase58.trim());
         const userPk = new PublicKey(walletBase58.trim());
@@ -314,7 +373,10 @@ export default function VineReputationShareCard(props: {
           });
         }
 
-        if (!cancelled) setRows(next);
+        if (!cancelled) {
+          setError(null);
+          setRows(next);
+        }
       } catch (e: any) {
         if (!cancelled) {
           console.error("[VineReputationShareCard] load error", e);
@@ -328,7 +390,7 @@ export default function VineReputationShareCard(props: {
     return () => {
       cancelled = true;
     };
-  }, [conn, daoBase58, walletBase58, historyDepth, decayBase]);
+  }, [conn, daoBase58, walletBase58, historyDepth, decayBase, initialRows.length, initialState?.error]);
 
   const totalRaw = rows.reduce((acc, r) => acc + r.points, BI_ZERO);
   const totalDecayed = rows.reduce((acc, r) => acc + r.effectivePoints, BI_ZERO);
@@ -367,8 +429,8 @@ export default function VineReputationShareCard(props: {
     }
   };
 
-  const explorerDao = `https://explorer.solana.com/address/${daoBase58}?cluster=devnet`;
-  const explorerWallet = `https://explorer.solana.com/address/${walletBase58}?cluster=devnet`;
+  const explorerDao = explorerAddressUrl(daoBase58, rpcEndpoint);
+  const explorerWallet = explorerAddressUrl(walletBase58, rpcEndpoint);
 
   const maxPts = useMemo(() => {
     const nums = rows.map((r) => bigintToSafeNumber(r.effectivePoints) ?? 0);
@@ -377,9 +439,10 @@ export default function VineReputationShareCard(props: {
 
   const bg = props.resolvedTheme?.background;
   const primary = props.resolvedTheme?.primary ?? "#cccccc";
+  const normalizedBgImage = normalizeUrl(bg?.image);
 
-  const hasBg = !!bg?.image;
-  const cardBgImage = hasBg ? `url("${bg!.image}")` : "none";
+  const hasBg = !!normalizedBgImage;
+  const cardBgImage = hasBg ? `url("${normalizedBgImage}")` : "none";
 
   const bgOpacity = hasBg ? Math.min(Math.max(bg?.opacity ?? 0.35, 0.18), 0.55) : 0;
   const bgBlur = hasBg ? Math.min(Math.max(bg?.blur ?? 14, 8), 22) : 0;
@@ -388,7 +451,7 @@ export default function VineReputationShareCard(props: {
   const brandName = meta?.name?.trim() || title;
   const brandSymbol = meta?.symbol?.trim() || "";
   const brandDesc = meta?.description?.trim() || subtitle;
-  const brandImage = meta?.image || "";
+  const brandImage = normalizeUrl(meta?.image) || "";
 
   const brandTitleLine = brandSymbol ? `${brandName} • ${brandSymbol}` : brandName;
 
@@ -698,7 +761,7 @@ export default function VineReputationShareCard(props: {
                                   "& .MuiLinearProgress-bar": {
                                     borderRadius: 99,
                                     backgroundImage:
-                                      "linear-gradient(90deg, rgba(56,189,248,0.95), rgba(167,139,250,0.95))",
+                                      `linear-gradient(90deg, ${primary}, rgba(255,255,255,0.92))`,
                                   },
                                 }}
                               />

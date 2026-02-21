@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { fetchProjectMetadata } from "@grapenpm/vine-reputation-client";
 import sharp from "sharp";
+import { GRAPE_RPC_ENDPOINT } from "@/app/constants";
 
 export const runtime = "nodejs";
 
@@ -99,7 +100,7 @@ async function fetchImageAsPngDataUrl(
 export async function GET(req: NextRequest) {
   const dao = req.nextUrl.searchParams.get("dao") || "";
   const wallet = req.nextUrl.searchParams.get("wallet") || "";
-  const endpoint = req.nextUrl.searchParams.get("endpoint") || "https://api.devnet.solana.com";
+  const endpoint = req.nextUrl.searchParams.get("endpoint")?.trim() || GRAPE_RPC_ENDPOINT;
 
   let meta: any = null;
   let theme: any = null;

@@ -6,8 +6,8 @@ import Providers from "./components/Providers";
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Reputation Dashboard | Grape DAO',
-  description: 'The Reputation Dashboard, showing DAO participation metrics',
+  title: 'OG Reputation Space',
+  description: 'On chain reputation spaces for web3, recognize, award & compose with other primites powered by Grape',
 }
 
 export default function RootLayout({

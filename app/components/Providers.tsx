@@ -13,18 +13,18 @@ import { resolveRpcEndpoint } from "../utils/rpcSettings";
 export default function Providers({ children }: { children: React.ReactNode }) {
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
 
-const computeEndpoint = () => {
-  // 1) user-selected endpoint (custom/predefined + network)
-  const resolved = resolveRpcEndpoint();
-  if (resolved?.trim()) return resolved.trim();
+  const computeEndpoint = () => {
+    // 1) user-selected endpoint (custom/predefined + network)
+    const resolved = resolveRpcEndpoint();
+    if (resolved?.trim()) return resolved.trim();
 
-  // 2) fallback default from env (optional)
-  const envDefault = process.env.NEXT_PUBLIC_RPC_ENDPOINT?.trim();
-  if (envDefault) return envDefault;
+    // 2) fallback default from env (optional)
+    const envDefault = process.env.NEXT_PUBLIC_RPC_ENDPOINT?.trim();
+    if (envDefault) return envDefault;
 
-  // 3) final fallback
-  return clusterApiUrl("mainnet-beta");
-};
+    // 3) final fallback
+    return clusterApiUrl("mainnet-beta");
+  };
 
   const [endpoint, setEndpoint] = useState<string>(computeEndpoint);
 
@@ -44,6 +44,15 @@ const computeEndpoint = () => {
       window.removeEventListener("grape:rpc-settings", recompute as any);
       window.removeEventListener("storage", onStorage);
     };
+  }, []);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production") return;
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Non-fatal: PWA install still works where SW is optional.
+    });
   }, []);
 
   return (

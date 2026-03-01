@@ -21,11 +21,11 @@ export type RpcSettings = {
 
 const LS_KEY = "grape_rpc_settings_v1";
 
-// ✅ Default: DEVNET + Solana Public
+// ✅ Default: MAINNET + Default provider (Shyft first, then fallbacks)
 const DEFAULT_SETTINGS: RpcSettings = {
-  network: "devnet",
+  network: "mainnet",
   mode: "predefined",
-  predefinedKey: "solana",
+  predefinedKey: "default",
   customRpc: "",
 };
 

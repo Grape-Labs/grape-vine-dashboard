@@ -5,6 +5,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { fetchConfig, fetchProjectMetadata, getConfigPda } from "@grapenpm/vine-reputation-client";
 import { GRAPE_RPC_ENDPOINT } from "@/app/constants";
 import DaoApp from "../../components/DaoApp";
+import { fetchDaoBranding } from "./branding";
 
 function isValidPk(s: string) {
   try {
@@ -178,11 +179,14 @@ export async function generateMetadata({ params, searchParams }: any): Promise<M
   const site = getSiteUrl();
   const metadataBase = new URL(site);
   const endpoint = resolveEndpoint(searchParams?.endpoint as string | undefined);
+  const branding = await fetchDaoBranding(dao, endpoint);
 
   // Make the title useful in iMessage compact previews
-  const shortDao = `${dao.slice(0, 6)}…${dao.slice(-6)}`;
-  const title = `Vine Reputation · ${shortDao}`;
-  const description = "On-chain, season-based reputation dashboard for this DAO.";
+  const shortDao = `${dao.slice(0, 6)}...${dao.slice(-6)}`;
+  const title = `${branding.name} · ${shortDao}`;
+  const description = branding.description;
+  const manifestPath = `/dao/${dao}/manifest.webmanifest`;
+  const iconBase = `/dao/${dao}/pwa-icon`;
 
   // IMPORTANT: Open Graph image must be absolute
   // Next will serve this automatically if you have:
@@ -197,8 +201,11 @@ export async function generateMetadata({ params, searchParams }: any): Promise<M
 
   return {
     metadataBase,
+    applicationName: branding.name,
     title,
     description,
+    manifest: manifestPath,
+    themeColor: branding.themeColor,
     alternates: { canonical: pageUrlStr },
 
     openGraph: {
@@ -206,7 +213,7 @@ export async function generateMetadata({ params, searchParams }: any): Promise<M
       url: pageUrlStr,
       title,
       description,
-      siteName: "Vine Reputation",
+      siteName: branding.name,
       locale: "en_US",
       images: [
         {
@@ -224,11 +231,18 @@ export async function generateMetadata({ params, searchParams }: any): Promise<M
       images: [ogImage.toString()],
     },
 
-    // This can help iMessage show a better icon in compact mode
-    // (make sure these files exist in /public)
+    appleWebApp: {
+      capable: true,
+      title: branding.name,
+      statusBarStyle: "black-translucent",
+    },
+
     icons: {
-      icon: "/public/images/favicon-32x32.png",
-      apple: "/public/images/apple-touch-icon.png",
+      icon: [
+        { url: `${iconBase}?size=192`, sizes: "192x192", type: "image/png" },
+        { url: `${iconBase}?size=512`, sizes: "512x512", type: "image/png" },
+      ],
+      apple: [{ url: `${iconBase}?size=180`, sizes: "180x180", type: "image/png" }],
     },
   };
 }

@@ -1,30 +1,40 @@
 import type { MetadataRoute } from "next";
-import { PublicKey } from "@solana/web3.js";
+import { fetchDaoBranding } from "./branding";
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://vine.governance.so").replace(/\/$/, "");
-
-function isValidPk(s: string) {
-  try { new PublicKey(s); return true; } catch { return false; }
+function toShortName(name: string) {
+  return name.length > 24 ? `${name.slice(0, 21)}...` : name;
 }
 
-export default function manifest({ params }: { params: { dao: string } }): MetadataRoute.Manifest {
-  const dao = String(params.dao || "");
-  const shortDao = isValidPk(dao) ? `${dao.slice(0, 6)}…${dao.slice(-6)}` : "Invalid DAO";
+export default async function manifest({
+  params,
+}: {
+  params: { dao: string };
+}): Promise<MetadataRoute.Manifest> {
+  const dao = String(params.dao || "").trim();
+  const branding = await fetchDaoBranding(dao);
+  const basePath = `/dao/${dao}`;
+  const iconBase = `${basePath}/pwa-icon`;
 
   return {
-    name: `Vine Reputation · ${shortDao}`,
-    short_name: "Vine",
-    description: "On-chain, season-based reputation dashboard.",
-    start_url: `/dao/${dao}`,
-    scope: `/dao/${dao}`,
+    id: basePath,
+    name: branding.name,
+    short_name: toShortName(branding.name),
+    description: branding.description,
+    start_url: basePath,
+    scope: basePath,
     display: "standalone",
-    background_color: "#020617",
-    theme_color: "#0b1220",
+    orientation: "portrait",
+    background_color: branding.backgroundColor,
+    theme_color: branding.themeColor,
     icons: [
-      // You can later swap these to be DAO-branded via a dynamic icon route (step 3)
-      { src: "/icons/vine-192.png", sizes: "192x192", type: "image/png" },
-      { src: "/icons/vine-512.png", sizes: "512x512", type: "image/png" },
-      { src: "/icons/vine-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: `${iconBase}?size=192`, sizes: "192x192", type: "image/png" },
+      { src: `${iconBase}?size=512`, sizes: "512x512", type: "image/png" },
+      {
+        src: `${iconBase}?size=512&maskable=1`,
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
     ],
   };
 }

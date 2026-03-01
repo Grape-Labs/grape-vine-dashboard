@@ -862,6 +862,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
   const pillTimestamp = !loadingSpin
     ? currentWinner?.ts || timestamp
     : null;
+  const canDrawNext = !loadingSpin && !drawLimitReached && raffleEligibleCount > 0;
 
   const visibleHolders = React.useMemo(() => {
     return (holders || []).filter(
@@ -943,6 +944,10 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
             </Box>
 
             <Box
+              onClick={canDrawNext ? spinRoulette : undefined}
+              role="button"
+              tabIndex={canDrawNext ? 0 : -1}
+              aria-label="Draw next winner"
               sx={{
                 position: "relative",
                 display: "inline-flex",
@@ -958,6 +963,14 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                 maxWidth: "min(100%, 900px)",
                 justifyContent: "center",
                 animation: loadingSpin ? "winnerGlow 1.4s ease-out infinite" : "none",
+                cursor: canDrawNext ? "pointer" : "default",
+                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+                "&:hover": canDrawNext
+                  ? {
+                      borderColor: "rgba(191,219,254,0.95)",
+                      boxShadow: "0 0 18px rgba(148,163,184,0.25)",
+                    }
+                  : undefined,
                 "&::before": loadingSpin
                   ? {
                       content: '""',
@@ -1133,19 +1146,19 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                 />
                 <Button
                   onClick={spinRoulette}
-                  disabled={loadingSpin || drawLimitReached || raffleEligibleCount === 0}
+                  disabled={!canDrawNext}
                   sx={{
                     textTransform: "none",
                     borderRadius: "18px",
                     px: 3,
                     py: 1,
                     background:
-                      loadingSpin || drawLimitReached || raffleEligibleCount === 0
+                      !canDrawNext
                         ? "rgba(0,200,255,0.3)"
                         : "rgba(255,255,255,0.12)",
                     "&:hover": {
                       background:
-                        loadingSpin || drawLimitReached || raffleEligibleCount === 0
+                        !canDrawNext
                           ? "rgba(0,200,255,0.35)"
                           : "rgba(255,255,255,0.2)",
                     },

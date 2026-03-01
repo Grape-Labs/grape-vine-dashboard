@@ -36,7 +36,9 @@ export async function GET(request: Request, { params }: { params: { dao: string 
   const isMaskable = url.searchParams.get("maskable") === "1";
 
   const branding = await fetchDaoBranding(dao);
-  const logoDataUrl = await fetchAsDataUrl(branding.image);
+  const grapeFallback = new URL("/icons/grape-512.png", url.origin).toString();
+  const logoDataUrl =
+    (await fetchAsDataUrl(branding.image)) || (await fetchAsDataUrl(grapeFallback));
 
   const outerPadding = Math.round(size * (isMaskable ? 0.14 : 0.06));
   const innerRadius = Math.round(size * 0.14);

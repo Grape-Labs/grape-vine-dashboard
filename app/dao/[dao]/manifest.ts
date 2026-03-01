@@ -14,6 +14,9 @@ export default async function manifest({
   const branding = await fetchDaoBranding(dao);
   const basePath = `/dao/${dao}`;
   const iconBase = `${basePath}/pwa-icon`;
+  const grapeIcon192 = "/icons/grape-192.png";
+  const grapeIcon512 = "/icons/grape-512.png";
+  const grapeIconMaskable = "/icons/grape-512-maskable.png";
 
   return {
     id: basePath,
@@ -31,6 +34,14 @@ export default async function manifest({
       { src: `${iconBase}?size=512`, sizes: "512x512", type: "image/png" },
       {
         src: `${iconBase}?size=512&maskable=1`,
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      { src: grapeIcon192, sizes: "192x192", type: "image/png" },
+      { src: grapeIcon512, sizes: "512x512", type: "image/png" },
+      {
+        src: grapeIconMaskable,
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

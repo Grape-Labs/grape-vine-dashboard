@@ -1,6 +1,6 @@
 // app/dao/[dao]/page.tsx
 import { redirect } from "next/navigation";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { fetchConfig, fetchProjectMetadata, getConfigPda } from "@grapenpm/vine-reputation-client";
 import { GRAPE_RPC_ENDPOINT } from "@/app/constants";
@@ -162,6 +162,19 @@ async function buildDaoInitialState(endpoint: string, dao: string): Promise<DaoI
   }
 }
 
+export async function generateViewport({ params, searchParams }: any): Promise<Viewport> {
+  const dao = String(params.dao || "");
+  if (!isValidPk(dao)) {
+    return { themeColor: "#0b1220" };
+  }
+
+  const endpoint = resolveEndpoint(searchParams?.endpoint as string | undefined);
+  const branding = await fetchDaoBranding(dao, endpoint);
+  return {
+    themeColor: branding.themeColor,
+  };
+}
+
 export async function generateMetadata({ params, searchParams }: any): Promise<Metadata> {
   const dao = String(params.dao || "");
 
@@ -205,7 +218,6 @@ export async function generateMetadata({ params, searchParams }: any): Promise<M
     title,
     description,
     manifest: manifestPath,
-    themeColor: branding.themeColor,
     alternates: { canonical: pageUrlStr },
 
     openGraph: {
@@ -241,8 +253,13 @@ export async function generateMetadata({ params, searchParams }: any): Promise<M
       icon: [
         { url: `${iconBase}?size=192`, sizes: "192x192", type: "image/png" },
         { url: `${iconBase}?size=512`, sizes: "512x512", type: "image/png" },
+        { url: "/icons/grape-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icons/grape-512.png", sizes: "512x512", type: "image/png" },
       ],
-      apple: [{ url: `${iconBase}?size=180`, sizes: "180x180", type: "image/png" }],
+      apple: [
+        { url: `${iconBase}?size=180`, sizes: "180x180", type: "image/png" },
+        { url: "/icons/grape-180.png", sizes: "180x180", type: "image/png" },
+      ],
     },
   };
 }

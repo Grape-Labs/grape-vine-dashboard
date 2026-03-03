@@ -417,7 +417,7 @@ background: `
   {/* Docs */}
   <Button
     component="a"
-    href="https://grape-governance.gitbook.io/gspl/vine"
+    href="hhttps://grapedao.gitbook.io"
     target="_blank"
     rel="noopener noreferrer"
     startIcon={<DescriptionOutlinedIcon />}

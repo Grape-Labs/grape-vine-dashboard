@@ -23,13 +23,14 @@ import {
   CircularProgress,
   IconButton,
   Tooltip,
+  SvgIcon,
 } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
 import Chip from "@mui/material/Chip";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
+import GitHubIcon from "@mui/icons-material/GitHub";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 import { OG_LOGO, OG_GREYLOGO, VINE_REP_PROGRAM_ID } from "./constants";
@@ -74,6 +75,14 @@ type SpaceUiMeta = {
   uri?: string | null;
   offchain?: OffchainTokenMeta | null;
 };
+
+function DiscordIcon(props: React.ComponentProps<typeof SvgIcon>) {
+  return (
+    <SvgIcon {...props} viewBox="0 0 24 24">
+      <path d="M20.317 4.37A19.792 19.792 0 0 0 15.885 3a13.536 13.536 0 0 0-.677 1.372 18.42 18.42 0 0 0-5.406 0A13.469 13.469 0 0 0 9.124 3a19.737 19.737 0 0 0-4.432 1.37C1.943 8.448 1.201 12.423 1.571 16.352A19.904 19.904 0 0 0 7.025 19a14.291 14.291 0 0 0 1.171-1.873 12.712 12.712 0 0 1-1.845-.885c.155-.113.307-.23.454-.353a13.892 13.892 0 0 0 10.391 0c.148.123.3.24.456.353a12.687 12.687 0 0 1-1.849.887A14.184 14.184 0 0 0 16.975 19a19.862 19.862 0 0 0 5.456-2.648c.435-4.553-.741-8.493-2.114-11.982zM8.02 13.978c-1.016 0-1.849-.943-1.849-2.1 0-1.156.816-2.1 1.849-2.1 1.042 0 1.866.952 1.849 2.1 0 1.156-.816 2.1-1.849 2.1zm7.978 0c-1.016 0-1.849-.943-1.849-2.1 0-1.156.816-2.1 1.849-2.1 1.042 0 1.866.952 1.849 2.1 0 1.156-.807 2.1-1.849 2.1z" />
+    </SvgIcon>
+  );
+}
 
 function PoweredByGrape() {
   return (
@@ -414,49 +423,71 @@ background: `
 </Box>
 
 <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-  {/* Docs */}
-  <Button
-    component="a"
-    href="https://grapedao.gitbook.io"
-    target="_blank"
-    rel="noopener noreferrer"
-    startIcon={<DescriptionOutlinedIcon />}
-    sx={{
-      textTransform: "none",
-      color: "rgba(248,250,252,0.75)",
-      fontWeight: 600,
-      px: 1.5,
-      borderRadius: "999px",
-      "&:hover": {
-        color: "rgba(248,250,252,0.95)",
+  <Tooltip title="Docs">
+    <IconButton
+      component="a"
+      href="https://grapedao.gitbook.io"
+      target="_blank"
+      rel="noopener noreferrer"
+      size="small"
+      sx={{
+        borderRadius: "999px",
+        color: "rgba(248,250,252,0.75)",
+        border: "1px solid rgba(255,255,255,0.14)",
         background: "rgba(255,255,255,0.06)",
-      },
-    }}
-  >
-    Docs
-  </Button>
+        "&:hover": {
+          background: "rgba(255,255,255,0.10)",
+          color: "rgba(248,250,252,0.95)",
+        },
+      }}
+    >
+      <DescriptionOutlinedIcon sx={{ fontSize: 18 }} />
+    </IconButton>
+  </Tooltip>
 
-  {/* Discord */}
-  <Button
-    component="a"
-    href="https://discord.gg/grapedao"
-    target="_blank"
-    rel="noopener noreferrer"
-    startIcon={<ForumOutlinedIcon />}
-    sx={{
-      textTransform: "none",
-      color: "rgba(248,250,252,0.75)",
-      fontWeight: 600,
-      px: 1.5,
-      borderRadius: "999px",
-      "&:hover": {
-        color: "rgba(248,250,252,0.95)",
+  <Tooltip title="Discord">
+    <IconButton
+      component="a"
+      href="https://discord.gg/grapedao"
+      target="_blank"
+      rel="noopener noreferrer"
+      size="small"
+      sx={{
+        borderRadius: "999px",
+        color: "rgba(248,250,252,0.75)",
+        border: "1px solid rgba(255,255,255,0.14)",
         background: "rgba(255,255,255,0.06)",
-      },
-    }}
-  >
-    Discord
-  </Button>
+        "&:hover": {
+          background: "rgba(255,255,255,0.10)",
+          color: "rgba(248,250,252,0.95)",
+        },
+      }}
+    >
+      <DiscordIcon sx={{ fontSize: 18 }} />
+    </IconButton>
+  </Tooltip>
+
+  <Tooltip title="GitHub">
+    <IconButton
+      component="a"
+      href="https://github.com/Grape-Labs/og-reputation-dashboard"
+      target="_blank"
+      rel="noopener noreferrer"
+      size="small"
+      sx={{
+        borderRadius: "999px",
+        color: "rgba(248,250,252,0.75)",
+        border: "1px solid rgba(255,255,255,0.14)",
+        background: "rgba(255,255,255,0.06)",
+        "&:hover": {
+          background: "rgba(255,255,255,0.10)",
+          color: "rgba(248,250,252,0.95)",
+        },
+      }}
+    >
+      <GitHubIcon sx={{ fontSize: 18 }} />
+    </IconButton>
+  </Tooltip>
 
 <Tooltip title="Settings">
   <IconButton

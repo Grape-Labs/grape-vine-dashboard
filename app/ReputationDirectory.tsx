@@ -417,7 +417,7 @@ background: `
   {/* Docs */}
   <Button
     component="a"
-    href="hhttps://grapedao.gitbook.io"
+    href="https://grapedao.gitbook.io"
     target="_blank"
     rel="noopener noreferrer"
     startIcon={<DescriptionOutlinedIcon />}

@@ -221,6 +221,16 @@ export default function ReputationDirectory() {
     return () => hydrateAbortRef.current?.abort();
   }, [refreshSpaces]);
 
+  const sortedSpaces = useMemo(
+    () =>
+      [...spaces].sort((a, b) => {
+        const seasonDiff = Number(b.currentSeason) - Number(a.currentSeason);
+        if (seasonDiff !== 0) return seasonDiff;
+        return a.daoId.toBase58().localeCompare(b.daoId.toBase58());
+      }),
+    [spaces]
+  );
+
   return (
 
     <Box
@@ -547,6 +557,101 @@ background: `
             <Paper
               elevation={0}
               sx={{
+                mt: 2,
+                p: { xs: 2, md: 2.5 },
+                borderRadius: "22px",
+                background:
+                  "linear-gradient(180deg, rgba(15,23,42,0.72), rgba(15,23,42,0.50))",
+                border: "1px solid rgba(255,255,255,0.14)",
+                boxShadow: "0 18px 40px rgba(0,0,0,0.28)",
+                color: "rgba(248,250,252,0.96)",
+              }}
+            >
+              <Typography sx={{ fontWeight: 900, letterSpacing: 0.2 }}>
+                Launch Your OG Reputation Space in Minutes
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.8, opacity: 0.86, maxWidth: 880 }}>
+                Turn community effort into visible reputation. OG Reputation Spaces make contributions
+                verifiable, recognition fair, and every season feel like progress your members can see.
+              </Typography>
+
+              <Box
+                sx={{
+                  mt: 2,
+                  display: "grid",
+                  gap: 2,
+                  gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+                }}
+              >
+                <Box
+                  sx={{
+                    p: 1.5,
+                    borderRadius: "14px",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                  }}
+                >
+                  <Typography sx={{ fontWeight: 800, fontSize: 14, opacity: 0.95 }}>
+                    Why teams launch OG Spaces
+                  </Typography>
+                  <Box sx={{ mt: 1, display: "flex", gap: 0.75, flexWrap: "wrap" }}>
+                    <Chip
+                      label="Spotlight top contributors"
+                      size="small"
+                      sx={{
+                        color: "rgba(248,250,252,0.94)",
+                        background: "rgba(255,255,255,0.12)",
+                        border: "1px solid rgba(255,255,255,0.2)",
+                      }}
+                    />
+                    <Chip
+                      label="Trust built on-chain"
+                      size="small"
+                      sx={{
+                        color: "rgba(248,250,252,0.94)",
+                        background: "rgba(255,255,255,0.12)",
+                        border: "1px solid rgba(255,255,255,0.2)",
+                      }}
+                    />
+                    <Chip
+                      label="Run seasons with momentum"
+                      size="small"
+                      sx={{
+                        color: "rgba(248,250,252,0.94)",
+                        background: "rgba(255,255,255,0.12)",
+                        border: "1px solid rgba(255,255,255,0.2)",
+                      }}
+                    />
+                  </Box>
+                </Box>
+
+                <Box
+                  sx={{
+                    p: 1.5,
+                    borderRadius: "14px",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                  }}
+                >
+                  <Typography sx={{ fontWeight: 800, fontSize: 14, opacity: 0.95 }}>
+                    3-step quick start
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.7, opacity: 0.88 }}>
+                    1. Connect your wallet and hit Create Space.
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.45, opacity: 0.88 }}>
+                    2. Brand your space and define who earns reputation.
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 0.45, opacity: 0.88 }}>
+                    3. Launch Season 1 and start rewarding real contribution.
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+
+            <Paper
+              elevation={0}
+              sx={{
                 mt: 3,
                 p: { xs: 1.5, md: 2 },
                 borderRadius: "26px",
@@ -629,7 +734,7 @@ background: `
                     },
                   }}
                 >
-                  {spaces.map((s) => {
+                  {sortedSpaces.map((s) => {
                     const dao = s.daoId.toBase58();
                     const off = spaceUiMeta[dao]?.offchain;
 

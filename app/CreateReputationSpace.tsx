@@ -786,6 +786,24 @@ export default function CreateReputationSpace({
     img.src = u;
   }, [activeTemplate?.url]);
 
+  const explorerProgramUrl = useMemo(() => {
+    const endpoint = (connection?.rpcEndpoint || "").toLowerCase();
+    const programId = VINE_REP_PROGRAM_ID.toBase58();
+
+    if (endpoint.includes("devnet")) {
+      return `https://explorer.solana.com/address/${programId}?cluster=devnet`;
+    }
+    if (endpoint.includes("testnet")) {
+      return `https://explorer.solana.com/address/${programId}?cluster=testnet`;
+    }
+    if (endpoint.includes("localhost") || endpoint.includes("127.0.0.1")) {
+      return `https://explorer.solana.com/address/${programId}?cluster=custom&customUrl=${encodeURIComponent(
+        connection.rpcEndpoint
+      )}`;
+    }
+    return `https://explorer.solana.com/address/${programId}?cluster=mainnet-beta`;
+  }, [connection?.rpcEndpoint]);
+
   return (
     <>
       <Dialog
@@ -808,7 +826,25 @@ export default function CreateReputationSpace({
             Create Reputation Space
           </Typography>
           <Typography variant="caption" sx={{ opacity: 0.75 }}>
-            Your connected wallet is authority + payer • Program {VINE_REP_PROGRAM_ID.toBase58()}
+            Your connected wallet is authority + payer • Program{" "}
+            <Box
+              component="a"
+              href={explorerProgramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                color: "rgba(248,250,252,0.96)",
+                textDecoration: "underline",
+                textDecorationColor: "rgba(248,250,252,0.55)",
+                fontWeight: 700,
+                "&:hover": {
+                  color: "#ffffff",
+                  textDecorationColor: "rgba(255,255,255,0.92)",
+                },
+              }}
+            >
+              {VINE_REP_PROGRAM_ID.toBase58()}
+            </Box>
           </Typography>
         </DialogTitle>
 
@@ -840,9 +876,15 @@ export default function CreateReputationSpace({
                           sx={{
                             mr: 0.25,
                             borderRadius: "10px",
+                            color: "rgba(248,250,252,0.95)",
                             border: "1px solid rgba(255,255,255,0.18)",
                             background: "rgba(255,255,255,0.06)",
                             "&:hover": { background: "rgba(255,255,255,0.10)" },
+                            "&.Mui-disabled": {
+                              color: "rgba(248,250,252,0.45)",
+                              border: "1px solid rgba(255,255,255,0.12)",
+                              background: "rgba(255,255,255,0.04)",
+                            },
                           }}
                         >
                           <AutoAwesomeIcon fontSize="small" />
@@ -873,9 +915,15 @@ export default function CreateReputationSpace({
                           sx={{
                             mr: 0.25,
                             borderRadius: "10px",
+                            color: "rgba(248,250,252,0.95)",
                             border: "1px solid rgba(255,255,255,0.18)",
                             background: "rgba(255,255,255,0.06)",
                             "&:hover": { background: "rgba(255,255,255,0.10)" },
+                            "&.Mui-disabled": {
+                              color: "rgba(248,250,252,0.45)",
+                              border: "1px solid rgba(255,255,255,0.12)",
+                              background: "rgba(255,255,255,0.04)",
+                            },
                           }}
                         >
                           <AutoAwesomeIcon fontSize="small" />
@@ -885,7 +933,7 @@ export default function CreateReputationSpace({
                   </InputAdornment>
                 ),
               }}
-              helperText="Paste an existing mint, or click the magic button to create one."
+              helperText="A Reputation mint is required because it is the on-chain token your space uses to issue and track reputation points. It also serves as a proof and symbol of reputation, even if the mint is not distributed. Paste an existing mint, or click the magic button to create one."
               FormHelperTextProps={{ sx: { opacity: 0.7 } }}
             />
 

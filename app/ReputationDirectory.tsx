@@ -167,6 +167,7 @@ function shorten(s: string, a = 6, b = 6) {
 export default function ReputationDirectory() {
   const router = useRouter();
   const { connection } = useConnection();
+  const rpcEndpoint = connection?.rpcEndpoint?.trim() || "";
 
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -229,6 +230,12 @@ export default function ReputationDirectory() {
         return a.daoId.toBase58().localeCompare(b.daoId.toBase58());
       }),
     [spaces]
+  );
+
+  const toDaoPath = useCallback(
+    (dao: string) =>
+      rpcEndpoint ? `/dao/${dao}?endpoint=${encodeURIComponent(rpcEndpoint)}` : `/dao/${dao}`,
+    [rpcEndpoint]
   );
 
   return (
@@ -753,7 +760,7 @@ background: `
                     return (
                       <Box
                         key={dao}
-                        onClick={() => router.push(`/dao/${dao}`)}
+                        onClick={() => router.push(toDaoPath(dao))}
                         sx={{
                           cursor: "pointer",
                           position: "relative",
@@ -926,7 +933,7 @@ background: `
               setCreateOpen(false);
               await refreshSpaces();
             }}
-            onCreated={(dao) => router.push(`/dao/${dao}`)}   // ✅ needs the small prop change
+            onCreated={(dao) => router.push(toDaoPath(dao))}
           />
           <RpcSettingsDialog open={rpcOpen} onClose={() => setRpcOpen(false)} />
         </Box>

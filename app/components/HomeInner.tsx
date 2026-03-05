@@ -412,6 +412,7 @@ function HeaderActions(props: {
 const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initialState }) => {
   const router = useRouter();
   const { connection } = useConnection();
+  const rpcEndpoint = connection?.rpcEndpoint?.trim() || "";
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
 
@@ -440,6 +441,16 @@ const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initial
 
 
   const [rpcOpen, setRpcOpen] = useState(false);
+
+  const toDaoPath = useCallback(
+    (dao: string) =>
+      rpcEndpoint ? `/dao/${dao}?endpoint=${encodeURIComponent(rpcEndpoint)}` : `/dao/${dao}`,
+    [rpcEndpoint]
+  );
+  const homePath = useMemo(
+    () => (rpcEndpoint ? `/?endpoint=${encodeURIComponent(rpcEndpoint)}` : "/"),
+    [rpcEndpoint]
+  );
 
   // keep latest activeDao to avoid stale closure
   const activeDaoRef = useRef("");
@@ -511,16 +522,21 @@ const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initial
     return () => hydrateAbortRef.current?.abort();
   }, [refreshSpaces]);
 
-  // keep URL in /dao/[dao] (and ONLY that)
+  // keep URL in /dao/[dao] and preserve the active RPC endpoint
   useEffect(() => {
     if (!activeDao) return;
     if (!spaces.some((s) => s.daoId.toBase58() === activeDao)) return;
 
     const current = (params?.dao as string) || "";
-    if (current === activeDao) return;
+    const targetPath = toDaoPath(activeDao);
+    const currentEndpoint =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("endpoint")?.trim() || ""
+        : "";
+    if (current === activeDao && currentEndpoint === rpcEndpoint) return;
 
-    router.replace(`/dao/${activeDao}`, { scroll: false });
-  }, [activeDao, spaces, router, params]);
+    router.replace(targetPath, { scroll: false });
+  }, [activeDao, spaces, router, params, toDaoPath, rpcEndpoint]);
 
   const activeSpace = useMemo(
     () => spaces.find((s) => s.daoId.toBase58() === activeDao) || null,
@@ -723,7 +739,7 @@ const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initial
 
             {/* Brand */}
             <Box
-              onClick={() => router.push("/")}
+              onClick={() => router.push(homePath)}
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -860,7 +876,7 @@ const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initial
               <MenuItem
                 onClick={() => {
                   setSpaceAnchor(null);
-                  router.push("/"); // home directory
+                  router.push(homePath); // home directory
                 }}
                 sx={{ mx: 1, my: 0.6, borderRadius: "14px" }}
               >

@@ -53,8 +53,8 @@ export default function DaoApp(props: { initialEndpoint?: string; initialState?:
   const { initialEndpoint, initialState } = props;
   const wallets = React.useMemo(() => [new PhantomWalletAdapter()], []);
 
-  const computeEndpoint = () => {
-    if (initialEndpoint?.trim()) return initialEndpoint.trim();
+  const computeEndpoint = React.useCallback((preferInitial = false) => {
+    if (preferInitial && initialEndpoint?.trim()) return initialEndpoint.trim();
 
     const resolved = resolveRpcEndpoint();
     if (resolved?.trim()) return resolved.trim();
@@ -63,12 +63,16 @@ export default function DaoApp(props: { initialEndpoint?: string; initialState?:
     if (envDefault) return envDefault;
 
     return clusterApiUrl("mainnet-beta");
-  };
+  }, [initialEndpoint]);
 
-  const [endpoint, setEndpoint] = React.useState<string>(computeEndpoint);
+  const [endpoint, setEndpoint] = React.useState<string>(() => computeEndpoint(true));
 
   React.useEffect(() => {
-    const recompute = () => setEndpoint(computeEndpoint());
+    setEndpoint(computeEndpoint(true));
+  }, [computeEndpoint]);
+
+  React.useEffect(() => {
+    const recompute = () => setEndpoint(computeEndpoint(false));
 
     window.addEventListener("grape:rpc-settings", recompute as any);
 
@@ -81,7 +85,7 @@ export default function DaoApp(props: { initialEndpoint?: string; initialState?:
       window.removeEventListener("grape:rpc-settings", recompute as any);
       window.removeEventListener("storage", onStorage);
     };
-  }, []);
+  }, [computeEndpoint]);
 
   return (
     <ConnectionProvider endpoint={endpoint} key={endpoint}>

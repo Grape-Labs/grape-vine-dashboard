@@ -1837,34 +1837,33 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
             </Typography>
           )}
 
+          <Box
+            sx={{
+              ml: 0.75,
+              px: 1,
+              py: 0.35,
+              borderRadius: "12px",
+              border: "1px solid rgba(148,163,184,0.5)",
+              background: "rgba(15,23,42,0.9)",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <FormControlLabel
+              sx={{ m: 0 }}
+              label={<span style={{ fontSize: 12, opacity: 0.85 }}>{isLegacy ? "Token" : "Reputation"}</span>}
+              control={
+                <Switch
+                  size="small"
+                  checked={isLegacy}
+                  onChange={(e) => toggleLegacy(e.target.checked)}
+                />
+              }
+            />
+          </Box>
+
           {(holders && holders.length > 0) && (
             <>
-
-              <Box
-                sx={{
-                  ml: 0.75,
-                  px: 1,
-                  py: 0.35,
-                  borderRadius: "12px",
-                  border: "1px solid rgba(148,163,184,0.5)",
-                  background: "rgba(15,23,42,0.9)",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <FormControlLabel
-                  sx={{ m: 0 }}
-                  label={<span style={{ fontSize: 12, opacity: 0.85 }}>{isLegacy ? "Token" : "Reputation"}</span>}
-                  control={
-                    <Switch
-                      size="small"
-                      checked={isLegacy}
-                      onChange={(e) => toggleLegacy(e.target.checked)}
-                    />
-                  }
-                />
-              </Box>
-
               {/* CSV export actions */}
               <Tooltip title="Copy holders as CSV" arrow>
                 <IconButton
@@ -1921,7 +1920,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                 </IconButton>   
               </Tooltip> 
 
-              </>
+            </>
           )}
         </Box>
       </Box>

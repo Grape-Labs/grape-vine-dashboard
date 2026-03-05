@@ -407,6 +407,7 @@ function setNetwork(network: SolanaNetwork) {
           variant="contained"
           sx={{
             textTransform: "none",
+            color: "#fff",
             borderRadius: "999px",
             px: 2.2,
             py: 1.05,

@@ -241,13 +241,19 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const isLegacy = searchParams.get("legacy") === "1";
+  const mode = searchParams.get("mode");
+  const isLegacy = searchParams.get("legacy") === "1" || mode === "token";
 
   const toggleLegacy = (checked: boolean) => {
     const params = new URLSearchParams(searchParams.toString());
 
-    if (checked) params.set("legacy", "1");
-    else params.delete("legacy");
+    if (checked) {
+      params.set("legacy", "1");
+      params.set("mode", "token");
+    } else {
+      params.delete("legacy");
+      if (params.get("mode") === "token") params.delete("mode");
+    }
 
     // keep everything else the same (dao, season, etc.)
     const qs = params.toString();

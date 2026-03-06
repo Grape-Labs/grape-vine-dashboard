@@ -12,6 +12,7 @@ type Props = {
   endpoint?: string;
   meta?: any;
   resolvedTheme?: any;
+  refreshNonce?: number;
 };
 
 import { useConnection } from "@solana/wallet-adapter-react";
@@ -35,6 +36,7 @@ export default function LeaderboardSwitch(props: Props) {
         activeSeason={props.activeSeason}
         meta={props.meta}
         resolvedTheme={props.resolvedTheme}
+        refreshNonce={props.refreshNonce}
       />
     );
   }
@@ -45,6 +47,7 @@ export default function LeaderboardSwitch(props: Props) {
       activeDaoIdBase58={props.activeDaoIdBase58}
       activeSeason={props.activeSeason}
       endpoint={props.endpoint}
+      refreshNonce={props.refreshNonce}
     />
   );
 }

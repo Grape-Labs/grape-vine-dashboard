@@ -424,6 +424,7 @@ const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initial
   const [manageOpen, setManageOpen] = useState(false);
   const [tokenOpen, setTokenOpen] = useState(false);
   const [metadataOpen, setMetadataOpen] = useState(false);
+  const [leaderboardRefreshNonce, setLeaderboardRefreshNonce] = useState(0);
 
   const initialSpaces = useMemo(() => hydrateInitialSpaces(initialState), [initialState]);
   const initialSpaceUiMeta = useMemo(() => hydrateInitialMeta(initialState), [initialState]);
@@ -541,6 +542,16 @@ const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initial
   const activeSpace = useMemo(
     () => spaces.find((s) => s.daoId.toBase58() === activeDao) || null,
     [spaces, activeDao]
+  );
+
+  const sortedSpaces = useMemo(
+    () =>
+      [...spaces].sort((a, b) => {
+        const seasonDiff = Number(b.currentSeason) - Number(a.currentSeason);
+        if (seasonDiff !== 0) return seasonDiff;
+        return a.daoId.toBase58().localeCompare(b.daoId.toBase58());
+      }),
+    [spaces]
   );
 
   const activeMint = useMemo(() => {
@@ -739,15 +750,12 @@ const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initial
 
             {/* Brand */}
             <Box
-              onClick={() => router.push(homePath)}
               sx={{
                 display: "flex",
                 alignItems: "center",
                 gap: 1.25,
                 flexGrow: 1,
                 minWidth: 0,
-                cursor: "pointer",
-                "&:hover": { opacity: 0.95 },
               }}
             >
               <Avatar
@@ -891,7 +899,7 @@ const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initial
               {spaces.length === 0 ? (
                 <MenuItem disabled>{spacesLoading ? "Loading…" : "No spaces found on-chain"}</MenuItem>
               ) : (
-                spaces.map((s) => {
+                sortedSpaces.map((s) => {
                   const dao = s.daoId.toBase58();
                   const ui = spaceUiMeta[dao];
                   const name = ui?.offchain?.name ?? shorten(dao, 8, 8);
@@ -1048,6 +1056,7 @@ const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initial
           daoIdBase58={activeDao}
           onChanged={async () => {
             await refreshSpaces();
+            setLeaderboardRefreshNonce((n) => n + 1);
           }}
         />
 
@@ -1070,6 +1079,7 @@ const HomeInner: React.FC<{ initialState?: HomeInnerInitialState }> = ({ initial
                     activeDaoIdBase58={activeDao}
                     meta={activeUi?.offchain ?? null}
                     resolvedTheme={resolvedTheme}
+                    refreshNonce={leaderboardRefreshNonce}
                     />
             </Box>
           </Paper>

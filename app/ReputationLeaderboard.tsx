@@ -135,6 +135,7 @@ type ReputationLeaderboardProps = {
   activeDaoIdBase58: string;      // DEVNET Vine DAO for reputation reads
   activeSeason?: number;          // OPTIONAL override; if omitted, use config.currentSeason
   endpoint?: string;              // OPTIONAL devnet endpoint override
+  refreshNonce?: number;          // bump to force holdings refresh after manager writes
   meta?: {
     name?: string;
     symbol?: string;
@@ -461,7 +462,7 @@ useEffect(() => {
   return () => {
     cancelled = true;
   };
-}, [repConn, props.activeDaoIdBase58, props.activeSeason]);
+}, [repConn, props.activeDaoIdBase58, props.activeSeason, props.refreshNonce]);
 
   // --- “reputation-first” sorted list ---
   const sortedRows = useMemo(() => {

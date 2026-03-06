@@ -320,7 +320,7 @@ type ReputationManagerProps = {
   defaultInitialSeason?: number;
   defaultMetadataUri?: string;
 
-  onChanged?: () => void;
+  onChanged?: () => void | Promise<void>;
 };
 
 const glassDialogPaperSx = {
@@ -351,6 +351,12 @@ const glassSecondaryBtnSx = {
   borderRadius: "999px",
   color: "rgba(248,250,252,0.85)",
 };
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 
 function TabPanel(props: {
   value: number;
@@ -857,9 +863,20 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
     if (!daoPk) throw new Error("Invalid DAO id.");
   };
 
+  const notifyChanged = async (delaysMs: number[] = []) => {
+    if (!onChanged) return;
+
+    await onChanged();
+    for (const delay of delaysMs) {
+      await sleep(delay);
+      await onChanged();
+    }
+  };
+
   const runTx = async (
     label: string,
-    buildIxs: () => Promise<TransactionInstruction[]>
+    buildIxs: () => Promise<TransactionInstruction[]>,
+    opts?: { refreshDelaysMs?: number[] }
   ) => {
     try {
       setSubmitting(true);
@@ -873,6 +890,12 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
 
       const sig = await sendTransaction(tx, connection);
       setSnackMsg(`✅ ${label}. Tx: ${sig}`);
+
+      try {
+        await connection.confirmTransaction(sig, "confirmed");
+      } catch {
+        // Best effort: some RPCs lag or prune quickly; refresh retries below still run.
+      }
 
       // refresh
       if (daoPk) {
@@ -890,7 +913,7 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
         }
       }
 
-      onChanged?.();
+      await notifyChanged(opts?.refreshDelaysMs ?? []);
     } catch (e: any) {
       console.error(e);
       setSnackError(extractTxErrorMessage(e));
@@ -1055,11 +1078,16 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       setBulkProgress(`Sending ${bi + 1}/${batches.length}…`);
       const tx = new Transaction().add(...ixs);
       const sig = await sendTransaction(tx, connection);
+      try {
+        await connection.confirmTransaction(sig, "confirmed");
+      } catch {
+        // Best effort: continue with refresh retries below.
+      }
 
       setSnackMsg(`✅ Bulk tx ${bi + 1}/${batches.length}. Tx: ${sig}`);
     }
 
-    setBulkProgress(`Done ✅ (${usableRows.length} wallets)`);
+    setBulkProgress("Waiting for RPC propagation…");
 
     // refresh (same as runTx)
     const c = await fetchConfig(connection, daoPk);
@@ -1076,7 +1104,8 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
       setBulkSeason(c.currentSeason);
     }
 
-    onChanged?.();
+    await notifyChanged([1500, 3000, 6000]);
+    setBulkProgress(`Done ✅ (${usableRows.length} wallets)`);
   } catch (e: any) {
     console.error(e);
     setSnackError(extractTxErrorMessage(e));
@@ -1229,6 +1258,9 @@ const ReputationManager: React.FC<ReputationManagerProps> = ({
 
       ixs.push(built.ix);
       return ixs;
+    }, {
+      // RPC indexers can lag after chain confirmation; refresh a few times.
+      refreshDelaysMs: [1500, 3000, 6000],
     });
   };
 

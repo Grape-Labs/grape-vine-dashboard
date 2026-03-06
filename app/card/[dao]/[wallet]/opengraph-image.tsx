@@ -4,8 +4,11 @@ import { fetchProjectMetadata } from "@grapenpm/vine-reputation-client";
 import { GRAPE_RPC_ENDPOINT } from "@/app/constants";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const contentType = "image/png";
 export const size = { width: 1200, height: 630 };
+export const alt = "Vine reputation card preview";
 
 type VineTheme = {
   primary?: string;
@@ -30,9 +33,18 @@ function extractMetadataUri(projectMeta: any): string | null {
   );
 }
 
+function normalizeUrl(u?: string | null): string | null {
+  if (!u) return null;
+  if (u.startsWith("ipfs://")) return `https://ipfs.io/ipfs/${u.slice("ipfs://".length)}`;
+  if (u.startsWith("ar://")) return `https://arweave.net/${u.slice("ar://".length)}`;
+  return u;
+}
+
 async function fetchOffchainJson(uri: string) {
   try {
-    const r = await fetch(uri, { cache: "no-store" });
+    const normalized = normalizeUrl(uri);
+    if (!normalized) return null;
+    const r = await fetch(normalized, { cache: "no-store" });
     if (!r.ok) return null;
     return (await r.json()) as any;
   } catch {
@@ -49,7 +61,9 @@ function shortenPk(base58: string, start = 6, end = 6) {
 async function fetchAsDataUrl(url?: string | null) {
   if (!url) return null;
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const normalized = normalizeUrl(url);
+    if (!normalized) return null;
+    const res = await fetch(normalized, { cache: "no-store" });
     if (!res.ok) return null;
     const ct = res.headers.get("content-type") || "image/png";
     const buf = Buffer.from(await res.arrayBuffer());
@@ -114,6 +128,7 @@ export default async function OpenGraphImage({
   const brandName = meta?.name || "Vine Reputation";
   const brandSymbol = meta?.symbol ? ` • ${meta.symbol}` : "";
   const brandDesc = meta?.description || "Proof of participation • DAO reputation score";
+  const shortWallet = shortenPk(wallet);
 
   return new ImageResponse(
     (
@@ -200,7 +215,7 @@ export default async function OpenGraphImage({
 
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 18, letterSpacing: 2, opacity: 0.85 }}>
-                VINE REPUTATION
+                PUBLIC REPUTATION CARD
               </div>
               <div style={{ fontSize: 40, fontWeight: 900, lineHeight: 1.05 }}>
                 {brandName}
@@ -211,10 +226,23 @@ export default async function OpenGraphImage({
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 34 }}>
-            <div style={{ fontSize: 22, opacity: 0.9 }}>
-              Wallet <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
-                {shortenPk(wallet)}
-              </span>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <div style={{ fontSize: 16, letterSpacing: 1.6, opacity: 0.72 }}>WALLET</div>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 800,
+                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                }}
+              >
+                {shortWallet}
+              </div>
             </div>
             <div style={{ fontSize: 22, opacity: 0.9 }}>
               DAO <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
@@ -244,7 +272,7 @@ export default async function OpenGraphImage({
                 fontSize: 18,
               }}
             >
-              Reputation score
+              Open full card
             </div>
           </div>
         </div>

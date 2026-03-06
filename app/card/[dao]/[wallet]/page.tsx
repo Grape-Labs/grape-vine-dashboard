@@ -5,6 +5,9 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { fetchConfig, fetchProjectMetadata, fetchReputation } from "@grapenpm/vine-reputation-client";
 import { GRAPE_RPC_ENDPOINT } from "@/app/constants";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type VineTheme = {
   primary?: string;
   background_image?: string | null;
@@ -55,6 +58,15 @@ async function fetchOffchainJson(uri: string) {
 
 function resolveEndpoint(raw?: string) {
   return (raw || "").trim() || GRAPE_RPC_ENDPOINT;
+}
+
+function getSiteUrl() {
+  const raw =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.SITE_URL ||
+    "https://vine.governance.so";
+
+  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
 }
 
 function bigintToSafeNumber(bi: bigint): number | null {
@@ -156,14 +168,13 @@ async function fetchEffectivePoints(_endpoint: string, _dao: string, _wallet: st
   return null; // <-- replace
 }
 
-// ✅ IMPORTANT: set this to your deployed origin (https)
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://vine.governance.so";
-
 export async function generateMetadata(
   { params, searchParams }: any
 ): Promise<Metadata> {
   const dao = params.dao as string;
   const wallet = params.wallet as string;
+  const site = getSiteUrl();
+  const metadataBase = new URL(site);
 
   const endpoint = resolveEndpoint(searchParams?.endpoint as string | undefined);
 
@@ -198,6 +209,10 @@ export async function generateMetadata(
   }
 
   const shortWallet = shortenPk(wallet);
+  const metadataDescription =
+    description && description !== "Proof of participation • DAO reputation score"
+      ? `${description} Public reputation card for ${shortWallet}.`
+      : `Public reputation card for ${shortWallet} in ${daoName}.`;
 
   // ✅ Make compact iMessage preview useful by putting info in the TITLE
   // Keep it short — iMessage truncates aggressively.
@@ -218,37 +233,42 @@ export async function generateMetadata(
   const title = `${titleParts.join(" • ")}${symbolSuffix}`;
 
   // ✅ OG image URL (generated server-side)
-  const ogImage = new URL(`/api/og/card`, SITE_URL);
-  ogImage.searchParams.set("dao", dao);
-  ogImage.searchParams.set("wallet", wallet);
+  const ogImage = new URL(`/card/${dao}/${wallet}/opengraph-image`, metadataBase);
   ogImage.searchParams.set("endpoint", endpoint);
 
-  const pageUrl = new URL(`/card/${dao}/${wallet}`, SITE_URL);
+  const pageUrl = new URL(`/card/${dao}/${wallet}`, metadataBase);
   if (searchParams?.endpoint) pageUrl.searchParams.set("endpoint", String(searchParams.endpoint));
   if (searchParams?.d) pageUrl.searchParams.set("d", String(searchParams.d));
+  const pageUrlStr = pageUrl.toString();
+  const ogImageStr = ogImage.toString();
 
   return {
-    metadataBase: new URL(SITE_URL),
+    metadataBase,
+    applicationName: daoName,
     title,
-    description,
+    description: metadataDescription,
+    alternates: { canonical: pageUrlStr },
     openGraph: {
       type: "website",
-      url: pageUrl.toString(),
+      url: pageUrlStr,
       title,
-      description,
+      description: metadataDescription,
+      siteName: daoName,
+      locale: "en_US",
       images: [
         {
-          url: ogImage.toString(),
+          url: ogImageStr,
           width: 1200,
           height: 630,
+          alt: `${daoName} reputation card for ${shortWallet}`,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
       title,
-      description,
-      images: [ogImage.toString()],
+      description: metadataDescription,
+      images: [ogImageStr],
     },
 
     /**
@@ -261,10 +281,10 @@ export async function generateMetadata(
      * is more consistent with static app icons.
      */
     icons: {
-      apple: "/public/images/apple-touch-icon.png",
+      apple: "/images/apple-touch-icon.png",
       icon: [
-        { url: "/public/images/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-        { url: "/public/images/favicon.ico" },
+        { url: "/images/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+        { url: "/images/favicon.ico" },
       ],
       // keep this if you still want the per-DAO logo as a hint
       ...(logo ? { other: [{ rel: "image_src", url: logo }] } : {}),

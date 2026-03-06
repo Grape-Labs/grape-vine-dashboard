@@ -1455,7 +1455,7 @@ const handleGetRaffleSelection = () => {
                     background: "rgba(15,23,42,0.9)",
                   }}
                 >
-                  <LoopIcon sx={{ fontSize: 16 }} />
+                  <ConfirmationNumberIcon sx={{ fontSize: 16 }} />
                 </IconButton>
               </Tooltip>
             </>

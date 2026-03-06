@@ -1916,7 +1916,7 @@ const TokenLeaderboard: FC<TokenLeaderboardProps> = (props) => {
                     },
                   }}
                 >
-                  <LoopIcon sx={{ fontSize: 16 }} />
+                  <ConfirmationNumberIcon sx={{ fontSize: 16 }} />
                 </IconButton>   
               </Tooltip> 
 

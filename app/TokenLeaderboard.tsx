@@ -167,6 +167,7 @@ type TokenLeaderboardProps = {
   programId: string;              // MAINNET mint
   activeDaoIdBase58: string;      // DEVNET Vine config DAO
   activeSeason?: number;          // DEVNET (optional)
+  refreshNonce?: number;          // optional force-refresh signal from parent
   meta?: {
     name?: string;
     symbol?: string;
